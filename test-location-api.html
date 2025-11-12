@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Location API</title>
+</head>
+<body>
+    <h1>Testing Location API</h1>
+    <button onclick="testStates()">Test States API</button>
+    <button onclick="testLGAs()">Test Plateau LGAs</button>
+    <pre id="output"></pre>
+
+    <script>
+        const API_URL = 'http://localhost:8000/api';
+
+        async function testStates() {
+            try {
+                const response = await fetch(`${API_URL}/states/`);
+                const data = await response.json();
+                document.getElementById('output').textContent =
+                    `Success! Loaded ${data.length} states:\n` +
+                    JSON.stringify(data.slice(0, 3), null, 2);
+            } catch (error) {
+                document.getElementById('output').textContent =
+                    `Error: ${error.message}`;
+            }
+        }
+
+        async function testLGAs() {
+            try {
+                // First get Plateau state (ID should be 32)
+                const statesResponse = await fetch(`${API_URL}/states/`);
+                const states = await statesResponse.json();
+                const plateau = states.find(s => s.name === 'Plateau');
+
+                if (!plateau) {
+                    throw new Error('Plateau state not found');
+                }
+
+                const lgasResponse = await fetch(`${API_URL}/states/${plateau.id}/lgas/`);
+                const lgas = await lgasResponse.json();
+
+                document.getElementById('output').textContent =
+                    `Success! Loaded ${lgas.length} LGAs for Plateau:\n` +
+                    JSON.stringify(lgas.slice(0, 5), null, 2);
+            } catch (error) {
+                document.getElementById('output').textContent =
+                    `Error: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>
