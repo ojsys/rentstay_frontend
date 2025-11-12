@@ -60,7 +60,27 @@ scp .htaccess ${SERVER_USER}@${SERVER_HOST}:${SERVER_PATH}/
 echo -e "${GREEN}Upload complete!${NC}"
 
 # Step 5: Verify deployment
-echo -e "\n${GREEN}[5/5]${NC} Deployment complete!"
+echo -e "\n${GREEN}[5/6]${NC} Verifying deployment on server..."
+
+ssh ${SERVER_USER}@${SERVER_HOST} << 'ENDSSH'
+cd /home/myrentst/public_html/app
+echo "Files in deployment directory:"
+ls -lh index.html .htaccess 2>/dev/null | head -5
+echo ""
+if [ -f .htaccess ]; then
+    echo "✓ .htaccess present"
+else
+    echo "✗ .htaccess missing!"
+fi
+if [ -f index.html ]; then
+    echo "✓ index.html present"
+else
+    echo "✗ index.html missing!"
+fi
+ENDSSH
+
+# Step 6: Summary
+echo -e "\n${GREEN}[6/6]${NC} Deployment complete!"
 echo -e "${BLUE}======================================${NC}"
 echo -e "${GREEN}✓ Frontend deployed successfully!${NC}"
 echo -e "${BLUE}======================================${NC}"
