@@ -73,9 +73,11 @@ See `ENV_CONFIG.md` for detailed documentation.
 
 ## 🚀 Deployment
 
-### Deploy to cPanel (GitHub Method)
+### Deploy to Vercel (Recommended - 5 Minutes)
 
-**1. Push to GitHub (if not already done):**
+**The easiest deployment method!**
+
+**1. Push to GitHub:**
 ```bash
 git init
 git add .
@@ -84,28 +86,28 @@ git remote add origin https://github.com/yourusername/rentstay-frontend.git
 git push -u origin main
 ```
 
-**2. Deploy on server:**
-```bash
-# SSH into cPanel
-ssh myrentst@myrentstay.com
-
-# Clone repository
-cd /home/myrentst/public_html/app
-git clone https://github.com/yourusername/rentstay-frontend.git .
-
-# Install and build
-npm install
-npm run build
-cp -r dist/* .
-```
+**2. Deploy on Vercel:**
+- Go to https://vercel.com
+- Sign up with GitHub
+- Import your repository
+- Add environment variables
+- Click Deploy
 
 **3. Future updates:**
 ```bash
-# On server, run update script
-/home/myrentst/public_html/app/update.sh
+git push origin main
+# Vercel auto-deploys! ✨
 ```
 
-See `DEPLOY_FROM_GITHUB.md` for complete instructions.
+**Benefits:** Free, automatic deployments, global CDN, SSL included, zero configuration.
+
+See `VERCEL_QUICKSTART.md` or `VERCEL_DEPLOYMENT.md` for complete instructions.
+
+### Alternative: Deploy to cPanel
+
+If you prefer cPanel hosting, see:
+- `DEPLOYMENT_STEPS.md` - Complete cPanel guide
+- `CPANEL_DEPLOYMENT_NO_NPM.md` - Detailed cPanel deployment
 
 ## 📜 Available Scripts
 
@@ -131,10 +133,16 @@ npm run lint       # Lint code with ESLint
 
 ## 📚 Documentation
 
-- **GITHUB_DEPLOYMENT.md** - Complete GitHub deployment guide
-- **DEPLOY_FROM_GITHUB.md** - Quick GitHub deployment reference
+### Deployment Guides
+- **VERCEL_QUICKSTART.md** - Deploy to Vercel in 5 minutes (Recommended)
+- **VERCEL_DEPLOYMENT.md** - Complete Vercel deployment guide
+- **DEPLOYMENT_STEPS.md** - Complete cPanel deployment guide
+- **CPANEL_DEPLOYMENT_NO_NPM.md** - cPanel without npm
+- **DEPLOY_QUICK_GUIDE.md** - Quick cPanel reference
+
+### Configuration
 - **ENV_CONFIG.md** - Environment variable configuration
-- **deploy.sh** - Automated deployment script
+- **deploy.sh** - Automated cPanel deployment script
 
 ## 🐛 Troubleshooting
 
