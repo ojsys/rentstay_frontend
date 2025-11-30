@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import { authAPI, locationAPI } from '../services/api';
 import DashboardShell from '../components/dashboard/DashboardShell';
 import toast from 'react-hot-toast';
 
 const Profile = () => {
+  const navigate = useNavigate();
   const { user, updateUser, fetchUser } = useAuthStore();
   const [saving, setSaving] = useState(false);
   const [states, setStates] = useState([]);
@@ -72,8 +74,12 @@ const Profile = () => {
       if (idDoc) fd.append('id_document', idDoc);
 
       await authAPI.updateProfile(fd, true);
-      toast.success('Profile updated');
+      toast.success('Profile updated successfully!');
       await fetchUser();
+      // Redirect to profile view page after 1 second
+      setTimeout(() => {
+        navigate('/profile/view');
+      }, 1000);
     } catch (err) {
       toast.error(err?.response?.data?.detail || 'Failed to update profile');
     } finally {

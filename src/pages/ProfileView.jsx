@@ -1,5 +1,6 @@
 import DashboardShell from '../components/dashboard/DashboardShell';
 import useAuthStore from '../store/authStore';
+import { getMediaUrl, getInitials } from '../utils/imageUtils';
 
 const InfoRow = ({ label, value }) => (
   <div className="flex justify-between py-2 border-b last:border-b-0">
@@ -49,12 +50,21 @@ const ProfileView = () => {
         <div className="card">
           <h2 className="text-lg font-semibold text-dark-900 mb-3">Profile Summary</h2>
           <div className="flex items-center gap-4 mb-4">
-            <div className="w-24 h-24 rounded-full bg-gray-100 overflow-hidden flex-shrink-0">
+            <div className="w-24 h-24 rounded-full bg-primary-100 overflow-hidden flex-shrink-0">
               {user?.profile_picture ? (
-                <img src={user.profile_picture} alt="Profile" className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-dark-400">No Image</div>
-              )}
+                <img
+                  src={getMediaUrl(user.profile_picture)}
+                  alt="Profile"
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'flex';
+                  }}
+                />
+              ) : null}
+              <div className={`w-full h-full flex items-center justify-center text-primary text-2xl font-semibold ${user?.profile_picture ? 'hidden' : ''}`}>
+                {getInitials(user?.full_name || user?.email)}
+              </div>
             </div>
             <div className="min-w-0">
               <p className="text-dark-900 font-semibold">{user?.full_name || `${user?.first_name || ''} ${user?.last_name || ''}`}</p>
