@@ -2,12 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Home, Building2, LogIn, UserPlus, LayoutDashboard, LogOut, Menu, X, User as UserIcon, ChevronDown } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
+import useSiteSettings from '../../hooks/useSiteSettings';
 
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userMenuRef = useRef(null);
   const { isAuthenticated, user, logout } = useAuthStore();
+  const { settings } = useSiteSettings();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -37,12 +39,22 @@ const Navbar = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
-            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-              <Building2 className="text-white" size={24} />
-            </div>
-            <span className="text-2xl font-display font-bold text-primary">
-              Rent<span className="text-accent">Stay</span>
-            </span>
+            {settings?.site_logo_url ? (
+              <img
+                src={settings.site_logo_url}
+                alt={settings.site_name || 'RentStay'}
+                className="h-10 object-contain"
+              />
+            ) : (
+              <>
+                <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+                  <Building2 className="text-white" size={24} />
+                </div>
+                <span className="text-2xl font-display font-bold text-primary">
+                  {settings?.site_name || 'Rent'}<span className="text-accent">Stay</span>
+                </span>
+              </>
+            )}
           </Link>
 
           {/* Desktop Navigation */}

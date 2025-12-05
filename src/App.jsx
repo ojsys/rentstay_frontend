@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
+import useSiteSettings from './hooks/useSiteSettings';
 
 // Layout
 import Layout from './components/layout/Layout';
@@ -50,6 +51,9 @@ const queryClient = new QueryClient({
 });
 
 function App() {
+  // Load site settings globally (updates favicon, title, etc.)
+  useSiteSettings();
+
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
