@@ -83,6 +83,24 @@ const useAuthStore = create(
         set({ user: { ...get().user, ...userData } });
       },
 
+      upgradeToLandlord: async (propertyDocs) => {
+        try {
+          const formData = new FormData();
+          if (propertyDocs) {
+            formData.append('property_documents', propertyDocs);
+          }
+
+          const response = await authAPI.upgradeToLandlord(formData);
+          set({ user: response.data.user });
+          return { success: true, message: response.data.detail };
+        } catch (error) {
+          return {
+            success: false,
+            error: error.response?.data?.detail || 'Upgrade failed'
+          };
+        }
+      },
+
       clearError: () => set({ error: null }),
     }),
     {

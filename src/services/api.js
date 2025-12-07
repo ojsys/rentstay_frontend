@@ -65,6 +65,7 @@ export const authAPI = {
   updateProfile: (data, isForm = false) => isForm
     ? api.patch('/auth/user/', data, { headers: { 'Content-Type': 'multipart/form-data' } })
     : api.patch('/auth/user/', data),
+  upgradeToLandlord: (formData) => api.post('/auth/upgrade-to-landlord/', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
   getVerificationStatus: () => api.get('/auth/verify/status/'),
   submitVerification: (formData) => api.post('/auth/verify/submit/', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
   listVerificationRequests: (status) => api.get('/auth/verify/requests/', { params: { status } }),

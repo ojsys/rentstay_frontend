@@ -1,6 +1,7 @@
+import { useEffect, useState } from 'react';
 import {
   User, Mail, Phone, Calendar, MapPin, CreditCard,
-  Shield, Edit2, CheckCircle, XCircle, Home, Map
+  Shield, Edit2, CheckCircle, XCircle, Home, Map, RefreshCw, Building2
 } from 'lucide-react';
 import DashboardShell from '../components/dashboard/DashboardShell';
 import useAuthStore from '../store/authStore';
@@ -45,7 +46,19 @@ const StatCard = ({ icon: Icon, label, value, color = 'primary' }) => {
 };
 
 const ProfileView = () => {
-  const { user } = useAuthStore();
+  const { user, fetchUser } = useAuthStore();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Refresh user data when component mounts to get latest verification status
+  useEffect(() => {
+    fetchUser();
+  }, [fetchUser]);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await fetchUser();
+    setTimeout(() => setIsRefreshing(false), 500); // Brief delay for visual feedback
+  };
 
   const maskLastSixDigits = (val) => {
     if (!val) return '—';
@@ -64,20 +77,42 @@ const ProfileView = () => {
     <DashboardShell>
       <div className="space-y-6">
         {/* Header Section with Profile Picture */}
-        <div className="card overflow-hidden">
-          {/* Cover Background */}
-          <div className="h-32 bg-gradient-to-r from-primary via-primary-600 to-purple-600 relative">
-            <div className="absolute inset-0 bg-black/10"></div>
-          </div>
+        <div className="relative overflow-hidden rounded-xl shadow-lg">
+          {/* Extended gradient background covering both banner and info section */}
+          <div className="relative bg-gradient-to-br from-primary via-primary-600 to-purple-700">
+            {/* Decorative circles */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/3"></div>
+            <div className="absolute bottom-0 left-0 w-48 h-48 bg-black/10 rounded-full translate-y-1/3 -translate-x-1/4"></div>
 
-          {/* Profile Info */}
-          <div className="px-6 pb-6">
-            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between -mt-16 sm:-mt-12">
-              <div className="flex flex-col sm:flex-row sm:items-end gap-4">
+            {/* Gradient overlay for depth */}
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/5 to-black/20"></div>
+
+            {/* Action buttons - positioned on banner */}
+            <div className="absolute top-4 right-4 sm:top-6 sm:right-6 flex items-center gap-2 z-20">
+              <button
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className="inline-flex items-center justify-center w-10 h-10 bg-white/20 hover:bg-white/30 backdrop-blur-md text-white rounded-lg border border-white/30 transition-all hover:scale-110 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Refresh profile data"
+              >
+                <RefreshCw size={18} className={isRefreshing ? 'animate-spin' : ''} />
+              </button>
+              <a
+                href="/profile"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 backdrop-blur-md text-white font-semibold rounded-lg border border-white/30 transition-all hover:scale-105 shadow-lg"
+              >
+                <Edit2 size={16} />
+                <span className="hidden sm:inline">Edit Profile</span>
+              </a>
+            </div>
+
+            {/* Content area with profile pic and info */}
+            <div className="relative z-10 px-6 pt-16 sm:pt-20 pb-6">
+              <div className="flex flex-col sm:flex-row sm:items-end gap-4 sm:gap-6">
                 {/* Profile Picture */}
-                <div className="relative">
-                  <div className="w-32 h-32 rounded-2xl bg-white p-1.5 shadow-xl">
-                    <div className="w-full h-full rounded-xl bg-primary-100 overflow-hidden">
+                <div className="relative flex-shrink-0">
+                  <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-2xl bg-white p-2 shadow-2xl ring-4 ring-white/50">
+                    <div className="w-full h-full rounded-xl bg-gradient-to-br from-primary-100 to-purple-100 overflow-hidden">
                       {user?.profile_picture ? (
                         <img
                           src={getMediaUrl(user.profile_picture)}
@@ -89,57 +124,52 @@ const ProfileView = () => {
                           }}
                         />
                       ) : null}
-                      <div className={`w-full h-full flex items-center justify-center text-primary text-3xl font-bold ${user?.profile_picture ? 'hidden' : ''}`}>
+                      <div className={`w-full h-full flex items-center justify-center text-primary text-4xl font-bold ${user?.profile_picture ? 'hidden' : ''}`}>
                         {getInitials(user?.full_name || user?.email)}
                       </div>
                     </div>
                   </div>
                   {user?.is_verified && (
-                    <div className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-1.5 border-4 border-white shadow-lg">
-                      <CheckCircle size={16} className="text-white" />
+                    <div className="absolute -bottom-2 -right-2 bg-green-500 rounded-full p-2.5 border-4 border-white shadow-xl">
+                      <CheckCircle size={20} className="text-white" />
                     </div>
                   )}
                 </div>
 
-                {/* Name and Basic Info */}
-                <div className="pb-2">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h1 className="text-2xl font-display font-bold text-dark-900">
-                      {user?.full_name || `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || 'User'}
-                    </h1>
-                  </div>
-                  <p className="text-dark-600 flex items-center gap-1.5 mb-1">
-                    <Mail size={14} />
-                    {user?.email}
+                {/* User Info - White text on gradient */}
+                <div className="flex-1 pb-2">
+                  <h1 className="text-2xl sm:text-3xl font-display font-bold text-white mb-2 drop-shadow-lg">
+                    {user?.full_name || `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || 'User'}
+                  </h1>
+                  <p className="text-white/95 flex items-center gap-2 mb-3 drop-shadow">
+                    <Mail size={16} />
+                    <span className="text-sm">{user?.email}</span>
                   </p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-primary-100 text-primary text-xs font-semibold rounded-full capitalize">
-                      <User size={12} />
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/25 backdrop-blur-md text-white text-sm font-semibold rounded-lg border border-white/40 capitalize shadow-lg">
+                      <User size={14} />
                       {user?.user_type || 'User'}
                     </span>
                     {user?.is_verified ? (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">
-                        <CheckCircle size={12} />
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-500/90 backdrop-blur-md text-white text-sm font-semibold rounded-lg border border-green-400/40 shadow-lg">
+                        <CheckCircle size={14} />
                         Verified
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-100 text-amber-700 text-xs font-semibold rounded-full">
-                        <XCircle size={12} />
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/90 backdrop-blur-md text-white text-sm font-semibold rounded-lg border border-amber-400/40 shadow-lg">
+                        <XCircle size={14} />
                         Unverified
+                      </span>
+                    )}
+                    {user?.phone_number && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/25 backdrop-blur-md text-white text-sm font-medium rounded-lg border border-white/40 shadow-lg">
+                        <Phone size={14} />
+                        {user.phone_number}
                       </span>
                     )}
                   </div>
                 </div>
               </div>
-
-              {/* Edit Button */}
-              <a
-                href="/profile"
-                className="btn btn-primary flex items-center gap-2 mt-4 sm:mt-0 self-start sm:self-auto"
-              >
-                <Edit2 size={16} />
-                Edit Profile
-              </a>
             </div>
           </div>
         </div>
@@ -165,6 +195,31 @@ const ProfileView = () => {
             color="primary"
           />
         </div>
+
+        {/* Upgrade to Landlord CTA */}
+        {user?.user_type === 'tenant' && (
+          <div className="card bg-gradient-to-r from-primary to-purple-600 text-white border-0">
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+              <div className="flex-shrink-0">
+                <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+                  <Building2 size={32} className="text-white" />
+                </div>
+              </div>
+              <div className="flex-1 text-center sm:text-left">
+                <h3 className="text-xl font-display font-bold mb-1">Become a Landlord</h3>
+                <p className="text-white/90 text-sm">
+                  List your properties, manage tenants, and grow your rental business
+                </p>
+              </div>
+              <a
+                href="/profile"
+                className="px-6 py-3 bg-white text-primary font-semibold rounded-lg hover:bg-white/90 transition-colors whitespace-nowrap"
+              >
+                Upgrade Account
+              </a>
+            </div>
+          </div>
+        )}
 
         {/* Information Sections */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

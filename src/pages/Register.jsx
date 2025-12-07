@@ -75,7 +75,8 @@ const Register = () => {
               >
                 <Building2 className={`mx-auto mb-2 ${userType === 'landlord' ? 'text-primary' : 'text-dark-400'}`} size={32} />
                 <h3 className="font-semibold text-dark-900">I'm a Landlord</h3>
-                <p className="text-sm text-dark-600 mt-1">I want to list properties</p>
+                <p className="text-sm text-dark-600 mt-1">List and manage properties</p>
+                <p className="text-xs text-dark-500 mt-2">Complete verification to access all features</p>
               </button>
             </div>
 

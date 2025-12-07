@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import { authAPI, locationAPI } from '../services/api';
 import DashboardShell from '../components/dashboard/DashboardShell';
+import UpgradeToLandlord from '../components/profile/UpgradeToLandlord';
 import { getMediaUrl, getInitials } from '../utils/imageUtils';
 import { User, MapPin, Shield, Upload, Camera, FileText, Loader2, X, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -382,6 +383,13 @@ const Profile = () => {
           </button>
         </div>
       </form>
+
+      {/* Account Upgrade Section */}
+      {user?.user_type === 'tenant' && (
+        <div className="mt-8">
+          <UpgradeToLandlord />
+        </div>
+      )}
     </DashboardShell>
   );
 };
