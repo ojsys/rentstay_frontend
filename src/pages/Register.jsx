@@ -7,21 +7,29 @@ import useAuthStore from '../store/authStore';
 
 const Register = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const [userType, setUserType] = useState('tenant');
+  const [userType, setUserType] = useState(null); // No default - force user to select
   const { register: registerUser } = useAuthStore();
   const navigate = useNavigate();
-  const { register, handleSubmit, watch, formState: { errors } } = useForm({
-    defaultValues: {
-      user_type: 'tenant'
-    }
-  });
+  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm();
 
   const password = watch('password');
 
   const onSubmit = async (data) => {
+    // Validate user type is selected
+    if (!userType) {
+      toast.error('Please select whether you are a tenant or landlord');
+      return;
+    }
+
     setIsLoading(true);
     try {
-      const result = await registerUser(data);
+      // Ensure user_type is included in the data
+      const registrationData = {
+        ...data,
+        user_type: userType
+      };
+
+      const result = await registerUser(registrationData);
       if (result.success) {
         toast.success('Account created successfully!');
         navigate('/dashboard');
@@ -49,14 +57,20 @@ const Register = () => {
             </div>
 
             {/* User Type Selection */}
-            <div className="grid grid-cols-2 gap-4 mb-8">
+            <div className="mb-8">
+              <label className="label text-center block mb-3">
+                Select Account Type <span className="text-red-500">*</span>
+              </label>
+              <div className="grid grid-cols-2 gap-4">
               <button
                 type="button"
                 onClick={() => setUserType('tenant')}
                 className={`p-6 rounded-xl border-2 transition-all ${
                   userType === 'tenant'
-                    ? 'border-primary bg-primary-50'
-                    : 'border-gray-200 hover:border-primary-200'
+                    ? 'border-primary bg-primary-50 shadow-md'
+                    : userType === null
+                    ? 'border-gray-300 hover:border-primary-300 bg-white'
+                    : 'border-gray-200 hover:border-primary-200 bg-gray-50'
                 }`}
               >
                 <Home className={`mx-auto mb-2 ${userType === 'tenant' ? 'text-primary' : 'text-dark-400'}`} size={32} />
@@ -69,8 +83,10 @@ const Register = () => {
                 onClick={() => setUserType('landlord')}
                 className={`p-6 rounded-xl border-2 transition-all ${
                   userType === 'landlord'
-                    ? 'border-primary bg-primary-50'
-                    : 'border-gray-200 hover:border-primary-200'
+                    ? 'border-primary bg-primary-50 shadow-md'
+                    : userType === null
+                    ? 'border-gray-300 hover:border-primary-300 bg-white'
+                    : 'border-gray-200 hover:border-primary-200 bg-gray-50'
                 }`}
               >
                 <Building2 className={`mx-auto mb-2 ${userType === 'landlord' ? 'text-primary' : 'text-dark-400'}`} size={32} />
@@ -78,10 +94,16 @@ const Register = () => {
                 <p className="text-sm text-dark-600 mt-1">List and manage properties</p>
                 <p className="text-xs text-dark-500 mt-2">Complete verification to access all features</p>
               </button>
+              </div>
+              {userType === null && (
+                <p className="text-sm text-amber-600 text-center mt-2 flex items-center justify-center gap-1">
+                  <span className="font-semibold">⚠️</span>
+                  Please select your account type to continue
+                </p>
+              )}
             </div>
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-              <input type="hidden" {...register('user_type')} value={userType} />
 
               {/* Name Fields */}
               <div className="grid grid-cols-2 gap-4">

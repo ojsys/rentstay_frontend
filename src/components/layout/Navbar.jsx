@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Home, Building2, LogIn, UserPlus, LayoutDashboard, LogOut, Menu, X, User as UserIcon, ChevronDown } from 'lucide-react';
+import {
+  Home, Building2, LogIn, UserPlus, LayoutDashboard, LogOut, Menu, X,
+  User as UserIcon, ChevronDown, Edit, Shield, FileText, Mail,
+  Calendar, Bed, PlusCircle, List, Users, Bell, ChevronRight
+} from 'lucide-react';
 import useAuthStore from '../../store/authStore';
 import useSiteSettings from '../../hooks/useSiteSettings';
 
@@ -17,6 +21,7 @@ const Navbar = () => {
     navigate('/');
   };
 
+  // Close user menu when clicking outside
   useEffect(() => {
     const onClickOutside = (e) => {
       if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
@@ -26,6 +31,18 @@ const Navbar = () => {
     document.addEventListener('mousedown', onClickOutside);
     return () => document.removeEventListener('mousedown', onClickOutside);
   }, []);
+
+  // Prevent body scroll when mobile menu is open
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isMobileMenuOpen]);
 
   const navLinks = [
     { to: '/', label: 'Home', icon: Home },
@@ -238,83 +255,251 @@ const Navbar = () => {
 
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-gray-200">
-            <div className="flex flex-col space-y-3">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.to}
-                  to={link.to}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="flex items-center space-x-2 px-4 py-2 text-dark-600 hover:bg-primary-50 hover:text-primary rounded-lg transition-colors"
-                >
-                  <link.icon size={18} />
-                  <span>{link.label}</span>
-                </Link>
-              ))}
-
-              {isAuthenticated ? (
-                <>
+          <div className="md:hidden border-t border-gray-200 bg-white">
+            <div className="max-h-[calc(100vh-4rem)] overflow-y-auto">
+              {/* User Info Section (if authenticated) */}
+              {isAuthenticated && (
+                <div className="px-4 py-4 bg-gradient-to-r from-primary-50 to-accent-50 border-b border-gray-200">
                   <Link
-                    to="/dashboard"
+                    to="/profile/view"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center space-x-2 px-4 py-2 text-dark-600 hover:bg-primary-50 hover:text-primary rounded-lg transition-colors"
+                    className="flex items-center justify-between group"
                   >
-                    <LayoutDashboard size={18} />
-                    <span>Dashboard</span>
+                    <div className="flex items-center space-x-3">
+                      <div className="w-12 h-12 bg-primary text-white rounded-full flex items-center justify-center font-semibold text-lg">
+                        {(user?.full_name || user?.email || 'U').charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-dark-900 truncate max-w-[200px]">
+                          {user?.full_name || user?.email}
+                        </p>
+                        <p className="text-xs text-dark-600 capitalize flex items-center gap-1">
+                          <span className="inline-block w-2 h-2 bg-green-500 rounded-full"></span>
+                          {user?.user_type}
+                        </p>
+                      </div>
+                    </div>
+                    <ChevronRight size={18} className="text-dark-400 group-hover:text-primary transition-colors" />
                   </Link>
-                  <Link
-                    to="/agreements"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center space-x-2 px-4 py-2 text-dark-600 hover:bg-primary-50 hover:text-primary rounded-lg transition-colors"
-                  >
-                    <UserIcon size={18} />
-                    <span>Agreements</span>
-                  </Link>
-                  {user?.user_type === 'landlord' && (
-                    <Link
-                      to="/agreements/template"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className="flex items-center space-x-2 px-4 py-2 text-dark-600 hover:bg-primary-50 hover:text-primary rounded-lg transition-colors"
-                    >
-                      <UserIcon size={18} />
-                      <span>Agreement Template</span>
-                    </Link>
-                  )}
-                  <div className="px-4 py-2 bg-gray-50 rounded-lg">
-                    <p className="text-sm font-medium text-dark-800">{user?.full_name || user?.email}</p>
-                    <p className="text-xs text-dark-500 capitalize">{user?.user_type}</p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      handleLogout();
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className="btn btn-secondary w-full justify-center"
-                  >
-                    <LogOut size={18} />
-                    <span>Logout</span>
-                  </button>
-                </>
-              ) : (
-                <>
-                  <Link
-                    to="/login"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="btn btn-secondary w-full justify-center"
-                  >
-                    <LogIn size={18} />
-                    <span>Login</span>
-                  </Link>
-                  <Link
-                    to="/register"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="btn btn-primary w-full justify-center"
-                  >
-                    <UserPlus size={18} />
-                    <span>Sign Up</span>
-                  </Link>
-                </>
+                </div>
               )}
+
+              <div className="py-2">
+                {/* Main Navigation Links */}
+                <div className="px-2 py-2">
+                  <p className="px-3 text-xs font-semibold text-dark-400 uppercase tracking-wider mb-2">
+                    Navigation
+                  </p>
+                  {navLinks.map((link) => (
+                    <Link
+                      key={link.to}
+                      to={link.to}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex items-center space-x-3 px-3 py-3 text-dark-700 hover:bg-primary-50 hover:text-primary rounded-lg transition-all active:scale-95"
+                    >
+                      <link.icon size={20} className="flex-shrink-0" />
+                      <span className="font-medium">{link.label}</span>
+                    </Link>
+                  ))}
+                </div>
+
+                {isAuthenticated ? (
+                  <>
+                    {/* Dashboard */}
+                    <div className="px-2 py-2 border-t border-gray-100">
+                      <Link
+                        to="/dashboard"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center space-x-3 px-3 py-3 text-dark-700 hover:bg-primary-50 hover:text-primary rounded-lg transition-all active:scale-95"
+                      >
+                        <LayoutDashboard size={20} className="flex-shrink-0" />
+                        <span className="font-medium">Dashboard</span>
+                      </Link>
+                    </div>
+
+                    {/* Account Section */}
+                    <div className="px-2 py-2 border-t border-gray-100">
+                      <p className="px-3 text-xs font-semibold text-dark-400 uppercase tracking-wider mb-2">
+                        Account
+                      </p>
+                      <Link
+                        to="/profile"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center space-x-3 px-3 py-3 text-dark-700 hover:bg-primary-50 hover:text-primary rounded-lg transition-all active:scale-95"
+                      >
+                        <Edit size={20} className="flex-shrink-0" />
+                        <span className="font-medium">Edit Profile</span>
+                      </Link>
+                      <Link
+                        to="/verify"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center space-x-3 px-3 py-3 text-dark-700 hover:bg-primary-50 hover:text-primary rounded-lg transition-all active:scale-95"
+                      >
+                        <Shield size={20} className="flex-shrink-0" />
+                        <span className="font-medium">Verification</span>
+                      </Link>
+                      <Link
+                        to="/notifications"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center space-x-3 px-3 py-3 text-dark-700 hover:bg-primary-50 hover:text-primary rounded-lg transition-all active:scale-95"
+                      >
+                        <Bell size={20} className="flex-shrink-0" />
+                        <span className="font-medium">Notifications</span>
+                      </Link>
+                    </div>
+
+                    {/* Activity Section */}
+                    <div className="px-2 py-2 border-t border-gray-100">
+                      <p className="px-3 text-xs font-semibold text-dark-400 uppercase tracking-wider mb-2">
+                        Activity
+                      </p>
+                      <Link
+                        to="/applications"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center space-x-3 px-3 py-3 text-dark-700 hover:bg-primary-50 hover:text-primary rounded-lg transition-all active:scale-95"
+                      >
+                        <FileText size={20} className="flex-shrink-0" />
+                        <span className="font-medium">Applications</span>
+                      </Link>
+                      <Link
+                        to="/visits"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center space-x-3 px-3 py-3 text-dark-700 hover:bg-primary-50 hover:text-primary rounded-lg transition-all active:scale-95"
+                      >
+                        <Calendar size={20} className="flex-shrink-0" />
+                        <span className="font-medium">Visits</span>
+                      </Link>
+                      <Link
+                        to="/agreements"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center space-x-3 px-3 py-3 text-dark-700 hover:bg-primary-50 hover:text-primary rounded-lg transition-all active:scale-95"
+                      >
+                        <FileText size={20} className="flex-shrink-0" />
+                        <span className="font-medium">Agreements</span>
+                      </Link>
+                      <Link
+                        to="/messages"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center space-x-3 px-3 py-3 text-dark-700 hover:bg-primary-50 hover:text-primary rounded-lg transition-all active:scale-95"
+                      >
+                        <Mail size={20} className="flex-shrink-0" />
+                        <span className="font-medium">Messages</span>
+                      </Link>
+                    </div>
+
+                    {/* Stays Section */}
+                    <div className="px-2 py-2 border-t border-gray-100">
+                      <p className="px-3 text-xs font-semibold text-dark-400 uppercase tracking-wider mb-2">
+                        Short-Term Stays
+                      </p>
+                      <Link
+                        to="/stays/bookings"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center space-x-3 px-3 py-3 text-dark-700 hover:bg-primary-50 hover:text-primary rounded-lg transition-all active:scale-95"
+                      >
+                        <Bed size={20} className="flex-shrink-0" />
+                        <span className="font-medium">My Stays</span>
+                      </Link>
+                      {user?.user_type === 'landlord' && (
+                        <>
+                          <Link
+                            to="/stays/listings/new"
+                            onClick={() => setIsMobileMenuOpen(false)}
+                            className="flex items-center space-x-3 px-3 py-3 text-dark-700 hover:bg-primary-50 hover:text-primary rounded-lg transition-all active:scale-95"
+                          >
+                            <PlusCircle size={20} className="flex-shrink-0" />
+                            <span className="font-medium">Share Your Space</span>
+                          </Link>
+                          <Link
+                            to="/stays/host/listings"
+                            onClick={() => setIsMobileMenuOpen(false)}
+                            className="flex items-center space-x-3 px-3 py-3 text-dark-700 hover:bg-primary-50 hover:text-primary rounded-lg transition-all active:scale-95"
+                          >
+                            <List size={20} className="flex-shrink-0" />
+                            <span className="font-medium">My Listings</span>
+                          </Link>
+                          <Link
+                            to="/stays/host/bookings"
+                            onClick={() => setIsMobileMenuOpen(false)}
+                            className="flex items-center space-x-3 px-3 py-3 text-dark-700 hover:bg-primary-50 hover:text-primary rounded-lg transition-all active:scale-95"
+                          >
+                            <Users size={20} className="flex-shrink-0" />
+                            <span className="font-medium">Guest Bookings</span>
+                          </Link>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Landlord Section */}
+                    {user?.user_type === 'landlord' && (
+                      <div className="px-2 py-2 border-t border-gray-100">
+                        <p className="px-3 text-xs font-semibold text-dark-400 uppercase tracking-wider mb-2">
+                          Landlord Tools
+                        </p>
+                        <Link
+                          to="/agreements/template"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className="flex items-center space-x-3 px-3 py-3 text-dark-700 hover:bg-primary-50 hover:text-primary rounded-lg transition-all active:scale-95"
+                        >
+                          <FileText size={20} className="flex-shrink-0" />
+                          <span className="font-medium">Agreement Template</span>
+                        </Link>
+                      </div>
+                    )}
+
+                    {/* Admin Section */}
+                    {(user?.is_staff || user?.user_type === 'admin') && (
+                      <div className="px-2 py-2 border-t border-gray-100">
+                        <p className="px-3 text-xs font-semibold text-dark-400 uppercase tracking-wider mb-2">
+                          Admin
+                        </p>
+                        <Link
+                          to="/admin/kyc"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className="flex items-center space-x-3 px-3 py-3 text-dark-700 hover:bg-primary-50 hover:text-primary rounded-lg transition-all active:scale-95"
+                        >
+                          <Shield size={20} className="flex-shrink-0" />
+                          <span className="font-medium">KYC Requests</span>
+                        </Link>
+                      </div>
+                    )}
+
+                    {/* Logout Button */}
+                    <div className="px-2 py-4 border-t border-gray-100">
+                      <button
+                        onClick={() => {
+                          handleLogout();
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className="flex items-center justify-center space-x-2 w-full px-4 py-3 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition-all active:scale-95 font-medium"
+                      >
+                        <LogOut size={20} />
+                        <span>Logout</span>
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  /* Guest Auth Buttons */
+                  <div className="px-2 py-4 space-y-3 border-t border-gray-100">
+                    <Link
+                      to="/login"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex items-center justify-center space-x-2 w-full px-4 py-3 bg-white border-2 border-primary text-primary hover:bg-primary-50 rounded-lg transition-all active:scale-95 font-medium"
+                    >
+                      <LogIn size={20} />
+                      <span>Login</span>
+                    </Link>
+                    <Link
+                      to="/register"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex items-center justify-center space-x-2 w-full px-4 py-3 bg-primary text-white hover:bg-primary-600 rounded-lg transition-all active:scale-95 font-medium"
+                    >
+                      <UserPlus size={20} />
+                      <span>Sign Up</span>
+                    </Link>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
