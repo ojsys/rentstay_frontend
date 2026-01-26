@@ -3,7 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import {
   Home, Building2, LogIn, UserPlus, LayoutDashboard, LogOut, Menu, X,
   User as UserIcon, ChevronDown, Edit, Shield, FileText, Mail,
-  Calendar, Bed, PlusCircle, List, Users, Bell, ChevronRight
+  Calendar, Bed, PlusCircle, List, Users, Bell, ChevronRight,
+  CreditCard, Wrench, Upload
 } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
 import useSiteSettings from '../../hooks/useSiteSettings';
@@ -385,6 +386,22 @@ const Navbar = () => {
                         <Mail size={20} className="flex-shrink-0" />
                         <span className="font-medium">Messages</span>
                       </Link>
+                      <Link
+                        to="/payments"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center space-x-3 px-3 py-3 text-dark-700 hover:bg-primary-50 hover:text-primary rounded-lg transition-all active:scale-95"
+                      >
+                        <CreditCard size={20} className="flex-shrink-0" />
+                        <span className="font-medium">Payments</span>
+                      </Link>
+                      <Link
+                        to="/maintenance"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center space-x-3 px-3 py-3 text-dark-700 hover:bg-primary-50 hover:text-primary rounded-lg transition-all active:scale-95"
+                      >
+                        <Wrench size={20} className="flex-shrink-0" />
+                        <span className="font-medium">Maintenance</span>
+                      </Link>
                     </div>
 
                     {/* Stays Section */}
@@ -434,8 +451,32 @@ const Navbar = () => {
                     {user?.user_type === 'landlord' && (
                       <div className="px-2 py-2 border-t border-gray-100">
                         <p className="px-3 text-xs font-semibold text-dark-400 uppercase tracking-wider mb-2">
-                          Landlord Tools
+                          Property Management
                         </p>
+                        <Link
+                          to="/properties/new"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className="flex items-center space-x-3 px-3 py-3 text-dark-700 hover:bg-primary-50 hover:text-primary rounded-lg transition-all active:scale-95"
+                        >
+                          <PlusCircle size={20} className="flex-shrink-0" />
+                          <span className="font-medium">Add Property</span>
+                        </Link>
+                        <Link
+                          to="/my-properties"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className="flex items-center space-x-3 px-3 py-3 text-dark-700 hover:bg-primary-50 hover:text-primary rounded-lg transition-all active:scale-95"
+                        >
+                          <Building2 size={20} className="flex-shrink-0" />
+                          <span className="font-medium">My Properties</span>
+                        </Link>
+                        <Link
+                          to="/properties/bulk-import"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className="flex items-center space-x-3 px-3 py-3 text-dark-700 hover:bg-primary-50 hover:text-primary rounded-lg transition-all active:scale-95"
+                        >
+                          <Upload size={20} className="flex-shrink-0" />
+                          <span className="font-medium">Bulk Import</span>
+                        </Link>
                         <Link
                           to="/agreements/template"
                           onClick={() => setIsMobileMenuOpen(false)}
