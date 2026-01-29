@@ -40,6 +40,14 @@ import AdminKYC from './pages/admin/AdminKYC';
 import Verify from './pages/Verify';
 import Visits from './pages/Visits';
 
+// Static Pages
+import About from './pages/About';
+import Pricing from './pages/Pricing';
+import HowItWorks from './pages/HowItWorks';
+import Privacy from './pages/Privacy';
+import Terms from './pages/Terms';
+import Contact from './pages/Contact';
+
 // Create a client
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -92,6 +100,13 @@ function App() {
             <Route path="/stays/host/bookings" element={<HostBookings />} />
             <Route path="/admin/kyc" element={<AdminKYC />} />
             <Route path="/visits" element={<Visits />} />
+            {/* Static Pages */}
+            <Route path="/about" element={<About />} />
+            <Route path="/pricing" element={<Pricing />} />
+            <Route path="/how-it-works" element={<HowItWorks />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/contact" element={<Contact />} />
           </Routes>
         </Layout>
       </Router>

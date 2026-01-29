@@ -200,3 +200,9 @@ export const locationAPI = {
   getAllLGAs: (params) => api.get('/lgas/', { params }),
   reverseGeocode: (lat, lon) => api.get('/geocode/reverse/', { params: { lat, lon } }),
 };
+
+// Static Pages API
+export const pagesAPI = {
+  getPage: (slug) => api.get(`/pages/${slug}/`),
+  listPages: () => api.get('/pages/'),
+};
