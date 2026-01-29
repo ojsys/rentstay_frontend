@@ -48,6 +48,10 @@ import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
 import Contact from './pages/Contact';
 
+// Legal Documents
+import LegalDocuments from './pages/LegalDocuments';
+import LegalDocument from './pages/LegalDocument';
+
 // Create a client
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -107,6 +111,9 @@ function App() {
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/contact" element={<Contact />} />
+            {/* Legal Documents */}
+            <Route path="/legal" element={<LegalDocuments />} />
+            <Route path="/legal/:slug" element={<LegalDocument />} />
           </Routes>
         </Layout>
       </Router>

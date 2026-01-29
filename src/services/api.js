@@ -206,3 +206,11 @@ export const pagesAPI = {
   getPage: (slug) => api.get(`/pages/${slug}/`),
   listPages: () => api.get('/pages/'),
 };
+
+// Legal Documents API
+export const legalAPI = {
+  getDocument: (slug) => api.get(`/legal/${slug}/`),
+  listDocuments: (category) => api.get('/legal/', { params: category ? { category } : {} }),
+  getFooterDocuments: () => api.get('/legal/footer/'),
+  getRequiredDocuments: () => api.get('/legal/required/'),
+};
