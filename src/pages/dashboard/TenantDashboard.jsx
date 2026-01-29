@@ -5,6 +5,7 @@ import { Loader2, CalendarClock, Wallet, Wrench, Mail, FileText, CreditCard, Plu
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import useAuthStore from '../../store/authStore';
+import LegalDocumentsCard from '../../components/dashboard/LegalDocumentsCard';
 
 const StatCard = ({ icon: Icon, label, value, sub }) => (
   <div className="card flex items-center space-x-4">
@@ -314,6 +315,12 @@ const TenantDashboard = () => {
           )}
         </div>
       </div>
+
+      {/* Legal Documents & Agreements */}
+      <LegalDocumentsCard
+        showRequired={true}
+        title="Important Agreements"
+      />
 
       {/* Quick Actions */}
       <div className="card">

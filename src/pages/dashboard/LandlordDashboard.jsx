@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { dashboardAPI, maintenanceAPI, applicationAPI, propertyAPI } from '../../services/api';
 import { Loader2, Home, Users, Briefcase, Wrench, TrendingUp, AlertTriangle, CheckCircle, Play, Clipboard, XCircle, Send } from 'lucide-react';
 import toast from 'react-hot-toast';
+import LegalDocumentsCard from '../../components/dashboard/LegalDocumentsCard';
 
 const gradients = [
   'from-primary-50 to-primary-100',
@@ -541,6 +542,9 @@ const LandlordDashboard = () => {
           </div>
         )}
       </div>
+
+      {/* Legal Documents & Agreements */}
+      <LegalDocumentsCard title="Agreements & Legal Documents" />
     </div>
 
     {/* Broadcast All Modal */}
