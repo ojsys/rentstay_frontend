@@ -4,7 +4,7 @@ import { pagesAPI } from '../services/api';
 import {
   Loader2, Search, MessageSquare, FileCheck, CreditCard,
   Key, Home, Building2, Users, Shield, TrendingUp,
-  ArrowRight, CheckCircle, HelpCircle, ChevronRight
+  ArrowRight, CheckCircle, HelpCircle
 } from 'lucide-react';
 
 const HowItWorks = () => {
@@ -27,6 +27,7 @@ const HowItWorks = () => {
     fetchPage();
   }, []);
 
+  // Static data for steps
   const tenantSteps = [
     {
       icon: Search,
@@ -160,15 +161,10 @@ const HowItWorks = () => {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-accent-500 via-primary-600 to-primary-800 text-white overflow-hidden">
-        <div className="absolute inset-0 opacity-20">
-          <div className="absolute top-0 left-1/4 w-96 h-96 bg-white rounded-full mix-blend-overlay filter blur-3xl"></div>
-          <div className="absolute bottom-0 right-1/4 w-72 h-72 bg-accent rounded-full mix-blend-overlay filter blur-3xl"></div>
-        </div>
-
-        <div className="container-custom relative z-10 py-16 md:py-24">
+      <section className="bg-gradient-to-br from-accent-500 via-primary-600 to-primary-800 text-white py-16 md:py-24">
+        <div className="container-custom">
           <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-3xl md:text-5xl lg:text-6xl font-display font-bold mb-4 md:mb-6">
+            <h1 className="text-3xl md:text-5xl lg:text-6xl font-display font-bold mb-6">
               {page?.title || 'How It Works'}
             </h1>
             <p className="text-lg md:text-2xl text-white/90 max-w-3xl mx-auto mb-8">
@@ -179,7 +175,7 @@ const HowItWorks = () => {
             <div className="inline-flex bg-white/10 backdrop-blur-sm rounded-full p-1">
               <button
                 onClick={() => setActiveTab('tenant')}
-                className={`px-4 md:px-6 py-2 md:py-3 rounded-full font-medium transition-all text-sm md:text-base ${
+                className={`px-5 py-2.5 rounded-full font-medium transition-all ${
                   activeTab === 'tenant'
                     ? 'bg-white text-primary'
                     : 'text-white hover:bg-white/10'
@@ -189,7 +185,7 @@ const HowItWorks = () => {
               </button>
               <button
                 onClick={() => setActiveTab('landlord')}
-                className={`px-4 md:px-6 py-2 md:py-3 rounded-full font-medium transition-all text-sm md:text-base ${
+                className={`px-5 py-2.5 rounded-full font-medium transition-all ${
                   activeTab === 'landlord'
                     ? 'bg-white text-primary'
                     : 'text-white hover:bg-white/10'
@@ -202,113 +198,38 @@ const HowItWorks = () => {
         </div>
       </section>
 
-      {/* Steps Section - Timeline Design */}
-      <section className="py-12 md:py-20 bg-white">
+      {/* Steps Section */}
+      <section className="py-16 md:py-24 bg-white">
         <div className="container-custom">
-          <div className="text-center mb-10 md:mb-16">
-            <h2 className="text-2xl md:text-4xl font-display font-bold text-dark-900 mb-3 md:mb-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-display font-bold text-gray-900 mb-4">
               {activeTab === 'tenant' ? 'Your Journey to a New Home' : 'Start Earning from Your Property'}
             </h2>
-            <p className="text-base md:text-xl text-dark-600 max-w-2xl mx-auto">
+            <p className="text-xl text-gray-600">
               {activeTab === 'tenant'
                 ? 'Follow these simple steps to find and secure your perfect rental'
                 : 'List your property and start receiving applications in minutes'}
             </p>
           </div>
 
-          {/* Mobile Timeline (Vertical) */}
-          <div className="md:hidden">
-            <div className="relative">
-              {/* Vertical Line */}
-              <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary-200 via-primary-400 to-primary-200"></div>
-
-              <div className="space-y-6">
-                {steps.map((step, index) => (
-                  <div key={index} className="relative flex items-start gap-4 pl-2">
-                    {/* Step Number Circle */}
-                    <div className={`relative z-10 w-10 h-10 ${step.color} rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg flex-shrink-0`}>
-                      {index + 1}
-                    </div>
-
-                    {/* Content Card */}
-                    <div className="flex-1 bg-gray-50 rounded-xl p-4 shadow-sm">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className={`w-10 h-10 ${step.color} rounded-lg flex items-center justify-center`}>
-                          <step.icon className="text-white" size={20} />
-                        </div>
-                        <h3 className="font-bold text-dark-900">{step.title}</h3>
-                      </div>
-                      <p className="text-dark-600 text-sm">{step.description}</p>
-                    </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {steps.map((step, index) => (
+              <div key={index} className="relative">
+                <div className="bg-gray-50 rounded-2xl p-8 text-center hover:shadow-lg transition-shadow h-full">
+                  <div className={`w-12 h-12 ${step.color} rounded-full flex items-center justify-center text-white font-bold text-lg mx-auto mb-4`}>
+                    {index + 1}
                   </div>
-                ))}
+                  <div className={`w-16 h-16 ${step.color} rounded-2xl flex items-center justify-center mx-auto mb-6`}>
+                    <step.icon className="text-white" size={28} />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-3">{step.title}</h3>
+                  <p className="text-gray-600">{step.description}</p>
+                </div>
               </div>
-            </div>
+            ))}
           </div>
 
-          {/* Desktop Timeline (Two Rows) */}
-          <div className="hidden md:block">
-            {/* First Row - Steps 1-3 */}
-            <div className="relative mb-8">
-              {/* Horizontal Line */}
-              <div className="absolute top-16 left-[16.67%] right-[16.67%] h-0.5 bg-gradient-to-r from-primary-300 via-primary-500 to-primary-300"></div>
-
-              <div className="grid grid-cols-3 gap-6">
-                {steps.slice(0, 3).map((step, index) => (
-                  <div key={index} className="flex flex-col items-center text-center">
-                    {/* Step Number */}
-                    <div className={`relative z-10 w-14 h-14 ${step.color} rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg mb-6`}>
-                      {index + 1}
-                    </div>
-
-                    {/* Card */}
-                    <div className="bg-gray-50 rounded-2xl p-6 hover:shadow-lg transition-shadow w-full h-full">
-                      <div className={`w-14 h-14 ${step.color} rounded-xl flex items-center justify-center mx-auto mb-4`}>
-                        <step.icon className="text-white" size={26} />
-                      </div>
-                      <h3 className="text-lg font-bold text-dark-900 mb-2">{step.title}</h3>
-                      <p className="text-dark-600 text-sm">{step.description}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Arrow Down Connector */}
-            <div className="flex justify-center my-4">
-              <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
-                <ChevronRight className="text-primary rotate-90" size={24} />
-              </div>
-            </div>
-
-            {/* Second Row - Steps 4-6 */}
-            <div className="relative mt-8">
-              {/* Horizontal Line */}
-              <div className="absolute top-16 left-[16.67%] right-[16.67%] h-0.5 bg-gradient-to-r from-primary-300 via-primary-500 to-primary-300"></div>
-
-              <div className="grid grid-cols-3 gap-6">
-                {steps.slice(3, 6).map((step, index) => (
-                  <div key={index + 3} className="flex flex-col items-center text-center">
-                    {/* Step Number */}
-                    <div className={`relative z-10 w-14 h-14 ${step.color} rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg mb-6`}>
-                      {index + 4}
-                    </div>
-
-                    {/* Card */}
-                    <div className="bg-gray-50 rounded-2xl p-6 hover:shadow-lg transition-shadow w-full h-full">
-                      <div className={`w-14 h-14 ${step.color} rounded-xl flex items-center justify-center mx-auto mb-4`}>
-                        <step.icon className="text-white" size={26} />
-                      </div>
-                      <h3 className="text-lg font-bold text-dark-900 mb-2">{step.title}</h3>
-                      <p className="text-dark-600 text-sm">{step.description}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="text-center mt-10 md:mt-16">
+          <div className="text-center mt-12">
             <Link
               to={activeTab === 'tenant' ? '/properties' : '/register'}
               className="btn btn-primary btn-lg inline-flex items-center"
@@ -320,13 +241,13 @@ const HowItWorks = () => {
         </div>
       </section>
 
-      {/* CMS Content Section */}
+      {/* CMS Content Section - Displays content from backend */}
       {page?.content && (
-        <section className="py-12 md:py-16 bg-white border-t border-gray-100">
+        <section className="py-12 md:py-16 bg-gray-50">
           <div className="container-custom">
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-soft p-6 md:p-10">
               <div
-                className="prose prose-slate prose-sm md:prose-base lg:prose-lg max-w-none"
+                className="prose prose-lg max-w-none"
                 dangerouslySetInnerHTML={{ __html: page.content }}
               />
             </div>
@@ -335,22 +256,22 @@ const HowItWorks = () => {
       )}
 
       {/* Benefits Section */}
-      <section className="py-12 md:py-20 bg-gray-50">
+      <section className="py-16 md:py-24 bg-white">
         <div className="container-custom">
-          <div className="text-center mb-10 md:mb-12">
-            <h2 className="text-2xl md:text-4xl font-display font-bold text-dark-900 mb-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-display font-bold text-gray-900 mb-4">
               Why Choose RentStay?
             </h2>
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {benefits.map((benefit, index) => (
-              <div key={index} className="bg-white rounded-2xl p-5 md:p-8 shadow-soft text-center">
-                <div className="w-12 h-12 md:w-14 md:h-14 bg-primary-100 rounded-xl flex items-center justify-center mx-auto mb-3 md:mb-4">
-                  <benefit.icon className="text-primary" size={24} />
+              <div key={index} className="bg-gray-50 rounded-2xl p-8 shadow-soft text-center">
+                <div className="w-14 h-14 bg-primary-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                  <benefit.icon className="text-primary" size={28} />
                 </div>
-                <h3 className="text-base md:text-lg font-bold text-dark-900 mb-1 md:mb-2">{benefit.title}</h3>
-                <p className="text-dark-600 text-xs md:text-sm">{benefit.description}</p>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">{benefit.title}</h3>
+                <p className="text-gray-600 text-sm">{benefit.description}</p>
               </div>
             ))}
           </div>
@@ -358,30 +279,30 @@ const HowItWorks = () => {
       </section>
 
       {/* FAQ Section */}
-      <section className="py-12 md:py-20 bg-white">
+      <section className="py-16 md:py-24 bg-gray-50">
         <div className="container-custom">
           <div className="max-w-3xl mx-auto">
-            <div className="text-center mb-8 md:mb-12">
-              <HelpCircle className="w-10 h-10 md:w-12 md:h-12 text-primary mx-auto mb-4" />
-              <h2 className="text-2xl md:text-4xl font-display font-bold text-dark-900 mb-4">
+            <div className="text-center mb-12">
+              <HelpCircle className="w-12 h-12 text-primary mx-auto mb-4" />
+              <h2 className="text-3xl md:text-4xl font-display font-bold text-gray-900 mb-4">
                 Frequently Asked Questions
               </h2>
             </div>
 
-            <div className="space-y-3 md:space-y-4">
+            <div className="space-y-4">
               {faqs.map((faq, index) => (
-                <div key={index} className="bg-gray-50 rounded-xl p-4 md:p-6">
-                  <h3 className="text-base md:text-lg font-semibold text-dark-900 mb-2 flex items-start">
-                    <CheckCircle className="text-primary mr-2 md:mr-3 flex-shrink-0 mt-0.5" size={18} />
+                <div key={index} className="bg-white rounded-xl p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-start">
+                    <CheckCircle className="text-primary mr-3 flex-shrink-0 mt-1" size={20} />
                     {faq.question}
                   </h3>
-                  <p className="text-dark-600 text-sm md:text-base ml-6 md:ml-8">{faq.answer}</p>
+                  <p className="text-gray-600 ml-8">{faq.answer}</p>
                 </div>
               ))}
             </div>
 
-            <div className="text-center mt-6 md:mt-8">
-              <p className="text-dark-600 mb-4">Still have questions?</p>
+            <div className="text-center mt-8">
+              <p className="text-gray-600 mb-4">Still have questions?</p>
               <Link to="/contact" className="btn btn-secondary">
                 Contact Us
               </Link>
@@ -391,15 +312,15 @@ const HowItWorks = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-12 md:py-16 bg-gradient-to-r from-primary to-accent text-white">
+      <section className="py-16 bg-gradient-to-r from-primary to-accent text-white">
         <div className="container-custom text-center">
-          <h2 className="text-2xl md:text-4xl font-display font-bold mb-4">
+          <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">
             Ready to Get Started?
           </h2>
-          <p className="text-lg md:text-xl text-white/90 mb-6 md:mb-8 max-w-2xl mx-auto">
+          <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
             Join thousands of happy tenants and landlords on RentStay
           </p>
-          <div className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link to="/properties" className="btn btn-lg bg-white text-primary hover:bg-gray-100">
               Browse Properties
             </Link>

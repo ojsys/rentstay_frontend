@@ -214,3 +214,8 @@ export const legalAPI = {
   getFooterDocuments: () => api.get('/legal/footer/'),
   getRequiredDocuments: () => api.get('/legal/required/'),
 };
+
+// Site Settings API
+export const siteSettingsAPI = {
+  get: () => api.get('/site-settings/'),
+};

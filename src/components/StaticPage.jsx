@@ -5,7 +5,6 @@ import { Loader2 } from 'lucide-react';
 const StaticPage = ({ slug, fallbackTitle, fallbackContent }) => {
   const [page, setPage] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchPage = async () => {
@@ -20,7 +19,6 @@ const StaticPage = ({ slug, fallbackTitle, fallbackContent }) => {
         }
       } catch (err) {
         console.error(`Error fetching page "${slug}":`, err);
-        setError(err);
         // Use fallback content if API fails
         setPage({
           title: fallbackTitle,
@@ -49,11 +47,11 @@ const StaticPage = ({ slug, fallbackTitle, fallbackContent }) => {
       <section className="bg-gradient-to-br from-primary-50 via-white to-accent-50 py-16 md:py-24">
         <div className="container-custom">
           <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-dark-900 mb-4">
+            <h1 className="text-3xl md:text-5xl lg:text-6xl font-display font-bold text-gray-900 mb-4">
               {page?.title || fallbackTitle}
             </h1>
             {page?.subtitle && (
-              <p className="text-xl text-dark-600 max-w-2xl mx-auto">
+              <p className="text-xl text-gray-600 max-w-2xl mx-auto">
                 {page.subtitle}
               </p>
             )}
@@ -66,7 +64,7 @@ const StaticPage = ({ slug, fallbackTitle, fallbackContent }) => {
         <div className="container-custom">
           <div className="max-w-4xl mx-auto">
             <div
-              className="bg-white rounded-2xl shadow-soft p-8 md:p-12 prose prose-slate prose-sm md:prose-base lg:prose-lg max-w-none"
+              className="bg-white rounded-2xl shadow-soft p-8 md:p-12 prose prose-lg max-w-none"
               dangerouslySetInnerHTML={{ __html: page?.content || fallbackContent }}
             />
           </div>

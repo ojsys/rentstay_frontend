@@ -26,6 +26,7 @@ const Pricing = () => {
     fetchPage();
   }, []);
 
+  // Static data for pricing
   const tenantFeatures = [
     { text: 'Browse all verified listings', included: true },
     { text: 'Contact landlords directly', included: true },
@@ -55,7 +56,7 @@ const Pricing = () => {
       ],
       cta: 'Get Started',
       popular: false,
-      gradient: 'from-gray-600 to-gray-700'
+      color: 'bg-gray-600'
     },
     {
       name: 'Professional',
@@ -75,7 +76,7 @@ const Pricing = () => {
       ],
       cta: 'Start Free Trial',
       popular: true,
-      gradient: 'from-primary to-primary-600'
+      color: 'bg-primary'
     },
     {
       name: 'Enterprise',
@@ -95,7 +96,7 @@ const Pricing = () => {
       ],
       cta: 'Contact Sales',
       popular: false,
-      gradient: 'from-accent to-accent-600'
+      color: 'bg-accent'
     },
   ];
 
@@ -128,22 +129,17 @@ const Pricing = () => {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-primary-700 via-primary-800 to-dark-900 text-white overflow-hidden">
-        <div className="absolute inset-0 opacity-30">
-          <div className="absolute top-20 right-20 w-72 h-72 bg-accent rounded-full mix-blend-overlay filter blur-3xl"></div>
-          <div className="absolute bottom-10 left-10 w-96 h-96 bg-primary-400 rounded-full mix-blend-overlay filter blur-3xl"></div>
-        </div>
-
-        <div className="container-custom relative z-10 py-20 md:py-28">
+      <section className="bg-gradient-to-br from-primary-700 via-primary-800 to-gray-900 text-white py-16 md:py-24">
+        <div className="container-custom">
           <div className="max-w-4xl mx-auto text-center">
             <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 mb-6">
               <Zap size={18} className="text-accent" />
               <span className="text-sm font-medium">Simple, Transparent Pricing</span>
             </div>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold mb-6">
+            <h1 className="text-3xl md:text-5xl lg:text-6xl font-display font-bold mb-6">
               {page?.title || 'Pricing'}
             </h1>
-            <p className="text-xl md:text-2xl text-white/90 max-w-3xl mx-auto">
+            <p className="text-lg md:text-2xl text-white/90 max-w-3xl mx-auto">
               {page?.subtitle || 'No hidden fees. No surprises. Just straightforward pricing for everyone.'}
             </p>
           </div>
@@ -159,10 +155,10 @@ const Pricing = () => {
                 <Users size={24} />
                 <span className="font-semibold uppercase tracking-wider text-sm">For Tenants</span>
               </div>
-              <h2 className="text-3xl md:text-4xl font-display font-bold text-dark-900 mb-4">
+              <h2 className="text-3xl md:text-4xl font-display font-bold text-gray-900 mb-4">
                 Completely Free to Find Your Home
               </h2>
-              <p className="text-xl text-dark-600">
+              <p className="text-xl text-gray-600">
                 No subscription fees. You only pay rent and a refundable caution fee.
               </p>
             </div>
@@ -170,8 +166,8 @@ const Pricing = () => {
             <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-3xl p-8 md:p-12 border-2 border-green-200">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
                 <div>
-                  <span className="text-5xl md:text-6xl font-bold text-dark-900">FREE</span>
-                  <p className="text-dark-600 mt-2">Forever free for tenants</p>
+                  <span className="text-5xl md:text-6xl font-bold text-gray-900">FREE</span>
+                  <p className="text-gray-600 mt-2">Forever free for tenants</p>
                 </div>
                 <Link to="/register" className="btn btn-primary btn-lg mt-6 md:mt-0">
                   Create Free Account
@@ -184,7 +180,7 @@ const Pricing = () => {
                     <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
                       <Check className="text-white" size={14} />
                     </div>
-                    <span className="text-dark-700">{feature.text}</span>
+                    <span className="text-gray-700">{feature.text}</span>
                   </div>
                 ))}
               </div>
@@ -192,7 +188,7 @@ const Pricing = () => {
 
             {/* Caution Fee Explanation */}
             <div className="mt-12">
-              <h3 className="text-2xl font-bold text-dark-900 text-center mb-8">
+              <h3 className="text-2xl font-bold text-gray-900 text-center mb-8">
                 About the Caution Fee
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -201,12 +197,12 @@ const Pricing = () => {
                     <div className="w-14 h-14 bg-primary-100 rounded-xl flex items-center justify-center mx-auto mb-4">
                       <item.icon className="text-primary" size={28} />
                     </div>
-                    <h4 className="font-bold text-dark-900 mb-2">{item.title}</h4>
-                    <p className="text-dark-600 text-sm">{item.description}</p>
+                    <h4 className="font-bold text-gray-900 mb-2">{item.title}</h4>
+                    <p className="text-gray-600 text-sm">{item.description}</p>
                   </div>
                 ))}
               </div>
-              <p className="text-center text-dark-600 mt-6">
+              <p className="text-center text-gray-600 mt-6">
                 The caution fee is <strong>10% of annual rent</strong> - fully refundable when you move out.
               </p>
             </div>
@@ -222,10 +218,10 @@ const Pricing = () => {
               <Building2 size={24} />
               <span className="font-semibold uppercase tracking-wider text-sm">For Landlords</span>
             </div>
-            <h2 className="text-3xl md:text-4xl font-display font-bold text-dark-900 mb-4">
+            <h2 className="text-3xl md:text-4xl font-display font-bold text-gray-900 mb-4">
               Choose Your Plan
             </h2>
-            <p className="text-xl text-dark-600 mb-8">
+            <p className="text-xl text-gray-600 mb-8">
               Start free, upgrade as you grow
             </p>
 
@@ -236,7 +232,7 @@ const Pricing = () => {
                 className={`px-6 py-2 rounded-full font-medium transition-all ${
                   billingCycle === 'monthly'
                     ? 'bg-primary text-white'
-                    : 'text-dark-600 hover:text-dark-900'
+                    : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
                 Monthly
@@ -246,7 +242,7 @@ const Pricing = () => {
                 className={`px-6 py-2 rounded-full font-medium transition-all ${
                   billingCycle === 'annual'
                     ? 'bg-primary text-white'
-                    : 'text-dark-600 hover:text-dark-900'
+                    : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
                 Annual
@@ -272,16 +268,16 @@ const Pricing = () => {
                 )}
 
                 <div className={`p-8 ${plan.popular ? 'pt-14' : ''}`}>
-                  <div className={`w-14 h-14 bg-gradient-to-br ${plan.gradient} rounded-2xl flex items-center justify-center mb-6`}>
+                  <div className={`w-14 h-14 ${plan.color} rounded-2xl flex items-center justify-center mb-6`}>
                     <plan.icon className="text-white" size={28} />
                   </div>
 
-                  <h3 className="text-2xl font-bold text-dark-900 mb-2">{plan.name}</h3>
-                  <p className="text-dark-600 text-sm mb-6">{plan.description}</p>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">{plan.name}</h3>
+                  <p className="text-gray-600 text-sm mb-6">{plan.description}</p>
 
                   <div className="mb-6">
-                    <span className="text-4xl font-bold text-dark-900">{plan.price}</span>
-                    {plan.period && <span className="text-dark-600">{plan.period}</span>}
+                    <span className="text-4xl font-bold text-gray-900">{plan.price}</span>
+                    {plan.period && <span className="text-gray-600">{plan.period}</span>}
                   </div>
 
                   <Link
@@ -301,7 +297,7 @@ const Pricing = () => {
                         ) : (
                           <X className="text-gray-300 flex-shrink-0 mt-0.5" size={18} />
                         )}
-                        <span className={feature.included ? 'text-dark-700' : 'text-dark-400'}>
+                        <span className={feature.included ? 'text-gray-700' : 'text-gray-400'}>
                           {feature.text}
                         </span>
                       </li>
@@ -314,13 +310,13 @@ const Pricing = () => {
         </div>
       </section>
 
-      {/* CMS Content Section */}
+      {/* CMS Content Section - Displays content from backend */}
       {page?.content && (
-        <section className="py-12 md:py-16 bg-white border-t border-gray-100">
+        <section className="py-12 md:py-16 bg-white">
           <div className="container-custom">
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-4xl mx-auto bg-gray-50 rounded-2xl p-6 md:p-10">
               <div
-                className="prose prose-slate prose-sm md:prose-base lg:prose-lg max-w-none"
+                className="prose prose-lg max-w-none"
                 dangerouslySetInnerHTML={{ __html: page.content }}
               />
             </div>
@@ -329,14 +325,14 @@ const Pricing = () => {
       )}
 
       {/* FAQ Section */}
-      <section className="py-16 md:py-24 bg-white">
+      <section className="py-16 md:py-24 bg-gray-50">
         <div className="container-custom">
           <div className="max-w-3xl mx-auto text-center">
             <HelpCircle className="w-12 h-12 text-primary mx-auto mb-4" />
-            <h2 className="text-3xl font-display font-bold text-dark-900 mb-4">
+            <h2 className="text-3xl font-display font-bold text-gray-900 mb-4">
               Questions About Pricing?
             </h2>
-            <p className="text-xl text-dark-600 mb-8">
+            <p className="text-xl text-gray-600 mb-8">
               We're here to help you understand our pricing structure
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
