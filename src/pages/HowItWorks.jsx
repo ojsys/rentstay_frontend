@@ -320,6 +320,20 @@ const HowItWorks = () => {
         </div>
       </section>
 
+      {/* CMS Content Section */}
+      {page?.content && (
+        <section className="py-12 md:py-16 bg-white border-t border-gray-100">
+          <div className="container-custom">
+            <div className="max-w-4xl mx-auto">
+              <div
+                className="prose prose-slate prose-sm md:prose-base lg:prose-lg max-w-none"
+                dangerouslySetInnerHTML={{ __html: page.content }}
+              />
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Benefits Section */}
       <section className="py-12 md:py-20 bg-gray-50">
         <div className="container-custom">

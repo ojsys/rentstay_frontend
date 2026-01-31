@@ -66,11 +66,7 @@ const StaticPage = ({ slug, fallbackTitle, fallbackContent }) => {
         <div className="container-custom">
           <div className="max-w-4xl mx-auto">
             <div
-              className="bg-white rounded-2xl shadow-soft p-8 md:p-12 prose prose-lg max-w-none
-                prose-headings:font-display prose-headings:text-dark-900
-                prose-p:text-dark-700 prose-a:text-primary prose-a:no-underline hover:prose-a:underline
-                prose-strong:text-dark-900 prose-ul:text-dark-700 prose-ol:text-dark-700
-                prose-li:marker:text-primary"
+              className="bg-white rounded-2xl shadow-soft p-8 md:p-12 prose prose-slate prose-sm md:prose-base lg:prose-lg max-w-none"
               dangerouslySetInnerHTML={{ __html: page?.content || fallbackContent }}
             />
           </div>

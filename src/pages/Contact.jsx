@@ -388,7 +388,7 @@ const Contact = () => {
                 {/* CMS Content */}
                 {page?.content && (
                   <div
-                    className="prose prose-sm max-w-none text-dark-600"
+                    className="prose prose-slate prose-sm max-w-none"
                     dangerouslySetInnerHTML={{ __html: page.content }}
                   />
                 )}

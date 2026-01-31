@@ -314,6 +314,20 @@ const Pricing = () => {
         </div>
       </section>
 
+      {/* CMS Content Section */}
+      {page?.content && (
+        <section className="py-12 md:py-16 bg-white border-t border-gray-100">
+          <div className="container-custom">
+            <div className="max-w-4xl mx-auto">
+              <div
+                className="prose prose-slate prose-sm md:prose-base lg:prose-lg max-w-none"
+                dangerouslySetInnerHTML={{ __html: page.content }}
+              />
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* FAQ Section */}
       <section className="py-16 md:py-24 bg-white">
         <div className="container-custom">

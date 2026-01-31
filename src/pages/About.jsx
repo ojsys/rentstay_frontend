@@ -136,10 +136,12 @@ const About = () => {
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-dark-900 mb-4 md:mb-6">
                 Making Housing Accessible for Everyone
               </h2>
-              <div
-                className="prose prose-sm md:prose-lg text-dark-600 max-w-none prose-headings:text-dark-900 prose-a:text-primary"
-                dangerouslySetInnerHTML={{ __html: page?.content || '' }}
-              />
+              {page?.content && (
+                <div
+                  className="prose prose-slate prose-sm md:prose-base lg:prose-lg max-w-none"
+                  dangerouslySetInnerHTML={{ __html: page.content }}
+                />
+              )}
             </div>
 
             <div className="relative mt-4 lg:mt-0">
