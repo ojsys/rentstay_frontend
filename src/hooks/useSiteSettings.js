@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import { siteSettingsAPI } from '../services/api';
 
 /**
  * Custom hook to fetch and manage site settings (logo, favicon, etc.)
@@ -13,9 +13,7 @@ export const useSiteSettings = () => {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const response = await axios.get(
-          `${import.meta.env.VITE_API_BASE_URL}/api/site-settings/`
-        );
+        const response = await siteSettingsAPI.get();
         setSettings(response.data);
         setError(null);
 
