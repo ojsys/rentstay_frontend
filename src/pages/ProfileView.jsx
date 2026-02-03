@@ -156,10 +156,14 @@ const ProfileView = () => {
                         Verified
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/90 backdrop-blur-md text-white text-sm font-semibold rounded-lg border border-amber-400/40 shadow-lg">
+                      <a
+                        href="/verify"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/90 backdrop-blur-md text-white text-sm font-semibold rounded-lg border border-amber-400/40 shadow-lg hover:bg-amber-600/90 transition-colors cursor-pointer"
+                        title="Click to verify your account"
+                      >
                         <XCircle size={14} />
-                        Unverified
-                      </span>
+                        Unverified - Verify Now
+                      </a>
                     )}
                     {user?.phone_number && (
                       <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/25 backdrop-blur-md text-white text-sm font-medium rounded-lg border border-white/40 shadow-lg">
@@ -182,12 +186,23 @@ const ProfileView = () => {
             value={user?.user_type?.charAt(0).toUpperCase() + user?.user_type?.slice(1) || 'User'}
             color="primary"
           />
-          <StatCard
-            icon={Shield}
-            label="Verification Status"
-            value={user?.is_verified ? 'Verified' : 'Pending'}
-            color={user?.is_verified ? 'success' : 'warning'}
-          />
+          {user?.is_verified ? (
+            <StatCard
+              icon={Shield}
+              label="Verification Status"
+              value="Verified"
+              color="success"
+            />
+          ) : (
+            <a href="/verify" className="block hover:opacity-90 transition-opacity">
+              <StatCard
+                icon={Shield}
+                label="Verification Status"
+                value="Click to Verify"
+                color="warning"
+              />
+            </a>
+          )}
           <StatCard
             icon={Calendar}
             label="Member Since"
@@ -262,12 +277,28 @@ const ProfileView = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               <InfoCard icon={CreditCard} label="ID Type" value={user?.id_type} />
               <InfoCard icon={Shield} label="ID Number" value={maskLastSixDigits(user?.id_number)} />
-              <InfoCard
-                icon={user?.is_verified ? CheckCircle : XCircle}
-                label="Verification Status"
-                value={user?.is_verified ? 'Verified' : 'Pending Verification'}
-                highlight={user?.is_verified}
-              />
+              {user?.is_verified ? (
+                <InfoCard
+                  icon={CheckCircle}
+                  label="Verification Status"
+                  value="Verified"
+                  highlight={true}
+                />
+              ) : (
+                <a href="/verify" className="block hover:opacity-90 transition-opacity">
+                  <div className="flex items-start gap-3 p-4 rounded-lg border transition-all bg-amber-50 border-amber-300 hover:border-amber-400 hover:shadow-md cursor-pointer">
+                    <div className="mt-0.5 text-amber-600">
+                      <XCircle size={20} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-amber-700 mb-0.5">Verification Status</p>
+                      <p className="text-sm font-semibold text-amber-800">
+                        Click to Verify Your Account
+                      </p>
+                    </div>
+                  </div>
+                </a>
+              )}
             </div>
           </div>
         </div>
