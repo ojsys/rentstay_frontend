@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import DashboardShell from '../../components/dashboard/DashboardShell';
 import { staysAPI, propertyAPI } from '../../services/api';
 import { Loader2, Home, Upload, Trash2, Star, ArrowLeft, ArrowRight, Image as ImageIcon } from 'lucide-react';
+import RichTextEditor from '../../components/common/RichTextEditor';
 import toast from 'react-hot-toast';
 
 const HostEditListing = () => {
@@ -159,7 +160,12 @@ const HostEditListing = () => {
         </div>
         <div className="md:col-span-2">
           <label className="label">Description</label>
-          <textarea name="description" value={form.description || ''} onChange={onChange} className="input min-h-[100px]" />
+          <div className="border rounded-lg overflow-hidden">
+            <RichTextEditor
+              value={form.description || ''}
+              onChange={(val) => setForm(prev => ({ ...prev, description: val }))}
+            />
+          </div>
         </div>
         <div>
           <label className="label">Type</label>

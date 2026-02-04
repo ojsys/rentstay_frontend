@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import DashboardShell from '../../components/dashboard/DashboardShell';
 import { staysAPI, propertyAPI } from '../../services/api';
 import { Loader2, Home, CheckCircle } from 'lucide-react';
+import RichTextEditor from '../../components/common/RichTextEditor';
 import toast from 'react-hot-toast';
 
 const HostNewListing = () => {
@@ -108,7 +109,12 @@ const HostNewListing = () => {
           </div>
           <div className="md:col-span-2">
             <label className="label">Description</label>
-            <textarea name="description" value={form.description} onChange={onChange} className="input min-h-[100px]" placeholder="Describe the space, amenities and rules" />
+            <div className="border rounded-lg overflow-hidden">
+              <RichTextEditor
+                value={form.description}
+                onChange={(val) => setForm(prev => ({ ...prev, description: val }))}
+              />
+            </div>
           </div>
           <div>
             <label className="label">Type</label>

@@ -270,7 +270,12 @@ const PropertyDetail = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 card">
             <h2 className="text-xl font-semibold text-dark-900 mb-4">Description</h2>
-            <p className="text-dark-700 leading-relaxed whitespace-pre-line">{property.description}</p>
+            <div
+              className="text-dark-700 leading-relaxed prose prose-sm max-w-none
+                [&>p]:mb-3 [&>ul]:list-disc [&>ul]:ml-4 [&>ol]:list-decimal [&>ol]:ml-4
+                [&>li]:mb-1 [&>a]:text-primary [&>a]:underline"
+              dangerouslySetInnerHTML={{ __html: property.description }}
+            />
           </div>
 
           <div className="card">
