@@ -39,6 +39,8 @@ import HostEditListing from './pages/stays/HostEditListing';
 import AdminKYC from './pages/admin/AdminKYC';
 import Verify from './pages/Verify';
 import Visits from './pages/Visits';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 // Static Pages
 import About from './pages/About';
@@ -76,6 +78,8 @@ function App() {
             <Route path="/properties/:id" element={<PropertyDetail />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password/:uid/:token" element={<ResetPassword />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/payment/callback" element={<PaymentCallback />} />
             <Route path="/messages" element={<Messages />} />

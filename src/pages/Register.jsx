@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, User, Phone, UserPlus, Home, Building2 } from 'lucide-react';
+import { Mail, Lock, User, Phone, UserPlus, Home, Building2, Eye, EyeOff } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import useAuthStore from '../store/authStore';
@@ -8,6 +8,8 @@ import useAuthStore from '../store/authStore';
 const Register = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [userType, setUserType] = useState(null); // No default - force user to select
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { register: registerUser } = useAuthStore();
   const navigate = useNavigate();
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm();
@@ -191,7 +193,7 @@ const Register = () => {
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-dark-400" size={20} />
                   <input
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     {...register('password', {
                       required: 'Password is required',
                       minLength: {
@@ -199,9 +201,16 @@ const Register = () => {
                         message: 'Password must be at least 8 characters'
                       }
                     })}
-                    className="input pl-10"
+                    className="input pl-10 pr-10"
                     placeholder="Minimum 8 characters"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-dark-400 hover:text-dark-600"
+                  >
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
                 </div>
                 {errors.password && (
                   <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>
@@ -214,14 +223,21 @@ const Register = () => {
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-dark-400" size={20} />
                   <input
-                    type="password"
+                    type={showConfirmPassword ? 'text' : 'password'}
                     {...register('password_confirm', {
                       required: 'Please confirm your password',
                       validate: value => value === password || 'Passwords do not match'
                     })}
-                    className="input pl-10"
+                    className="input pl-10 pr-10"
                     placeholder="Re-enter password"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-dark-400 hover:text-dark-600"
+                  >
+                    {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
                 </div>
                 {errors.password_confirm && (
                   <p className="text-red-500 text-sm mt-1">{errors.password_confirm.message}</p>

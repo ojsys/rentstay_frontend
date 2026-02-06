@@ -70,6 +70,9 @@ export const authAPI = {
   submitVerification: (formData) => api.post('/auth/verify/submit/', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
   listVerificationRequests: (status) => api.get('/auth/verify/requests/', { params: { status } }),
   decideVerification: (requestId, status, notes) => api.post(`/auth/verify/requests/${requestId}/decision/`, { status, notes }),
+  requestPasswordReset: (email) => api.post('/auth/password/reset/', { email }),
+  confirmPasswordReset: (data) => api.post('/auth/password/reset/confirm/', data),
+  changePassword: (data) => api.post('/auth/password/change/', data),
 };
 
 export const propertyAPI = {
