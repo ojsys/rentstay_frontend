@@ -41,6 +41,7 @@ import Verify from './pages/Verify';
 import Visits from './pages/Visits';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import NotFound from './pages/NotFound';
 
 // Static Pages
 import About from './pages/About';
@@ -118,6 +119,8 @@ function App() {
             {/* Legal Documents */}
             <Route path="/legal" element={<LegalDocuments />} />
             <Route path="/legal/:slug" element={<LegalDocument />} />
+            {/* 404 Catch-all */}
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </Layout>
       </Router>
