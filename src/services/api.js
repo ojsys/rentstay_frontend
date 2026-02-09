@@ -153,16 +153,41 @@ export const messagingAPI = {
 };
 
 export const applicationAPI = {
-  apply: (propertyId, message) => api.post('/applications/', { property_id: propertyId, message }),
+  apply: (propertyId, message, extraData = {}) => api.post('/applications/', { property_id: propertyId, message, ...extraData }),
   listTenant: () => api.get('/applications/'),
   listLandlord: () => api.get('/applications/'),
   approve: (id, response_message) => api.post(`/applications/${id}/approve/`, { response_message }),
   reject: (id, response_message) => api.post(`/applications/${id}/reject/`, { response_message }),
+  getDetail: (id) => api.get(`/applications/${id}/detail/`),
+  updateNotes: (id, data) => api.patch(`/applications/${id}/detail/`, data),
+};
+
+export const moveOutAPI = {
+  list: (params) => api.get('/move-outs/', { params }),
+  create: (data) => api.post('/move-outs/', data),
+  getInspection: (moveOutId) => api.get(`/move-outs/${moveOutId}/inspection/`),
+  submitInspection: (moveOutId, data) => api.post(`/move-outs/${moveOutId}/inspection/`, data),
+  getDeductions: (moveOutId) => api.get(`/move-outs/${moveOutId}/deductions/`),
+  addDeduction: (moveOutId, data) => api.post(`/move-outs/${moveOutId}/deductions/`, data),
+  removeDeduction: (moveOutId, deductionId) => api.delete(`/move-outs/${moveOutId}/deductions/${deductionId}/`),
+  processRefund: (moveOutId) => api.post(`/move-outs/${moveOutId}/process-refund/`),
 };
 
 export const dashboardAPI = {
   getTenant: () => api.get('/tenants/dashboard/'),
   getLandlord: () => api.get('/landlords/dashboard/'),
+  getDashboardMetadata: () => api.get('/landlords/dashboard-metadata/'),
+  getLandlordLeases: (params) => api.get('/landlords/leases/', { params }),
+  getLandlordPaymentsDashboard: () => api.get('/landlords/payments-dashboard/'),
+  requestPayout: (data) => api.post('/landlords/request-payout/', data),
+  getCautionWallet: () => api.get('/landlords/caution-wallet/'),
+  getLandlordReports: (type) => api.get('/landlords/reports/', { params: { type } }),
+  submitOnboarding: (data) => api.post('/landlords/onboarding/', data),
+  // Bank accounts
+  getBankAccounts: () => api.get('/bank-accounts/'),
+  createBankAccount: (data) => api.post('/bank-accounts/', data),
+  updateBankAccount: (id, data) => api.patch(`/bank-accounts/${id}/`, data),
+  deleteBankAccount: (id) => api.delete(`/bank-accounts/${id}/`),
 };
 
 // Stays (short-term rentals)

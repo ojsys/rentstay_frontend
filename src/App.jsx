@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 import useSiteSettings from './hooks/useSiteSettings';
@@ -43,6 +43,16 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import NotFound from './pages/NotFound';
 
+// Landlord Dashboard (tabbed)
+import LandlordDashboardLayout from './pages/dashboard/LandlordDashboardLayout';
+import LandlordDashboardHome from './pages/dashboard/LandlordDashboardHome';
+import LandlordDashboardProperties from './pages/dashboard/LandlordDashboardProperties';
+import LandlordDashboardLeases from './pages/dashboard/LandlordDashboardLeases';
+import LandlordDashboardPayments from './pages/dashboard/LandlordDashboardPayments';
+import LandlordDashboardMaintenance from './pages/dashboard/LandlordDashboardMaintenance';
+import LandlordDashboardMessages from './pages/dashboard/LandlordDashboardMessages';
+import LandlordDashboardReports from './pages/dashboard/LandlordDashboardReports';
+
 // Static Pages
 import About from './pages/About';
 import Pricing from './pages/Pricing';
@@ -82,6 +92,16 @@ function App() {
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password/:uid/:token" element={<ResetPassword />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            {/* Landlord Dashboard (tabbed sub-routes) */}
+            <Route path="/dashboard" element={<LandlordDashboardLayout />}>
+              <Route path="home" element={<LandlordDashboardHome />} />
+              <Route path="properties" element={<LandlordDashboardProperties />} />
+              <Route path="leases" element={<LandlordDashboardLeases />} />
+              <Route path="payments" element={<LandlordDashboardPayments />} />
+              <Route path="maintenance" element={<LandlordDashboardMaintenance />} />
+              <Route path="messages" element={<LandlordDashboardMessages />} />
+              <Route path="reports" element={<LandlordDashboardReports />} />
+            </Route>
             <Route path="/payment/callback" element={<PaymentCallback />} />
             <Route path="/messages" element={<Messages />} />
             <Route path="/notifications" element={<Notifications />} />
