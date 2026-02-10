@@ -122,6 +122,8 @@ export const rentalAPI = {
   saveTemplate: (body) => api.put('/agreements/template/', { body }),
   setDocumentSource: (agreementId, source) => api.post(`/agreements/${agreementId}/use_document/`, { source }),
   setAgreementStatus: (agreementId, status) => api.post(`/agreements/${agreementId}/set_status/`, { status }),
+  getDealSummary: (agreementId) => api.get(`/agreements/${agreementId}/deal-summary/`),
+  confirmDeal: (agreementId) => api.post(`/agreements/${agreementId}/deal-summary/`),
 };
 
 export const visitAPI = {
@@ -160,6 +162,7 @@ export const applicationAPI = {
   reject: (id, response_message) => api.post(`/applications/${id}/reject/`, { response_message }),
   getDetail: (id) => api.get(`/applications/${id}/detail/`),
   updateNotes: (id, data) => api.patch(`/applications/${id}/detail/`, data),
+  requestMoreInfo: (id, message) => api.post(`/applications/${id}/request-info/`, { message }),
 };
 
 export const moveOutAPI = {

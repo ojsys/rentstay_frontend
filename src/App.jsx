@@ -25,6 +25,7 @@ import AgreementDetail from './pages/AgreementDetail';
 import Agreements from './pages/Agreements';
 import AgreementTemplate from './pages/AgreementTemplate';
 import AddProperty from './pages/AddProperty';
+import AddPropertyWizard from './pages/AddPropertyWizard';
 import MyProperties from './pages/MyProperties';
 import EditProperty from './pages/EditProperty';
 import BulkImportProperties from './pages/BulkImportProperties';
@@ -114,6 +115,7 @@ function App() {
             <Route path="/agreements" element={<Agreements />} />
             <Route path="/agreements/template" element={<AgreementTemplate />} />
             <Route path="/properties/new" element={<AddProperty />} />
+            <Route path="/properties/new/wizard" element={<AddPropertyWizard />} />
             <Route path="/my-properties" element={<MyProperties />} />
             <Route path="/properties/:id/edit" element={<EditProperty />} />
             <Route path="/properties/bulk-import" element={<BulkImportProperties />} />
