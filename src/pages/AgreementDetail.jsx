@@ -47,9 +47,38 @@ const AgreementDetail = () => {
 
   const payNext = async () => {
     try {
-      const res = await paymentAPI.initializePayment({ payment_type: 'rent', agreement_id: agreement.id });
-      const { authorization_url } = res.data || {};
-      if (authorization_url) window.location.href = authorization_url;
+      const res = await paymentAPI.preparePayment({ payment_type: 'rent', agreement_id: agreement.id });
+      const { reference, amount, email, publicKey } = res.data || {};
+      if (!reference || !amount || !publicKey) {
+        toast.error('Failed to prepare payment.');
+        return;
+      }
+      const popup = new window.PaystackPop();
+      popup.newTransaction({
+        key: publicKey,
+        email,
+        amount,
+        ref: reference,
+        channels: ['card', 'bank', 'ussd', 'qr', 'mobile_money', 'bank_transfer'],
+        onSuccess: async (transaction) => {
+          try {
+            await paymentAPI.verifyPayment(transaction.reference || reference);
+            toast.success('Payment successful!');
+            // Reload agreement and schedule
+            const agRes = await rentalAPI.getAgreement(id);
+            setAgreement(agRes.data);
+            try {
+              const scRes = await rentalAPI.getRentPayments(id);
+              setSchedule(scRes.data || []);
+            } catch {}
+          } catch {
+            toast.error('Payment verification failed. Contact support.');
+          }
+        },
+        onCancel: () => {
+          toast('Payment cancelled.');
+        },
+      });
     } catch (e) {
       toast.error('Failed to initialize payment');
     }

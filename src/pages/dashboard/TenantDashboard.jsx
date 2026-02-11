@@ -82,13 +82,32 @@ const TenantDashboard = () => {
       return;
     }
     try {
-      const res = await paymentAPI.initializePayment({ payment_type: type, agreement_id: agreement.id });
-      const { authorization_url } = res.data || {};
-      if (authorization_url) {
-        window.location.href = authorization_url;
-      } else {
-        toast.error('Failed to start payment.');
+      const res = await paymentAPI.preparePayment({ payment_type: type, agreement_id: agreement.id });
+      const { reference, amount, email, publicKey } = res.data || {};
+      if (!reference || !amount || !publicKey) {
+        toast.error('Failed to prepare payment.');
+        return;
       }
+      const popup = new window.PaystackPop();
+      popup.newTransaction({
+        key: publicKey,
+        email,
+        amount,
+        ref: reference,
+        channels: ['card', 'bank', 'ussd', 'qr', 'mobile_money', 'bank_transfer'],
+        onSuccess: async (transaction) => {
+          try {
+            await paymentAPI.verifyPayment(transaction.reference || reference);
+            toast.success('Payment successful!');
+            queryClient.invalidateQueries({ queryKey: ['tenant-dashboard'] });
+          } catch {
+            toast.error('Payment verification failed. Contact support.');
+          }
+        },
+        onCancel: () => {
+          toast('Payment cancelled.');
+        },
+      });
     } catch (err) {
       const msg = err?.response?.data?.detail || 'Payment initialization failed';
       toast.error(msg);

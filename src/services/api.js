@@ -102,6 +102,7 @@ export const propertyAPI = {
 
 export const paymentAPI = {
   initializePayment: (data) => api.post('/payments/initialize/', data),
+  preparePayment: (data) => api.post('/payments/prepare/', data),
   verifyPayment: (reference) => api.get(`/payments/verify/${reference}/`),
   getPaymentHistory: () => api.get('/payments/history/'),
   getCautionFeeStatus: (agreementId) => api.get(`/payments/caution-fee/${agreementId}/`),
