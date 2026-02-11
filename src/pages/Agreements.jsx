@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import DashboardShell from '../components/dashboard/DashboardShell';
 import { rentalAPI } from '../services/api';
 import { FileText, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import useAuthStore from '../store/authStore';
 
 const Agreements = () => {
+  const { user } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState([]);
 
@@ -24,6 +26,8 @@ const Agreements = () => {
     };
     load();
   }, []);
+
+  if (user?.user_type === 'landlord') return <Navigate to="/dashboard/leases" replace />;
 
   return (
     <DashboardShell>

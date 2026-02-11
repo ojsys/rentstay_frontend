@@ -4,6 +4,7 @@ import { visitAPI } from '../services/api';
 import useAuthStore from '../store/authStore';
 import { CalendarClock, Check, X, RefreshCw, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { Navigate } from 'react-router-dom';
 
 const Visits = () => {
   const { user } = useAuthStore();
@@ -25,6 +26,8 @@ const Visits = () => {
   };
 
   useEffect(() => { load(); }, []);
+
+  if (user?.user_type === 'landlord') return <Navigate to="/dashboard/visits" replace />;
 
   const act = async (id, type) => {
     try {

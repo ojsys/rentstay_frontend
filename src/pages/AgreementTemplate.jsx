@@ -64,7 +64,10 @@ const AgreementTemplate = () => {
     }
   };
 
-  if (!user || user.user_type !== 'landlord') return <Navigate to="/dashboard" replace />;
+  // Redirect all users - landlords go to dashboard leases (template tab), others to dashboard
+  if (!user) return <Navigate to="/dashboard" replace />;
+  if (user.user_type === 'landlord') return <Navigate to="/dashboard/leases" replace />;
+  return <Navigate to="/dashboard" replace />;
 
   return (
     <DashboardShell>

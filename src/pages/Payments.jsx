@@ -3,6 +3,7 @@ import DashboardShell from '../components/dashboard/DashboardShell';
 import { paymentAPI, dashboardAPI } from '../services/api';
 import { CreditCard, Loader2 } from 'lucide-react';
 import useAuthStore from '../store/authStore';
+import { Navigate } from 'react-router-dom';
 
 const Payments = () => {
   const [loading, setLoading] = useState(true);
@@ -38,6 +39,8 @@ const Payments = () => {
     };
     load();
   }, [user?.user_type]);
+
+  if (user?.user_type === 'landlord') return <Navigate to="/dashboard/payments" replace />;
 
   return (
     <DashboardShell>

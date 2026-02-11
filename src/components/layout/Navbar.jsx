@@ -17,6 +17,8 @@ const Navbar = () => {
   const { settings } = useSiteSettings();
   const navigate = useNavigate();
 
+  const isLandlord = user?.user_type === 'landlord';
+
   const handleLogout = () => {
     logout();
     navigate('/');
@@ -94,7 +96,7 @@ const Navbar = () => {
             {isAuthenticated ? (
               <>
                 <Link
-                  to="/dashboard"
+                  to={isLandlord ? '/dashboard/home' : '/dashboard'}
                   className="flex items-center space-x-1 text-dark-600 hover:text-primary transition-colors font-medium"
                 >
                   <LayoutDashboard size={18} />
@@ -122,6 +124,13 @@ const Navbar = () => {
                       </Link>
                       <div className="border-t" />
                       <Link
+                        to={isLandlord ? '/dashboard/home' : '/dashboard'}
+                        onClick={() => setIsUserMenuOpen(false)}
+                        className="block px-4 py-2 text-sm text-dark-700 hover:bg-gray-50"
+                      >
+                        Dashboard
+                      </Link>
+                      <Link
                         to="/profile"
                         onClick={() => setIsUserMenuOpen(false)}
                         className="block px-4 py-2 text-sm text-dark-700 hover:bg-gray-50"
@@ -135,72 +144,50 @@ const Navbar = () => {
                       >
                         Verification
                       </Link>
-                      {user?.user_type === 'landlord' && (
-                        <Link
-                          to="/agreements/template"
-                          onClick={() => setIsUserMenuOpen(false)}
-                          className="block px-4 py-2 text-sm text-dark-700 hover:bg-gray-50"
-                        >
-                          Agreement Template
-                        </Link>
-                      )}
                       <Link
-                        to="/applications"
+                        to="/notifications"
                         onClick={() => setIsUserMenuOpen(false)}
                         className="block px-4 py-2 text-sm text-dark-700 hover:bg-gray-50"
                       >
-                        Applications
+                        Notifications
                       </Link>
-                      <Link
-                        to="/visits"
-                        onClick={() => setIsUserMenuOpen(false)}
-                        className="block px-4 py-2 text-sm text-dark-700 hover:bg-gray-50"
-                      >
-                        Visits
-                      </Link>
-                      <Link
-                        to="/agreements"
-                        onClick={() => setIsUserMenuOpen(false)}
-                        className="block px-4 py-2 text-sm text-dark-700 hover:bg-gray-50"
-                      >
-                        Agreements
-                      </Link>
-                      <Link
-                        to="/messages"
-                        onClick={() => setIsUserMenuOpen(false)}
-                        className="block px-4 py-2 text-sm text-dark-700 hover:bg-gray-50"
-                      >
-                        Messages
-                      </Link>
-                      <Link
-                        to="/stays/bookings"
-                        onClick={() => setIsUserMenuOpen(false)}
-                        className="block px-4 py-2 text-sm text-dark-700 hover:bg-gray-50"
-                      >
-                        My Stays
-                      </Link>
-                      {user?.user_type === 'landlord' && (
+                      {/* Non-landlord items (tenants/guests still see these) */}
+                      {!isLandlord && (
                         <>
                           <Link
-                            to="/stays/listings/new"
+                            to="/applications"
                             onClick={() => setIsUserMenuOpen(false)}
                             className="block px-4 py-2 text-sm text-dark-700 hover:bg-gray-50"
                           >
-                            Share Your Space
+                            Applications
                           </Link>
                           <Link
-                            to="/stays/host/listings"
+                            to="/visits"
                             onClick={() => setIsUserMenuOpen(false)}
                             className="block px-4 py-2 text-sm text-dark-700 hover:bg-gray-50"
                           >
-                            My Listings
+                            Visits
                           </Link>
                           <Link
-                            to="/stays/host/bookings"
+                            to="/agreements"
                             onClick={() => setIsUserMenuOpen(false)}
                             className="block px-4 py-2 text-sm text-dark-700 hover:bg-gray-50"
                           >
-                            Guest Bookings
+                            Agreements
+                          </Link>
+                          <Link
+                            to="/messages"
+                            onClick={() => setIsUserMenuOpen(false)}
+                            className="block px-4 py-2 text-sm text-dark-700 hover:bg-gray-50"
+                          >
+                            Messages
+                          </Link>
+                          <Link
+                            to="/stays/bookings"
+                            onClick={() => setIsUserMenuOpen(false)}
+                            className="block px-4 py-2 text-sm text-dark-700 hover:bg-gray-50"
+                          >
+                            My Stays
                           </Link>
                         </>
                       )}
@@ -213,13 +200,6 @@ const Navbar = () => {
                           KYC Requests
                         </Link>
                       )}
-                      <Link
-                        to="/notifications"
-                        onClick={() => setIsUserMenuOpen(false)}
-                        className="block px-4 py-2 text-sm text-dark-700 hover:bg-gray-50"
-                      >
-                        Notifications
-                      </Link>
                       <div className="border-t" />
                       <button
                         onClick={() => { setIsUserMenuOpen(false); handleLogout(); }}
@@ -309,7 +289,7 @@ const Navbar = () => {
                     {/* Dashboard */}
                     <div className="px-2 py-2 border-t border-gray-100">
                       <Link
-                        to="/dashboard"
+                        to={isLandlord ? '/dashboard/home' : '/dashboard'}
                         onClick={() => setIsMobileMenuOpen(false)}
                         className="flex items-center space-x-3 px-3 py-3 text-dark-700 hover:bg-primary-50 hover:text-primary rounded-lg transition-all active:scale-95"
                       >
@@ -349,141 +329,76 @@ const Navbar = () => {
                       </Link>
                     </div>
 
-                    {/* Activity Section */}
-                    <div className="px-2 py-2 border-t border-gray-100">
-                      <p className="px-3 text-xs font-semibold text-dark-400 uppercase tracking-wider mb-2">
-                        Activity
-                      </p>
-                      <Link
-                        to="/applications"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className="flex items-center space-x-3 px-3 py-3 text-dark-700 hover:bg-primary-50 hover:text-primary rounded-lg transition-all active:scale-95"
-                      >
-                        <FileText size={20} className="flex-shrink-0" />
-                        <span className="font-medium">Applications</span>
-                      </Link>
-                      <Link
-                        to="/visits"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className="flex items-center space-x-3 px-3 py-3 text-dark-700 hover:bg-primary-50 hover:text-primary rounded-lg transition-all active:scale-95"
-                      >
-                        <Calendar size={20} className="flex-shrink-0" />
-                        <span className="font-medium">Visits</span>
-                      </Link>
-                      <Link
-                        to="/agreements"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className="flex items-center space-x-3 px-3 py-3 text-dark-700 hover:bg-primary-50 hover:text-primary rounded-lg transition-all active:scale-95"
-                      >
-                        <FileText size={20} className="flex-shrink-0" />
-                        <span className="font-medium">Agreements</span>
-                      </Link>
-                      <Link
-                        to="/messages"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className="flex items-center space-x-3 px-3 py-3 text-dark-700 hover:bg-primary-50 hover:text-primary rounded-lg transition-all active:scale-95"
-                      >
-                        <Mail size={20} className="flex-shrink-0" />
-                        <span className="font-medium">Messages</span>
-                      </Link>
-                      <Link
-                        to="/payments"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className="flex items-center space-x-3 px-3 py-3 text-dark-700 hover:bg-primary-50 hover:text-primary rounded-lg transition-all active:scale-95"
-                      >
-                        <CreditCard size={20} className="flex-shrink-0" />
-                        <span className="font-medium">Payments</span>
-                      </Link>
-                      <Link
-                        to="/maintenance"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className="flex items-center space-x-3 px-3 py-3 text-dark-700 hover:bg-primary-50 hover:text-primary rounded-lg transition-all active:scale-95"
-                      >
-                        <Wrench size={20} className="flex-shrink-0" />
-                        <span className="font-medium">Maintenance</span>
-                      </Link>
-                    </div>
-
-                    {/* Stays Section */}
-                    <div className="px-2 py-2 border-t border-gray-100">
-                      <p className="px-3 text-xs font-semibold text-dark-400 uppercase tracking-wider mb-2">
-                        Short-Term Stays
-                      </p>
-                      <Link
-                        to="/stays/bookings"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className="flex items-center space-x-3 px-3 py-3 text-dark-700 hover:bg-primary-50 hover:text-primary rounded-lg transition-all active:scale-95"
-                      >
-                        <Bed size={20} className="flex-shrink-0" />
-                        <span className="font-medium">My Stays</span>
-                      </Link>
-                      {user?.user_type === 'landlord' && (
-                        <>
-                          <Link
-                            to="/stays/listings/new"
-                            onClick={() => setIsMobileMenuOpen(false)}
-                            className="flex items-center space-x-3 px-3 py-3 text-dark-700 hover:bg-primary-50 hover:text-primary rounded-lg transition-all active:scale-95"
-                          >
-                            <PlusCircle size={20} className="flex-shrink-0" />
-                            <span className="font-medium">Share Your Space</span>
-                          </Link>
-                          <Link
-                            to="/stays/host/listings"
-                            onClick={() => setIsMobileMenuOpen(false)}
-                            className="flex items-center space-x-3 px-3 py-3 text-dark-700 hover:bg-primary-50 hover:text-primary rounded-lg transition-all active:scale-95"
-                          >
-                            <List size={20} className="flex-shrink-0" />
-                            <span className="font-medium">My Listings</span>
-                          </Link>
-                          <Link
-                            to="/stays/host/bookings"
-                            onClick={() => setIsMobileMenuOpen(false)}
-                            className="flex items-center space-x-3 px-3 py-3 text-dark-700 hover:bg-primary-50 hover:text-primary rounded-lg transition-all active:scale-95"
-                          >
-                            <Users size={20} className="flex-shrink-0" />
-                            <span className="font-medium">Guest Bookings</span>
-                          </Link>
-                        </>
-                      )}
-                    </div>
-
-                    {/* Landlord Section */}
-                    {user?.user_type === 'landlord' && (
+                    {/* Activity Section - only for non-landlords */}
+                    {!isLandlord && (
                       <div className="px-2 py-2 border-t border-gray-100">
                         <p className="px-3 text-xs font-semibold text-dark-400 uppercase tracking-wider mb-2">
-                          Property Management
+                          Activity
                         </p>
                         <Link
-                          to="/properties/new"
-                          onClick={() => setIsMobileMenuOpen(false)}
-                          className="flex items-center space-x-3 px-3 py-3 text-dark-700 hover:bg-primary-50 hover:text-primary rounded-lg transition-all active:scale-95"
-                        >
-                          <PlusCircle size={20} className="flex-shrink-0" />
-                          <span className="font-medium">Add Property</span>
-                        </Link>
-                        <Link
-                          to="/my-properties"
-                          onClick={() => setIsMobileMenuOpen(false)}
-                          className="flex items-center space-x-3 px-3 py-3 text-dark-700 hover:bg-primary-50 hover:text-primary rounded-lg transition-all active:scale-95"
-                        >
-                          <Building2 size={20} className="flex-shrink-0" />
-                          <span className="font-medium">My Properties</span>
-                        </Link>
-                        <Link
-                          to="/properties/bulk-import"
-                          onClick={() => setIsMobileMenuOpen(false)}
-                          className="flex items-center space-x-3 px-3 py-3 text-dark-700 hover:bg-primary-50 hover:text-primary rounded-lg transition-all active:scale-95"
-                        >
-                          <Upload size={20} className="flex-shrink-0" />
-                          <span className="font-medium">Bulk Import</span>
-                        </Link>
-                        <Link
-                          to="/agreements/template"
+                          to="/applications"
                           onClick={() => setIsMobileMenuOpen(false)}
                           className="flex items-center space-x-3 px-3 py-3 text-dark-700 hover:bg-primary-50 hover:text-primary rounded-lg transition-all active:scale-95"
                         >
                           <FileText size={20} className="flex-shrink-0" />
-                          <span className="font-medium">Agreement Template</span>
+                          <span className="font-medium">Applications</span>
+                        </Link>
+                        <Link
+                          to="/visits"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className="flex items-center space-x-3 px-3 py-3 text-dark-700 hover:bg-primary-50 hover:text-primary rounded-lg transition-all active:scale-95"
+                        >
+                          <Calendar size={20} className="flex-shrink-0" />
+                          <span className="font-medium">Visits</span>
+                        </Link>
+                        <Link
+                          to="/agreements"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className="flex items-center space-x-3 px-3 py-3 text-dark-700 hover:bg-primary-50 hover:text-primary rounded-lg transition-all active:scale-95"
+                        >
+                          <FileText size={20} className="flex-shrink-0" />
+                          <span className="font-medium">Agreements</span>
+                        </Link>
+                        <Link
+                          to="/messages"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className="flex items-center space-x-3 px-3 py-3 text-dark-700 hover:bg-primary-50 hover:text-primary rounded-lg transition-all active:scale-95"
+                        >
+                          <Mail size={20} className="flex-shrink-0" />
+                          <span className="font-medium">Messages</span>
+                        </Link>
+                        <Link
+                          to="/payments"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className="flex items-center space-x-3 px-3 py-3 text-dark-700 hover:bg-primary-50 hover:text-primary rounded-lg transition-all active:scale-95"
+                        >
+                          <CreditCard size={20} className="flex-shrink-0" />
+                          <span className="font-medium">Payments</span>
+                        </Link>
+                        <Link
+                          to="/maintenance"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className="flex items-center space-x-3 px-3 py-3 text-dark-700 hover:bg-primary-50 hover:text-primary rounded-lg transition-all active:scale-95"
+                        >
+                          <Wrench size={20} className="flex-shrink-0" />
+                          <span className="font-medium">Maintenance</span>
+                        </Link>
+                      </div>
+                    )}
+
+                    {/* Stays Section - only for non-landlords */}
+                    {!isLandlord && (
+                      <div className="px-2 py-2 border-t border-gray-100">
+                        <p className="px-3 text-xs font-semibold text-dark-400 uppercase tracking-wider mb-2">
+                          Short-Term Stays
+                        </p>
+                        <Link
+                          to="/stays/bookings"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className="flex items-center space-x-3 px-3 py-3 text-dark-700 hover:bg-primary-50 hover:text-primary rounded-lg transition-all active:scale-95"
+                        >
+                          <Bed size={20} className="flex-shrink-0" />
+                          <span className="font-medium">My Stays</span>
                         </Link>
                       </div>
                     )}

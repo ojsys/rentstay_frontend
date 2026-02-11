@@ -4,6 +4,7 @@ import useAuthStore from '../store/authStore';
 import DashboardShell from '../components/dashboard/DashboardShell';
 import { Wrench, Play, CheckCircle, Loader2, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { Navigate } from 'react-router-dom';
 
 const Maintenance = () => {
   const { user } = useAuthStore();
@@ -42,6 +43,8 @@ const Maintenance = () => {
     };
     loadAgreement();
   }, [isLandlord]);
+
+  if (isLandlord) return <Navigate to="/dashboard/maintenance" replace />;
 
   const submit = async (e) => {
     e.preventDefault();

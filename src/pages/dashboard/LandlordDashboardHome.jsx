@@ -389,7 +389,7 @@ const LandlordDashboardHome = () => {
           <div className="card">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-dark-900">Pending Applications</h3>
-              <Link to="/applications" className="text-primary text-xs font-medium">View all</Link>
+              <Link to="/dashboard/leases" className="text-primary text-xs font-medium">View all</Link>
             </div>
             {appsPending.length === 0 ? (
               <p className="text-dark-600 text-sm">No pending applications.</p>

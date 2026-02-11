@@ -1,10 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { dashboardAPI } from '../../services/api';
+import { dashboardAPI, rentalAPI } from '../../services/api';
 import { Loader2, FileText, CalendarClock, AlertTriangle, Users, ArrowRight } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import EnhancedApplicationsInbox from '../../components/dashboard/EnhancedApplicationsInbox';
 import MoveOutWorkflow from '../../components/dashboard/MoveOutWorkflow';
+import toast from 'react-hot-toast';
 
 const statusColors = {
   active: 'bg-green-100 text-green-700',
@@ -15,15 +16,76 @@ const statusColors = {
   cancelled: 'bg-red-100 text-red-700',
 };
 
+const sampleData = {
+  landlord: 'John Landlord',
+  tenant: 'Jane Tenant',
+  address: '123 Example Street, Lagos',
+  start_date: '2025-01-01',
+  end_date: '2025-12-31',
+  rent_amount: '₦1,200,000.00',
+  caution_fee: '₦120,000.00',
+};
+
+function renderPreview(template) {
+  let text = template || '';
+  Object.entries(sampleData).forEach(([k, v]) => {
+    text = text.replaceAll(`{{${k}}}`, String(v));
+  });
+  return text;
+}
+
 const LandlordDashboardLeases = () => {
   const [activeSection, setActiveSection] = useState('leases');
   const [typeFilter, setTypeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('');
 
+  // Template state
+  const [templateBody, setTemplateBody] = useState('');
+  const [placeholders, setPlaceholders] = useState(['{{landlord}}','{{tenant}}','{{address}}','{{start_date}}','{{end_date}}','{{rent_amount}}','{{caution_fee}}']);
+  const [templateLoading, setTemplateLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [RichTextEditor, setRichTextEditor] = useState(null);
+
   const { data, isLoading } = useQuery({
     queryKey: ['landlord-leases'],
     queryFn: () => dashboardAPI.getLandlordLeases().then(res => res.data),
   });
+
+  // Lazy-load RichTextEditor and template data when template tab is active
+  useEffect(() => {
+    if (activeSection !== 'template') return;
+    const load = async () => {
+      setTemplateLoading(true);
+      try {
+        // Dynamic import of RichTextEditor
+        if (!RichTextEditor) {
+          const mod = await import('../../components/common/RichTextEditor');
+          setRichTextEditor(() => mod.default);
+        }
+        const res = await rentalAPI.getTemplate();
+        setTemplateBody(res.data.body || '');
+        if (res.data.placeholders) setPlaceholders(res.data.placeholders);
+      } catch (e) {
+        toast.error(e?.response?.data?.detail || 'Failed to load template');
+      } finally {
+        setTemplateLoading(false);
+      }
+    };
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSection]);
+
+  const saveTemplate = async () => {
+    try {
+      setSaving(true);
+      await rentalAPI.saveTemplate(templateBody);
+      toast.success('Template saved');
+    } catch {
+      toast.error('Failed to save template');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const agreements = data?.agreements || [];
   const bookings = data?.bookings || [];
@@ -36,7 +98,6 @@ const LandlordDashboardLeases = () => {
 
   if (statusFilter) items = items.filter(i => i.status === statusFilter);
 
-  // Sort by date descending
   items.sort((a, b) => {
     const dateA = a.start_date || a.check_in || '';
     const dateB = b.start_date || b.check_in || '';
@@ -47,6 +108,7 @@ const LandlordDashboardLeases = () => {
     { key: 'leases', label: 'Leases & Bookings' },
     { key: 'applications', label: 'Applications' },
     { key: 'moveouts', label: 'Move-Outs' },
+    { key: 'template', label: 'Template' },
   ];
 
   return (
@@ -66,6 +128,39 @@ const LandlordDashboardLeases = () => {
 
       {activeSection === 'applications' && <EnhancedApplicationsInbox />}
       {activeSection === 'moveouts' && <MoveOutWorkflow />}
+
+      {/* Template sub-tab */}
+      {activeSection === 'template' && (
+        <div className="space-y-6">
+          {templateLoading ? (
+            <div className="flex items-center justify-center py-12 text-dark-500"><Loader2 className="animate-spin mr-2" /> Loading template...</div>
+          ) : (
+            <>
+              <div className="card">
+                <h3 className="text-lg font-semibold text-dark-900 mb-2">Edit Template</h3>
+                <p className="text-sm text-dark-600 mb-3">Use placeholders: {placeholders.join(', ')}</p>
+                {RichTextEditor ? (
+                  <RichTextEditor value={templateBody} onChange={(val) => setTemplateBody(val)} />
+                ) : (
+                  <textarea className="input min-h-[200px]" value={templateBody} onChange={(e) => setTemplateBody(e.target.value)} />
+                )}
+                <div className="flex justify-end mt-4">
+                  <button className="btn btn-primary" onClick={saveTemplate} disabled={saving}>
+                    {saving ? 'Saving...' : 'Save Template'}
+                  </button>
+                </div>
+              </div>
+              <div className="card">
+                <h3 className="text-lg font-semibold text-dark-900 mb-2">Preview</h3>
+                <p className="text-sm text-dark-600 mb-3">Example preview with sample values</p>
+                <div className="prose max-w-none">
+                  <div dangerouslySetInnerHTML={{ __html: renderPreview(templateBody) }} />
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       {activeSection === 'leases' && <>
       {/* Stats */}

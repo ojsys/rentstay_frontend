@@ -4,7 +4,7 @@ import { messagingAPI } from '../services/api';
 import { Loader2, Send, MessageSquare } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import DashboardShell from '../components/dashboard/DashboardShell';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Navigate } from 'react-router-dom';
 
 const Messages = () => {
   const { user, isAuthenticated } = useAuthStore();
@@ -12,6 +12,8 @@ const Messages = () => {
   const [activeId, setActiveId] = useState(null);
   const [text, setText] = useState('');
   const [params, setParams] = useSearchParams();
+  const [localMsgs, setLocalMsgs] = useState([]);
+  const pendingMapRef = useRef({});
 
   const { data: conversations, isLoading: loadingConvos } = useQuery({
     queryKey: ['conversations'],
@@ -24,8 +26,6 @@ const Messages = () => {
     queryFn: () => activeId ? messagingAPI.getMessages(activeId).then(res => res.data) : Promise.resolve([]),
     enabled: !!activeId,
   });
-  const [localMsgs, setLocalMsgs] = useState([]);
-  const pendingMapRef = useRef({});
 
   // Initialize active conversation from query param
   useEffect(() => {
@@ -95,6 +95,8 @@ const Messages = () => {
     if (!currentConvo || !user) return null;
     return (currentConvo.participants || []).find(p => p.id !== user.id) || null;
   }, [currentConvo, user]);
+
+  if (user?.user_type === 'landlord') return <Navigate to="/dashboard/messages" replace />;
 
   return (
     <DashboardShell>

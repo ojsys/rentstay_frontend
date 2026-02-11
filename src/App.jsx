@@ -53,6 +53,8 @@ import LandlordDashboardPayments from './pages/dashboard/LandlordDashboardPaymen
 import LandlordDashboardMaintenance from './pages/dashboard/LandlordDashboardMaintenance';
 import LandlordDashboardMessages from './pages/dashboard/LandlordDashboardMessages';
 import LandlordDashboardReports from './pages/dashboard/LandlordDashboardReports';
+import LandlordDashboardVisits from './pages/dashboard/LandlordDashboardVisits';
+import LandlordDashboardStays from './pages/dashboard/LandlordDashboardStays';
 
 // Static Pages
 import About from './pages/About';
@@ -101,6 +103,8 @@ function App() {
               <Route path="payments" element={<LandlordDashboardPayments />} />
               <Route path="maintenance" element={<LandlordDashboardMaintenance />} />
               <Route path="messages" element={<LandlordDashboardMessages />} />
+              <Route path="visits" element={<LandlordDashboardVisits />} />
+              <Route path="stays" element={<LandlordDashboardStays />} />
               <Route path="reports" element={<LandlordDashboardReports />} />
             </Route>
             <Route path="/payment/callback" element={<PaymentCallback />} />

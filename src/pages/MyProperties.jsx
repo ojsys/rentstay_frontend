@@ -3,9 +3,11 @@ import DashboardShell from '../components/dashboard/DashboardShell';
 import { propertyAPI } from '../services/api';
 import { Home, Edit2, Trash2, Image as ImageIcon, Star, BarChart2, Send } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
+import useAuthStore from '../store/authStore';
 
 const MyProperties = () => {
+  const { user } = useAuthStore();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(null);
@@ -34,6 +36,8 @@ const MyProperties = () => {
   };
 
   useEffect(() => { load(); }, []);
+
+  if (user?.user_type === 'landlord') return <Navigate to="/dashboard/properties" replace />;
 
   const startEdit = (p) => {
     setEditing(p.id);

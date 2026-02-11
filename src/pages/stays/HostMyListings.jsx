@@ -3,8 +3,11 @@ import DashboardShell from '../../components/dashboard/DashboardShell';
 import { staysAPI } from '../../services/api';
 import { Loader2, Upload } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { Navigate } from 'react-router-dom';
+import useAuthStore from '../../store/authStore';
 
 const HostMyListings = () => {
+  const { user } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState([]);
   const [filters, setFilters] = useState({ q: '', status: '', type: '' });
@@ -22,6 +25,8 @@ const HostMyListings = () => {
   };
 
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [filters]);
+
+  if (user?.user_type === 'landlord') return <Navigate to="/dashboard/stays" replace />;
 
   const publish = async (id) => { try { await staysAPI.publish(id); load(); } catch { toast.error('Failed'); } };
   const unpublish = async (id) => { try { await staysAPI.unpublish(id); load(); } catch { toast.error('Failed'); } };

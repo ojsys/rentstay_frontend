@@ -3,8 +3,11 @@ import DashboardShell from '../../components/dashboard/DashboardShell';
 import { staysAPI } from '../../services/api';
 import { Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { Navigate } from 'react-router-dom';
+import useAuthStore from '../../store/authStore';
 
 const HostBookings = () => {
+  const { user } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState([]);
 
@@ -16,6 +19,8 @@ const HostBookings = () => {
   };
 
   useEffect(() => { load(); }, []);
+
+  if (user?.user_type === 'landlord') return <Navigate to="/dashboard/stays" replace />;
 
   const approve = async (id) => {
     try { await staysAPI.approveBooking(id); toast.success('Approved'); load(); } catch { toast.error('Failed'); }

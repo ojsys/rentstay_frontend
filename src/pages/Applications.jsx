@@ -4,6 +4,7 @@ import useAuthStore from '../store/authStore';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import DashboardShell from '../components/dashboard/DashboardShell';
+import { Navigate } from 'react-router-dom';
 
 const Applications = () => {
   const { user, isAuthenticated } = useAuthStore();
@@ -28,6 +29,8 @@ const Applications = () => {
     if (isAuthenticated) load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, user?.user_type]);
+
+  if (isLandlord) return <Navigate to="/dashboard/leases" replace />;
 
   const approve = async (id) => {
     try {
