@@ -6,15 +6,16 @@ import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import useAuthStore from '../../store/authStore';
 import LegalDocumentsCard from '../../components/dashboard/LegalDocumentsCard';
+import PaystackPop from '@paystack/inline-js';
 
 const StatCard = ({ icon: Icon, label, value, sub }) => (
-  <div className="card flex items-center space-x-4">
-    <div className="w-12 h-12 bg-primary-100 text-primary rounded-xl flex items-center justify-center">
-      <Icon size={24} />
+  <div className="card flex items-center space-x-3">
+    <div className="w-10 h-10 md:w-12 md:h-12 bg-primary-100 text-primary rounded-xl flex items-center justify-center flex-shrink-0">
+      <Icon size={20} />
     </div>
-    <div>
-      <p className="text-dark-600 text-sm">{label}</p>
-      <p className="text-2xl font-semibold text-dark-900">{value}</p>
+    <div className="min-w-0">
+      <p className="text-dark-600 text-xs md:text-sm">{label}</p>
+      <p className="text-lg md:text-2xl font-semibold text-dark-900 truncate">{value}</p>
       {sub && <p className="text-xs text-dark-500 mt-1">{sub}</p>}
     </div>
   </div>
@@ -82,31 +83,32 @@ const TenantDashboard = () => {
       return;
     }
     try {
-      const res = await paymentAPI.initializePayment({ payment_type: type, agreement_id: agreement.id });
-      const { access_code, authorization_url, reference } = res.data || {};
-
-      // Prefer inline popup (shows all payment channels) over redirect
-      if (access_code && window.PaystackPop) {
-        const popup = new window.PaystackPop();
-        popup.resumeTransaction(access_code, {
-          onSuccess: async (transaction) => {
-            try {
-              await paymentAPI.verifyPayment(transaction.reference || reference);
-              toast.success('Payment successful!');
-              queryClient.invalidateQueries({ queryKey: ['tenant-dashboard'] });
-            } catch {
-              toast.error('Payment verification failed. Contact support.');
-            }
-          },
-          onCancel: () => {
-            toast('Payment cancelled.');
-          },
-        });
-      } else if (authorization_url) {
-        window.location.href = authorization_url;
-      } else {
-        toast.error('Failed to start payment.');
+      const res = await paymentAPI.preparePayment({ payment_type: type, agreement_id: agreement.id });
+      const { reference, amount, email, publicKey } = res.data || {};
+      if (!reference || !amount || !publicKey) {
+        toast.error('Failed to prepare payment.');
+        return;
       }
+      const popup = new PaystackPop();
+      popup.newTransaction({
+        key: publicKey,
+        email,
+        amount,
+        reference,
+        channels: ['card', 'bank', 'ussd', 'qr', 'mobile_money', 'bank_transfer'],
+        onSuccess: async (transaction) => {
+          try {
+            await paymentAPI.verifyPayment(transaction.reference || reference);
+            toast.success('Payment successful!');
+            queryClient.invalidateQueries({ queryKey: ['tenant-dashboard'] });
+          } catch {
+            toast.error('Payment verification failed. Contact support.');
+          }
+        },
+        onCancel: () => {
+          toast('Payment cancelled.');
+        },
+      });
     } catch (err) {
       const msg = err?.response?.data?.detail || 'Payment initialization failed';
       toast.error(msg);
@@ -179,91 +181,79 @@ const TenantDashboard = () => {
           </div>
         </div>
       )}
-      {/* Top Cards - Redesigned (CTA at bottom) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Top Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-6">
         {/* Next Rent */}
-        <div className="rounded-xl p-4 shadow-card ring-1 ring-gray-100 bg-gradient-to-br from-primary-50 to-primary-100 h-full flex flex-col">
-          <div className="flex items-center justify-between mb-1">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white/80 text-primary rounded-xl flex items-center justify-center shadow-sm">
-                <CalendarClock size={18} />
-              </div>
-              <p className="text-sm text-dark-700">Next Rent</p>
+        <div className="rounded-xl p-2 md:p-4 shadow-card ring-1 ring-gray-100 bg-gradient-to-br from-primary-50 to-primary-100 flex flex-col overflow-hidden" style={{ minWidth: 0 }}>
+          <div className="flex items-center gap-1.5 md:gap-3 mb-1">
+            <div className="w-7 h-7 md:w-10 md:h-10 bg-white/80 text-primary rounded-lg md:rounded-xl flex items-center justify-center shadow-sm flex-shrink-0">
+              <CalendarClock className="w-3.5 h-3.5 md:w-[18px] md:h-[18px]" />
             </div>
+            <p className="font-medium text-dark-700" style={{ fontSize: 'clamp(0.6rem, 2.5vw, 0.875rem)' }}>Next Rent</p>
           </div>
-          <p className="text-2xl font-semibold text-dark-900 leading-tight">{agreement?.next_due_date ? new Date(agreement.next_due_date).toLocaleDateString() : '—'}</p>
-          <div className="mt-2 inline-flex items-center text-xs px-2 py-1 rounded-full bg-white/80 text-dark-800 border border-white/60">
-            ₦{Number(balances.next_payment_amount).toLocaleString()}
-          </div>
-          <div className="mt-auto pt-3 space-y-2">
-            <button disabled={!agreement} onClick={() => handlePay('rent')} className="btn btn-primary btn-sm inline-flex items-center w-full justify-center">
-              <CreditCard size={14} className="mr-1" /> Pay Now
+          <p className="font-bold text-dark-900 leading-tight truncate" style={{ fontSize: 'clamp(0.65rem, 3vw, 1.5rem)' }}>{agreement?.next_due_date ? new Date(agreement.next_due_date).toLocaleDateString() : '—'}</p>
+          <p className="font-semibold text-primary mt-0.5 truncate" style={{ fontSize: 'clamp(0.6rem, 2.5vw, 0.875rem)' }}>₦{Number(balances.next_payment_amount).toLocaleString()}</p>
+          <div className="mt-auto pt-2 md:pt-3 space-y-1">
+            <button disabled={!agreement} onClick={() => handlePay('rent')} className="bg-primary text-white hover:bg-primary-600 rounded-lg font-medium inline-flex items-center w-full justify-center" style={{ fontSize: 'clamp(0.55rem, 2.2vw, 0.75rem)', padding: 'clamp(0.25rem, 1vw, 0.5rem) clamp(0.4rem, 1.5vw, 0.75rem)' }}>
+              <CreditCard className="mr-1 flex-shrink-0 w-3 h-3 md:w-3.5 md:h-3.5" /> Pay Now
             </button>
             {agreement && (
-              <Link to={`/agreements/${agreement.id}`} className="text-primary text-xs font-medium inline-flex items-center justify-center w-full">
-                View Schedule <ArrowRight size={12} className="ml-1" />
+              <Link to={`/agreements/${agreement.id}`} className="text-primary font-medium inline-flex items-center justify-center w-full" style={{ fontSize: 'clamp(0.5rem, 2vw, 0.75rem)' }}>
+                Schedule <ArrowRight className="ml-0.5 w-2.5 h-2.5 md:w-3 md:h-3" />
               </Link>
             )}
           </div>
         </div>
 
         {/* Outstanding */}
-        <div className="rounded-xl p-4 shadow-card ring-1 ring-gray-100 bg-gradient-to-br from-amber-50 to-amber-100 h-full flex flex-col">
-          <div className="flex items-center justify-between mb-1">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white/80 text-amber-600 rounded-xl flex items-center justify-center shadow-sm">
-                <Wallet size={18} />
-              </div>
-              <p className="text-sm text-dark-700">Outstanding</p>
+        <div className="rounded-xl p-2 md:p-4 shadow-card ring-1 ring-gray-100 bg-gradient-to-br from-amber-50 to-amber-100 flex flex-col overflow-hidden" style={{ minWidth: 0 }}>
+          <div className="flex items-center gap-1.5 md:gap-3 mb-1">
+            <div className="w-7 h-7 md:w-10 md:h-10 bg-white/80 text-amber-600 rounded-lg md:rounded-xl flex items-center justify-center shadow-sm flex-shrink-0">
+              <Wallet className="w-3.5 h-3.5 md:w-[18px] md:h-[18px]" />
             </div>
+            <p className="font-medium text-dark-700" style={{ fontSize: 'clamp(0.6rem, 2.5vw, 0.875rem)' }}>Outstanding</p>
           </div>
-          <p className="text-2xl font-semibold text-dark-900 leading-tight">₦{Number(balances.outstanding).toLocaleString()}</p>
-          <div className="mt-auto pt-3">
-            <Link to="/payments" className="btn btn-secondary btn-sm inline-flex items-center w-full justify-center">
-              View Payments <ArrowRight size={14} className="ml-1" />
+          <p className="font-bold text-dark-900 leading-tight truncate" style={{ fontSize: 'clamp(0.65rem, 3vw, 1.5rem)' }}>₦{Number(balances.outstanding).toLocaleString()}</p>
+          <div className="mt-auto pt-2 md:pt-3">
+            <Link to="/payments" className="bg-white text-dark-800 border border-gray-300 hover:bg-gray-50 rounded-lg font-medium inline-flex items-center w-full justify-center" style={{ fontSize: 'clamp(0.55rem, 2.2vw, 0.75rem)', padding: 'clamp(0.25rem, 1vw, 0.5rem) clamp(0.4rem, 1.5vw, 0.75rem)' }}>
+              Payments <ArrowRight className="ml-1 flex-shrink-0 w-2.5 h-2.5 md:w-3 md:h-3" />
             </Link>
           </div>
         </div>
 
         {/* Maintenance */}
-        <div className="rounded-xl p-4 shadow-card ring-1 ring-gray-100 bg-gradient-to-br from-green-50 to-green-100 h-full flex flex-col">
-          <div className="flex items-center justify-between mb-1">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white/80 text-green-600 rounded-xl flex items-center justify-center shadow-sm">
-                <Wrench size={18} />
-              </div>
-              <p className="text-sm text-dark-700">Maintenance</p>
+        <div className="rounded-xl p-2 md:p-4 shadow-card ring-1 ring-gray-100 bg-gradient-to-br from-green-50 to-green-100 flex flex-col overflow-hidden" style={{ minWidth: 0 }}>
+          <div className="flex items-center gap-1.5 md:gap-3 mb-1">
+            <div className="w-7 h-7 md:w-10 md:h-10 bg-white/80 text-green-600 rounded-lg md:rounded-xl flex items-center justify-center shadow-sm flex-shrink-0">
+              <Wrench className="w-3.5 h-3.5 md:w-[18px] md:h-[18px]" />
             </div>
+            <p className="font-medium text-dark-700" style={{ fontSize: 'clamp(0.6rem, 2.5vw, 0.875rem)' }}>Maintenance</p>
           </div>
-          <p className="text-2xl font-semibold text-dark-900 leading-tight">{maintenance.open} open</p>
-          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
-            <span className="px-2 py-0.5 rounded-full bg-white/80 text-dark-800 border border-white/60">{maintenance.in_progress} in progress</span>
-            <span className="px-2 py-0.5 rounded-full bg-white/80 text-dark-800 border border-white/60">{maintenance.closed} closed</span>
+          <p className="font-bold text-dark-900 leading-tight" style={{ fontSize: 'clamp(0.65rem, 3vw, 1.5rem)' }}>{maintenance.open} open</p>
+          <div className="mt-1 flex flex-wrap items-center gap-1">
+            <span className="px-1.5 py-0.5 rounded-full bg-white/80 text-dark-700 border border-white/60" style={{ fontSize: 'clamp(0.5rem, 2vw, 0.75rem)' }}>{maintenance.in_progress} active</span>
+            <span className="px-1.5 py-0.5 rounded-full bg-white/80 text-dark-700 border border-white/60" style={{ fontSize: 'clamp(0.5rem, 2vw, 0.75rem)' }}>{maintenance.closed} done</span>
           </div>
-          <div className="mt-auto pt-3">
-            <button onClick={() => setShowRequest(true)} className="btn btn-secondary btn-sm inline-flex items-center w-full justify-center">
-              <Plus size={14} className="mr-1" /> New Request
+          <div className="mt-auto pt-2 md:pt-3">
+            <button onClick={() => setShowRequest(true)} className="bg-white text-dark-800 border border-gray-300 hover:bg-gray-50 rounded-lg font-medium inline-flex items-center w-full justify-center" style={{ fontSize: 'clamp(0.55rem, 2.2vw, 0.75rem)', padding: 'clamp(0.25rem, 1vw, 0.5rem) clamp(0.4rem, 1.5vw, 0.75rem)' }}>
+              <Plus className="mr-1 flex-shrink-0 w-2.5 h-2.5 md:w-3 md:h-3" /> New
             </button>
           </div>
         </div>
 
         {/* Messages */}
-        <div className="rounded-xl p-4 shadow-card ring-1 ring-gray-100 bg-gradient-to-br from-indigo-50 to-indigo-100 h-full flex flex-col">
-          <div className="flex items-center justify-between mb-1">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white/80 text-indigo-600 rounded-xl flex items-center justify-center shadow-sm">
-                <Mail size={18} />
-              </div>
-              <p className="text-sm text-dark-700">Messages</p>
+        <div className="rounded-xl p-2 md:p-4 shadow-card ring-1 ring-gray-100 bg-gradient-to-br from-indigo-50 to-indigo-100 flex flex-col overflow-hidden" style={{ minWidth: 0 }}>
+          <div className="flex items-center gap-1.5 md:gap-3 mb-1">
+            <div className="w-7 h-7 md:w-10 md:h-10 bg-white/80 text-indigo-600 rounded-lg md:rounded-xl flex items-center justify-center shadow-sm flex-shrink-0">
+              <Mail className="w-3.5 h-3.5 md:w-[18px] md:h-[18px]" />
             </div>
+            <p className="font-medium text-dark-700" style={{ fontSize: 'clamp(0.6rem, 2.5vw, 0.875rem)' }}>Messages</p>
           </div>
-          <p className="text-2xl font-semibold text-dark-900 leading-tight">{data?.unread_messages || 0} unread</p>
-          <div className="mt-2 inline-flex items-center text-xs px-2 py-0.5 rounded-full bg-white/80 text-dark-800 border border-white/60">
-            {data?.unread_notifications || 0} notifications
-          </div>
-          <div className="mt-auto pt-3">
-            <Link to="/messages" className="btn btn-secondary btn-sm inline-flex items-center w-full justify-center">
-              Open Messages <ArrowRight size={14} className="ml-1" />
+          <p className="font-bold text-dark-900 leading-tight" style={{ fontSize: 'clamp(0.65rem, 3vw, 1.5rem)' }}>{data?.unread_messages || 0} unread</p>
+          <p className="text-dark-500 mt-0.5" style={{ fontSize: 'clamp(0.5rem, 2vw, 0.75rem)' }}>{data?.unread_notifications || 0} notifications</p>
+          <div className="mt-auto pt-2 md:pt-3">
+            <Link to="/messages" className="bg-white text-dark-800 border border-gray-300 hover:bg-gray-50 rounded-lg font-medium inline-flex items-center w-full justify-center" style={{ fontSize: 'clamp(0.55rem, 2.2vw, 0.75rem)', padding: 'clamp(0.25rem, 1vw, 0.5rem) clamp(0.4rem, 1.5vw, 0.75rem)' }}>
+              Messages <ArrowRight className="ml-1 flex-shrink-0 w-2.5 h-2.5 md:w-3 md:h-3" />
             </Link>
           </div>
         </div>
@@ -314,18 +304,18 @@ const TenantDashboard = () => {
         <div className="card">
           <SectionTitle>Caution Fee</SectionTitle>
           {caution ? (
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div>
-                <p className="text-sm text-dark-600">Principal</p>
-                <p className="text-2xl font-semibold text-dark-900">₦{Number(caution.principal).toLocaleString()}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 text-center">
+              <div className="bg-gray-50 rounded-lg p-2 md:p-0 md:bg-transparent">
+                <p className="text-xs md:text-sm text-dark-600">Principal</p>
+                <p className="text-lg md:text-2xl font-semibold text-dark-900">₦{Number(caution.principal).toLocaleString()}</p>
               </div>
-              <div>
-                <p className="text-sm text-dark-600">Interest</p>
-                <p className="text-2xl font-semibold text-dark-900">₦{Number(caution.interest_accrued).toLocaleString()}</p>
+              <div className="bg-gray-50 rounded-lg p-2 md:p-0 md:bg-transparent">
+                <p className="text-xs md:text-sm text-dark-600">Interest</p>
+                <p className="text-lg md:text-2xl font-semibold text-dark-900">₦{Number(caution.interest_accrued).toLocaleString()}</p>
               </div>
-              <div>
-                <p className="text-sm text-dark-600">Refundable</p>
-                <p className="text-2xl font-semibold text-dark-900">₦{Number(caution.refundable_amount).toLocaleString()}</p>
+              <div className="bg-gray-50 rounded-lg p-2 md:p-0 md:bg-transparent">
+                <p className="text-xs md:text-sm text-dark-600">Refundable</p>
+                <p className="text-lg md:text-2xl font-semibold text-dark-900">₦{Number(caution.refundable_amount).toLocaleString()}</p>
               </div>
             </div>
           ) : (
@@ -342,19 +332,17 @@ const TenantDashboard = () => {
 
       {/* Quick Actions */}
       <div className="card">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-dark-900">Quick Actions</h3>
-          <div className="flex gap-3">
-            <button onClick={() => handlePay('rent')} className="btn btn-primary inline-flex items-center">
-              <CreditCard size={16} className="mr-2" /> Pay Rent
-            </button>
-            <button onClick={() => handlePay('caution_fee')} className="btn btn-secondary inline-flex items-center">
-              <CreditCard size={16} className="mr-2" /> Pay Caution Fee
-            </button>
-            <button onClick={() => setShowRequest(true)} className="btn btn-accent inline-flex items-center">
-              <Plus size={16} className="mr-2" /> Request Maintenance
-            </button>
-          </div>
+        <h3 className="text-lg font-semibold text-dark-900 mb-4">Quick Actions</h3>
+        <div className="flex flex-wrap gap-2 md:gap-3 mb-4">
+          <button onClick={() => handlePay('rent')} className="btn btn-primary btn-sm md:btn-md inline-flex items-center">
+            <CreditCard size={14} className="mr-1.5" /> Pay Rent
+          </button>
+          <button onClick={() => handlePay('caution_fee')} className="btn btn-secondary btn-sm md:btn-md inline-flex items-center">
+            <CreditCard size={14} className="mr-1.5" /> Pay Caution
+          </button>
+          <button onClick={() => setShowRequest(true)} className="btn btn-accent btn-sm md:btn-md inline-flex items-center">
+            <Plus size={14} className="mr-1.5" /> Maintenance
+          </button>
         </div>
 
         {showRequest && (

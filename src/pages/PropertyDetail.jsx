@@ -197,7 +197,7 @@ const PropertyDetail = () => {
             <div className="card">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-dark-600">Rent (yearly)</p>
+                  <p className="text-sm text-dark-600">Rent ({property.rent_term === 'monthly' ? 'monthly' : property.rent_term === 'biannual' ? 'biannual' : 'yearly'})</p>
                   <p className="text-3xl font-bold text-primary">₦{Number(property.rent_amount).toLocaleString()}</p>
                 </div>
                 <div className="text-right">

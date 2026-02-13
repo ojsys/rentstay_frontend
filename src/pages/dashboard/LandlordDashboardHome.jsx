@@ -34,17 +34,15 @@ const Sparkline = ({ data = [] }) => {
 
 const KPI = ({ icon: Icon, label, value, sub, gradient = gradients[0], trend, to }) => {
   const content = (
-    <div className={`rounded-xl p-4 shadow-card ring-1 ring-gray-100 bg-gradient-to-br ${gradient} transition-all hover:shadow-md`}>
-      <div className="flex items-start justify-between">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-white/70 text-primary rounded-lg flex items-center justify-center shadow-sm">
-            <Icon size={20} />
-          </div>
-          <div>
-            <p className="text-dark-700 text-sm">{label}</p>
-            <p className="text-2xl font-semibold text-dark-900 leading-tight">{value}</p>
-            {sub && <p className="text-xs text-dark-600 mt-0.5">{sub}</p>}
-          </div>
+    <div className={`rounded-xl p-2 md:p-4 shadow-card ring-1 ring-gray-100 bg-gradient-to-br ${gradient} transition-all hover:shadow-md overflow-hidden`} style={{ minWidth: 0 }}>
+      <div className="flex items-center gap-1.5 md:gap-3">
+        <div className="w-7 h-7 md:w-10 md:h-10 bg-white/70 text-primary rounded-lg flex items-center justify-center shadow-sm flex-shrink-0">
+          <Icon className="w-3.5 h-3.5 md:w-5 md:h-5" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-dark-700 font-medium" style={{ fontSize: 'clamp(0.6rem, 2.5vw, 0.875rem)' }}>{label}</p>
+          <p className="font-bold text-dark-900 leading-tight truncate" style={{ fontSize: 'clamp(1.1rem, 3vw, 1.5rem)' }}>{value}</p>
+          {sub && <p className="text-dark-600 mt-0.5" style={{ fontSize: 'clamp(0.55rem, 2vw, 0.75rem)' }}>{sub}</p>}
         </div>
       </div>
       {trend && trend.length > 1 && <Sparkline data={trend} />}
@@ -197,7 +195,7 @@ const LandlordDashboardHome = () => {
         )}
 
         {/* KPIs */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-4">
           <KPI icon={Home} label="Active Listings" value={m.properties || 0} gradient={gradients[0]} to="/dashboard/properties" />
           <KPI icon={Users} label="Occupied Units" value={statusCounts.rented || 0} gradient={gradients[2]} to="/dashboard/leases" />
           <KPI icon={AlertTriangle} label="Vacant Units" value={m.vacancies || 0} gradient={gradients[1]} to="/dashboard/properties" />

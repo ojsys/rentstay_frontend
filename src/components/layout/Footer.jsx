@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom';
 import { Building2, Mail, Phone, MapPin, Facebook, Twitter, Instagram, Linkedin } from 'lucide-react';
 import useSiteSettings from '../../hooks/useSiteSettings';
+import useAuthStore from '../../store/authStore';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
   const { settings } = useSiteSettings();
+  const { isAuthenticated } = useAuthStore();
 
   // Check if any social links are available
   const hasSocialLinks = settings?.facebook_url || settings?.twitter_url ||
@@ -94,7 +96,7 @@ const Footer = () => {
                 <Link to="/properties" className="hover:text-primary transition-colors">Browse Properties</Link>
               </li>
               <li>
-                <Link to="/register" className="hover:text-primary transition-colors">List Your Property</Link>
+                <Link to={isAuthenticated ? "/properties/new" : "/login"} className="hover:text-primary transition-colors">List Your Property</Link>
               </li>
               <li>
                 <Link to="/about" className="hover:text-primary transition-colors">About Us</Link>

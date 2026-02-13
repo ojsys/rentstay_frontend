@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import DashboardShell from '../components/dashboard/DashboardShell';
 import { rentalAPI, paymentAPI } from '../services/api';
-import { FileText, Loader2, CalendarClock, CreditCard, Upload, Download, Eye, FileDown } from 'lucide-react';
+import { FileText, Loader2, CalendarClock, CreditCard, Upload, Download, Eye, FileDown, Calendar, CalendarDays } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import toast from 'react-hot-toast';
+import PaystackPop from '@paystack/inline-js';
 
 const AgreementDetail = () => {
   const { id } = useParams();
@@ -17,6 +18,7 @@ const AgreementDetail = () => {
   const [showPreview, setShowPreview] = useState(false);
   const [statusVal, setStatusVal] = useState('');
   const [savingStatus, setSavingStatus] = useState(false);
+  const [paymentFrequency, setPaymentFrequency] = useState('annual');
   const { user } = useAuthStore();
 
   useEffect(() => {
@@ -45,35 +47,61 @@ const AgreementDetail = () => {
     if (agreement?.status) setStatusVal(agreement.status);
   }, [agreement]);
 
+  // Compute rent amounts based on frequency
+  const rentTerm = agreement?.property?.rent_term || 'annual';
+  const baseRent = Number(agreement?.rent_amount || 0);
+  let annualRent, monthlyRent;
+  if (rentTerm === 'monthly') {
+    monthlyRent = baseRent;
+    annualRent = baseRent * 12;
+  } else if (rentTerm === 'biannual') {
+    annualRent = baseRent * 2;
+    monthlyRent = Math.round((baseRent / 6) * 100) / 100;
+  } else {
+    annualRent = baseRent;
+    monthlyRent = Math.round((baseRent / 12) * 100) / 100;
+  }
+  const selectedAmount = paymentFrequency === 'annual' ? annualRent : monthlyRent;
+  const frequencyLabel = paymentFrequency === 'annual' ? 'Yearly' : 'Monthly';
+
   const payNext = async () => {
     try {
-      const res = await paymentAPI.initializePayment({ payment_type: 'rent', agreement_id: agreement.id });
-      const { access_code, authorization_url, reference } = res.data || {};
-
-      if (access_code && window.PaystackPop) {
-        const popup = new window.PaystackPop();
-        popup.resumeTransaction(access_code, {
-          onSuccess: async (transaction) => {
-            try {
-              await paymentAPI.verifyPayment(transaction.reference || reference);
-              toast.success('Payment successful!');
-              const agRes = await rentalAPI.getAgreement(id);
-              setAgreement(agRes.data);
-              try {
-                const scRes = await rentalAPI.getRentPayments(id);
-                setSchedule(scRes.data || []);
-              } catch {}
-            } catch {
-              toast.error('Payment verification failed. Contact support.');
-            }
-          },
-          onCancel: () => {
-            toast('Payment cancelled.');
-          },
-        });
-      } else if (authorization_url) {
-        window.location.href = authorization_url;
+      const res = await paymentAPI.preparePayment({
+        payment_type: 'rent',
+        agreement_id: agreement.id,
+        amount: selectedAmount,
+        description: `Rent payment (${frequencyLabel.toLowerCase()})`,
+      });
+      const { reference, amount, email, publicKey } = res.data || {};
+      if (!reference || !amount || !publicKey) {
+        toast.error('Failed to prepare payment.');
+        return;
       }
+      const popup = new PaystackPop();
+      popup.newTransaction({
+        key: publicKey,
+        email,
+        amount,
+        reference,
+        channels: ['card', 'bank', 'ussd', 'qr', 'mobile_money', 'bank_transfer'],
+        onSuccess: async (transaction) => {
+          try {
+            await paymentAPI.verifyPayment(transaction.reference || reference);
+            toast.success('Payment successful!');
+            const agRes = await rentalAPI.getAgreement(id);
+            setAgreement(agRes.data);
+            try {
+              const scRes = await rentalAPI.getRentPayments(id);
+              setSchedule(scRes.data || []);
+            } catch {}
+          } catch {
+            toast.error('Payment verification failed. Contact support.');
+          }
+        },
+        onCancel: () => {
+          toast('Payment cancelled.');
+        },
+      });
     } catch (e) {
       toast.error('Failed to initialize payment');
     }
@@ -191,8 +219,39 @@ const AgreementDetail = () => {
           </div>
         </div>
         <div className="card">
-          <h3 className="text-lg font-semibold text-dark-900 mb-3">Actions</h3>
-          <button onClick={payNext} className="btn btn-primary w-full mb-2 inline-flex items-center"><CreditCard size={16} className="mr-2" /> Pay Next Rent</button>
+          <h3 className="text-lg font-semibold text-dark-900 mb-3">Pay Rent</h3>
+          {/* Payment Frequency Toggle */}
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            <button
+              onClick={() => setPaymentFrequency('annual')}
+              className={`flex items-center justify-center gap-1.5 p-2.5 rounded-lg border-2 text-xs transition-all ${
+                paymentFrequency === 'annual'
+                  ? 'border-primary bg-primary/5 text-primary'
+                  : 'border-gray-200 hover:border-gray-300 text-dark-600'
+              }`}
+            >
+              <Calendar size={14} />
+              <span className="font-semibold">Yearly</span>
+            </button>
+            <button
+              onClick={() => setPaymentFrequency('monthly')}
+              className={`flex items-center justify-center gap-1.5 p-2.5 rounded-lg border-2 text-xs transition-all ${
+                paymentFrequency === 'monthly'
+                  ? 'border-primary bg-primary/5 text-primary'
+                  : 'border-gray-200 hover:border-gray-300 text-dark-600'
+              }`}
+            >
+              <CalendarDays size={14} />
+              <span className="font-semibold">Monthly</span>
+            </button>
+          </div>
+          <div className="bg-gray-50 rounded-lg p-2.5 mb-3 text-center">
+            <p className="text-xs text-dark-500">{frequencyLabel} Amount</p>
+            <p className="text-lg font-bold text-primary">₦{selectedAmount.toLocaleString()}</p>
+          </div>
+          <button onClick={payNext} className="btn btn-primary w-full mb-2 inline-flex items-center justify-center">
+            <CreditCard size={16} className="mr-2" /> Pay ₦{selectedAmount.toLocaleString()} ({frequencyLabel})
+          </button>
           {agreement?.custom_document && agreement?.use_custom_document ? (
             <a className="btn btn-secondary w-full inline-flex items-center" href={agreement.custom_document} target="_blank" rel="noreferrer">
               <FileText size={16} className="mr-2" /> View Agreement (Custom PDF)
