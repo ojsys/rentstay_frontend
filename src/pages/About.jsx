@@ -205,7 +205,7 @@ const About = () => {
             </h2>
             <p className="text-xl text-gray-600 mb-8">
               Our team combines decades of real estate experience with cutting-edge technology
-              expertise. Based in Jos, Plateau State, we understand the local market and are
+              expertise. We understand the local market and are
               committed to solving the housing challenges faced by Nigerians.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">

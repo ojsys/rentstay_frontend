@@ -363,7 +363,7 @@ const Home = () => {
               Why Choose RentStay?
             </h2>
             <p className="text-xl text-dark-600 max-w-2xl mx-auto">
-              We're revolutionizing the rental market in Jos with transparency and technology
+              We're revolutionizing the property rental market with transparency and technology
             </p>
           </div>
 
