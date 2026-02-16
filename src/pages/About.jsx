@@ -50,9 +50,9 @@ const About = () => {
   ];
 
   const stats = [
-    { number: '500+', label: 'Properties Listed' },
-    { number: '1,000+', label: 'Happy Tenants' },
-    { number: '₦50M+', label: 'Caution Fees Managed' },
+    { number: '5+', label: 'Properties Listed' },
+    { number: '10+', label: 'Happy Tenants' },
+    { number: '₦0M+', label: 'Caution Fees Managed' },
     { number: '98%', label: 'Satisfaction Rate' }
   ];
 
