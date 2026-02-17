@@ -452,7 +452,7 @@ const Home = () => {
               Ready to Find Your Home?
             </h2>
             <p className="text-xl mb-8 text-white/90">
-              Join thousands of satisfied tenants in Jos
+              Join thousands of tenants looking for the right place to call home.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/properties" className="btn btn-lg bg-white text-primary hover:bg-gray-100">
