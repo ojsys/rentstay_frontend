@@ -43,6 +43,8 @@ import Visits from './pages/Visits';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import NotFound from './pages/NotFound';
+import TenantInviteWizard from './pages/TenantInviteWizard';
+import InviteAccept from './pages/InviteAccept';
 
 // Landlord Dashboard (tabbed)
 import LandlordDashboardLayout from './pages/dashboard/LandlordDashboardLayout';
@@ -100,6 +102,7 @@ function App() {
               <Route path="home" element={<LandlordDashboardHome />} />
               <Route path="properties" element={<LandlordDashboardProperties />} />
               <Route path="leases" element={<LandlordDashboardLeases />} />
+              <Route path="invite-tenant" element={<TenantInviteWizard />} />
               <Route path="payments" element={<LandlordDashboardPayments />} />
               <Route path="maintenance" element={<LandlordDashboardMaintenance />} />
               <Route path="messages" element={<LandlordDashboardMessages />} />
@@ -134,6 +137,7 @@ function App() {
             <Route path="/stays/bookings" element={<GuestBookings />} />
             <Route path="/stays/host/bookings" element={<HostBookings />} />
             <Route path="/admin/kyc" element={<AdminKYC />} />
+            <Route path="/invite/:token" element={<InviteAccept />} />
             <Route path="/visits" element={<Visits />} />
             {/* Static Pages */}
             <Route path="/about" element={<About />} />

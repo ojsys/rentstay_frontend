@@ -251,3 +251,19 @@ export const legalAPI = {
 export const siteSettingsAPI = {
   get: () => api.get('/site-settings/'),
 };
+
+// Tenant Invite API
+export const inviteAPI = {
+  // Landlord: list sent invites
+  list: () => api.get('/invites/'),
+  // Landlord: send a new invite
+  send: (data) => api.post('/invites/', data),
+  // Public: get invite details by token (no auth needed)
+  getByToken: (token) => api.get(`/invites/${token}/`),
+  // Tenant: accept an invite
+  accept: (token) => api.post(`/invites/${token}/accept/`),
+  // Tenant: decline an invite
+  decline: (token) => api.post(`/invites/${token}/decline/`),
+  // Landlord: generate rent schedule for an existing agreement
+  generateSchedule: (agreementId, data) => api.post(`/agreements/${agreementId}/generate-schedule/`, data),
+};

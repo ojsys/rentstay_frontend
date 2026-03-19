@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
-import { dashboardAPI, rentalAPI } from '../../services/api';
-import { Loader2, FileText, CalendarClock, AlertTriangle, Users, ArrowRight } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { dashboardAPI, rentalAPI, inviteAPI } from '../../services/api';
+import { Loader2, FileText, CalendarClock, AlertTriangle, Users, ArrowRight, UserPlus, Mail, Clock, CheckCircle2, XCircle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import EnhancedApplicationsInbox from '../../components/dashboard/EnhancedApplicationsInbox';
 import MoveOutWorkflow from '../../components/dashboard/MoveOutWorkflow';
@@ -34,7 +34,22 @@ function renderPreview(template) {
   return text;
 }
 
+const inviteStatusColors = {
+  pending: 'bg-amber-100 text-amber-700',
+  accepted: 'bg-green-100 text-green-700',
+  declined: 'bg-red-100 text-red-700',
+  expired: 'bg-gray-100 text-gray-600',
+};
+
+const InviteStatusIcon = ({ status }) => {
+  if (status === 'accepted') return <CheckCircle2 size={14} className="text-green-600" />;
+  if (status === 'declined') return <XCircle size={14} className="text-red-500" />;
+  if (status === 'expired') return <Clock size={14} className="text-gray-400" />;
+  return <Mail size={14} className="text-amber-500" />;
+};
+
 const LandlordDashboardLeases = () => {
+  const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState('leases');
   const [typeFilter, setTypeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('');
@@ -49,6 +64,12 @@ const LandlordDashboardLeases = () => {
   const { data, isLoading } = useQuery({
     queryKey: ['landlord-leases'],
     queryFn: () => dashboardAPI.getLandlordLeases().then(res => res.data),
+  });
+
+  const { data: invitesData, isLoading: invitesLoading, refetch: refetchInvites } = useQuery({
+    queryKey: ['landlord-invites'],
+    queryFn: () => inviteAPI.list().then(res => res.data),
+    enabled: activeSection === 'invites',
   });
 
   // Lazy-load RichTextEditor and template data when template tab is active
@@ -104,8 +125,12 @@ const LandlordDashboardLeases = () => {
     return dateB.localeCompare(dateA);
   });
 
+  const invites = invitesData || [];
+  const pendingInvitesCount = invites.filter(i => i.status === 'pending').length;
+
   const sections = [
     { key: 'leases', label: 'Leases & Bookings' },
+    { key: 'invites', label: 'Invites', badge: pendingInvitesCount > 0 ? pendingInvitesCount : null },
     { key: 'applications', label: 'Applications' },
     { key: 'moveouts', label: 'Move-Outs' },
     { key: 'template', label: 'Template' },
@@ -115,19 +140,89 @@ const LandlordDashboardLeases = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-dark-900">Leases & Bookings</h2>
+        <button
+          onClick={() => navigate('/dashboard/invite-tenant')}
+          className="btn btn-primary btn-sm inline-flex items-center gap-1.5"
+        >
+          <UserPlus size={15} /> Invite Tenant
+        </button>
       </div>
 
       {/* Section tabs */}
       <div className="flex gap-1 bg-gray-100 rounded-lg p-1 overflow-x-auto">
         {sections.map(s => (
-          <button key={s.key} onClick={() => setActiveSection(s.key)} className={`px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-all ${activeSection === s.key ? 'bg-white shadow-sm text-dark-900' : 'text-dark-600 hover:text-dark-900'}`}>
+          <button key={s.key} onClick={() => setActiveSection(s.key)} className={`relative px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-all ${activeSection === s.key ? 'bg-white shadow-sm text-dark-900' : 'text-dark-600 hover:text-dark-900'}`}>
             {s.label}
+            {s.badge != null && (
+              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-primary text-white text-[10px] font-bold flex items-center justify-center px-1">
+                {s.badge}
+              </span>
+            )}
           </button>
         ))}
       </div>
 
       {activeSection === 'applications' && <EnhancedApplicationsInbox />}
       {activeSection === 'moveouts' && <MoveOutWorkflow />}
+
+      {/* Invites section */}
+      {activeSection === 'invites' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold text-dark-900">Tenant Invitations</h3>
+              <p className="text-sm text-dark-500">Invitations you've sent to onboard existing tenants.</p>
+            </div>
+            <button onClick={() => navigate('/dashboard/invite-tenant')} className="btn btn-primary btn-sm inline-flex items-center gap-1.5">
+              <UserPlus size={14} /> New Invite
+            </button>
+          </div>
+
+          {invitesLoading ? (
+            <div className="flex items-center justify-center py-12 text-dark-500"><Loader2 className="animate-spin mr-2" /> Loading...</div>
+          ) : invites.length === 0 ? (
+            <div className="card text-center py-12">
+              <Mail size={40} className="mx-auto text-dark-300 mb-3" />
+              <p className="font-medium text-dark-700 mb-1">No invitations sent yet</p>
+              <p className="text-sm text-dark-500 mb-4">Invite an existing tenant to manage their tenancy online.</p>
+              <button onClick={() => navigate('/dashboard/invite-tenant')} className="btn btn-primary btn-sm">
+                <UserPlus size={14} className="mr-1" /> Send First Invite
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {invites.map(invite => (
+                <div key={invite.id} className="card">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <InviteStatusIcon status={invite.status} />
+                        <h4 className="font-semibold text-dark-900 truncate">{invite.property_title}</h4>
+                        <span className={`px-2 py-0.5 rounded text-xs font-medium capitalize ${inviteStatusColors[invite.status] || 'bg-gray-100 text-gray-600'}`}>
+                          {invite.status}
+                        </span>
+                      </div>
+                      <p className="text-sm text-dark-600">
+                        {[invite.tenant_first_name, invite.tenant_last_name].filter(Boolean).join(' ') || invite.tenant_email}
+                        {' · '}{invite.tenant_email}
+                      </p>
+                      <p className="text-xs text-dark-400 mt-0.5">
+                        ₦{Number(invite.rent_amount).toLocaleString()} / {invite.rent_term} · {invite.lease_start} to {invite.lease_end}
+                      </p>
+                      {invite.status === 'pending' && (
+                        <p className="text-xs text-amber-600 mt-0.5">
+                          Expires: {new Date(invite.expires_at).toLocaleDateString()}
+                          {invite.is_expired && <span className="ml-1 font-medium">(expired)</span>}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Template sub-tab */}
       {activeSection === 'template' && (

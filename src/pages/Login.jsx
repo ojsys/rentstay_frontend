@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Mail, Lock, LogIn, Eye, EyeOff } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
@@ -10,6 +10,7 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuthStore();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { register, handleSubmit, formState: { errors } } = useForm();
 
   const onSubmit = async (data) => {
@@ -18,7 +19,8 @@ const Login = () => {
       const result = await login(data);
       if (result.success) {
         toast.success('Login successful!');
-        navigate('/dashboard');
+        const redirect = searchParams.get('redirect');
+        navigate(redirect || '/dashboard');
       } else {
         toast.error(result.error?.detail || 'Login failed. Please check your credentials.');
       }

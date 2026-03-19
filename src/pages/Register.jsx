@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Mail, Lock, User, Phone, UserPlus, Home, Building2, Eye, EyeOff } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
@@ -12,9 +12,22 @@ const Register = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { register: registerUser } = useAuthStore();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm();
 
+  const inviteToken = searchParams.get('invite');
   const password = watch('password');
+
+  // Pre-fill fields if coming from an invite link
+  useEffect(() => {
+    const email = searchParams.get('email');
+    const firstName = searchParams.get('first_name');
+    const lastName = searchParams.get('last_name');
+    if (email) setValue('email', email);
+    if (firstName) setValue('first_name', firstName);
+    if (lastName) setValue('last_name', lastName);
+    if (inviteToken) setUserType('tenant');
+  }, []);  // eslint-disable-line react-hooks/exhaustive-deps
 
   const onSubmit = async (data) => {
     // Validate user type is selected
@@ -34,7 +47,11 @@ const Register = () => {
       const result = await registerUser(registrationData);
       if (result.success) {
         toast.success('Account created successfully!');
-        navigate('/dashboard');
+        if (inviteToken) {
+          navigate(`/invite/${inviteToken}`);
+        } else {
+          navigate('/dashboard');
+        }
       } else {
         const errorMsg = result.error?.email?.[0] || result.error?.detail || 'Registration failed';
         toast.error(errorMsg);
