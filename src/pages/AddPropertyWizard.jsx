@@ -54,6 +54,8 @@ const AddPropertyWizard = () => {
     has_compound: false,
     rent_amount: '',
     rent_term: 'annual',
+    has_agent_fee: false,
+    has_legal_fee: false,
     house_rules: '',
     status: 'draft',
   });
@@ -292,10 +294,53 @@ const AddPropertyWizard = () => {
                     ))}
                   </div>
                 </div>
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-dark-700 mb-1">Optional Tenant Fees</label>
+                  <label className="flex items-start gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input type="checkbox" checked={form.has_agent_fee} onChange={e => update('has_agent_fee', e.target.checked)} className="mt-0.5 w-4 h-4" />
+                    <div>
+                      <p className="text-sm font-medium text-dark-800">Agent Affiliate Fee (5%)</p>
+                      <p className="text-xs text-dark-500">Adds 5% of rent to the tenant's total move-in cost.</p>
+                    </div>
+                  </label>
+                  <label className="flex items-start gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input type="checkbox" checked={form.has_legal_fee} onChange={e => update('has_legal_fee', e.target.checked)} className="mt-0.5 w-4 h-4" />
+                    <div>
+                      <p className="text-sm font-medium text-dark-800">Legal Service Fee (10%)</p>
+                      <p className="text-xs text-dark-500">Adds 10% of rent for legal documentation and tenancy agreement structuring.</p>
+                    </div>
+                  </label>
+                </div>
                 {form.rent_amount > 0 && (
-                  <div className="bg-gray-50 rounded-lg p-3 text-sm">
-                    <p className="text-dark-600">Caution Fee (10%): <span className="font-medium">&#8358;{(Number(form.rent_amount) * 0.1).toLocaleString()}</span></p>
-                    <p className="text-dark-600">Total for Tenant: <span className="font-bold">&#8358;{(Number(form.rent_amount) * 1.1).toLocaleString()}</span></p>
+                  <div className="bg-gray-50 rounded-lg p-3 text-sm space-y-1">
+                    <div className="flex justify-between text-dark-600">
+                      <span>Base Rent</span>
+                      <span className="font-medium">&#8358;{Number(form.rent_amount).toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-dark-600">
+                      <span>Caution Fee (10%)</span>
+                      <span className="font-medium">&#8358;{(Number(form.rent_amount) * 0.1).toLocaleString()}</span>
+                    </div>
+                    {form.has_agent_fee && (
+                      <div className="flex justify-between text-amber-700">
+                        <span>Agent Affiliate Fee (5%)</span>
+                        <span className="font-medium">&#8358;{(Number(form.rent_amount) * 0.05).toLocaleString()}</span>
+                      </div>
+                    )}
+                    {form.has_legal_fee && (
+                      <div className="flex justify-between text-blue-700">
+                        <span>Legal Service Fee (10%)</span>
+                        <span className="font-medium">&#8358;{(Number(form.rent_amount) * 0.10).toLocaleString()}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between border-t pt-1 font-bold text-dark-900">
+                      <span>Total for Tenant</span>
+                      <span>&#8358;{(Number(form.rent_amount) * (
+                        1.1
+                        + (form.has_agent_fee ? 0.05 : 0)
+                        + (form.has_legal_fee ? 0.10 : 0)
+                      )).toLocaleString()}</span>
+                    </div>
                   </div>
                 )}
               </div>
@@ -325,6 +370,7 @@ const AddPropertyWizard = () => {
                     <div><span className="text-dark-500">Type:</span> <span className="font-medium capitalize">{form.property_type}</span></div>
                     <div><span className="text-dark-500">Area:</span> <span className="font-medium">{form.area}</span></div>
                     <div><span className="text-dark-500">Rent:</span> <span className="font-medium">&#8358;{Number(form.rent_amount).toLocaleString()}/{form.rent_term}</span></div>
+                    <div><span className="text-dark-500">Fees:</span> <span className="font-medium">{[form.has_agent_fee && 'Agent 5%', form.has_legal_fee && 'Legal 10%'].filter(Boolean).join(', ') || 'None'}</span></div>
                     <div><span className="text-dark-500">Rooms:</span> <span className="font-medium">{form.bedrooms}BR / {form.bathrooms}BA / {form.toilets}T</span></div>
                     <div><span className="text-dark-500">Photos:</span> <span className="font-medium">{images.length}</span></div>
                   </div>

@@ -51,7 +51,7 @@ export default function TenantInviteWizard() {
   // All hooks must come before any conditional return
   const { data: propertiesData, isLoading: propsLoading } = useQuery({
     queryKey: ['my-properties-invite'],
-    queryFn: () => propertyAPI.list({ landlord: 'me' }).then(r => r.data),
+    queryFn: () => propertyAPI.list({ mine: 'true' }).then(r => r.data),
     enabled: user?.user_type === 'landlord',
   });
 

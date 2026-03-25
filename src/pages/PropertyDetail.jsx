@@ -195,15 +195,38 @@ const PropertyDetail = () => {
 
           <div>
             <div className="card">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-dark-600">Rent ({property.rent_term === 'monthly' ? 'monthly' : property.rent_term === 'biannual' ? 'biannual' : 'yearly'})</p>
-                  <p className="text-3xl font-bold text-primary">₦{Number(property.rent_amount).toLocaleString()}</p>
+              <div>
+                <p className="text-sm text-dark-600">Rent ({property.rent_term === 'monthly' ? 'monthly' : property.rent_term === 'biannual' ? 'biannual' : 'yearly'})</p>
+                <p className="text-3xl font-bold text-primary">₦{Number(property.rent_amount).toLocaleString()}</p>
+              </div>
+              <div className="border-t mt-3 pt-3 space-y-1.5 text-sm">
+                <div className="flex justify-between text-dark-600">
+                  <span>Base Rent</span>
+                  <span className="font-medium text-dark-800">₦{Number(property.rent_amount).toLocaleString()}</span>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm text-dark-600">Caution Fee</p>
-                  <p className="text-xl font-semibold text-accent">₦{Number(property.caution_fee).toLocaleString()}</p>
+                <div className="flex justify-between text-dark-600">
+                  <span>Caution Fee (10%)</span>
+                  <span className="font-medium text-accent">₦{Number(property.caution_fee).toLocaleString()}</span>
                 </div>
+                {property.has_agent_fee && (
+                  <div className="flex justify-between text-amber-700">
+                    <span>Agent Affiliate Fee ({property.agent_fee_percent}%)</span>
+                    <span className="font-medium">₦{Number(property.agent_fee_amount).toLocaleString()}</span>
+                  </div>
+                )}
+                {property.has_legal_fee && (
+                  <div className="flex justify-between text-blue-700">
+                    <span>Legal Service Fee ({property.legal_fee_percent}%)</span>
+                    <span className="font-medium">₦{Number(property.legal_fee_amount).toLocaleString()}</span>
+                  </div>
+                )}
+                <div className="flex justify-between font-bold text-dark-900 border-t pt-1.5">
+                  <span>Total to Move In</span>
+                  <span className="text-primary">₦{Number(property.total_amount).toLocaleString()}</span>
+                </div>
+                {(property.has_agent_fee || property.has_legal_fee) && (
+                  <p className="text-xs text-dark-400 pt-1">* Fees set by the landlord are included in your move-in total.</p>
+                )}
               </div>
 
               <div className="grid grid-cols-3 gap-3 mt-6 text-sm">
