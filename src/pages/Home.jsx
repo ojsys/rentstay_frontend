@@ -1,12 +1,24 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, MapPin, Home as HomeIcon, DollarSign, Shield, TrendingUp, CheckCircle, ArrowRight } from 'lucide-react';
+import { Search, MapPin, Home as HomeIcon, DollarSign, Shield, TrendingUp, CheckCircle, ArrowRight, ChevronDown } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import { locationAPI } from '../services/api';
+
+const nigerianCities = [
+  'Abuja', 'Aba', 'Abeokuta', 'Akure', 'Benin City', 'Calabar',
+  'Enugu', 'Ibadan', 'Ilorin', 'Jos', 'Kaduna', 'Kano',
+  'Lagos', 'Maiduguri', 'Onitsha', 'Owerri', 'Port Harcourt',
+  'Uyo', 'Warri', 'Zaria'
+].sort();
+
+const propertyTypes = [
+  'Apartment', 'House', 'Duplex', 'Bungalow', 'Studio', 'Penthouse', 'Mansion'
+];
 
 const Home = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [location, setLocation] = useState('');
+  const [selectedPropertyType, setSelectedPropertyType] = useState('');
   const [userLocation, setUserLocation] = useState('Jos'); // Default location display
   const [showLocationSelector, setShowLocationSelector] = useState(false);
   const [locationDenied, setLocationDenied] = useState(false);
@@ -153,10 +165,10 @@ const Home = () => {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    // Navigate to properties with search params
     const params = new URLSearchParams();
     if (searchQuery) params.append('search', searchQuery);
     if (location) params.append('city', location);
+    if (selectedPropertyType) params.append('property_type', selectedPropertyType.toLowerCase());
     window.location.href = `/properties?${params.toString()}`;
   };
 
@@ -184,7 +196,7 @@ const Home = () => {
   ];
 
   const howItWorks = [
-    { step: 1, title: 'Search Properties', description: 'Browse verified listings in Jos with advanced filters' },
+    { step: 1, title: 'Search Properties', description: 'Browse verified listings across Nigeria with advanced filters' },
     { step: 2, title: 'Contact Landlord', description: 'Message landlords directly through our platform' },
     { step: 3, title: 'Secure Payment', description: 'Pay rent + refundable caution fee securely via Paystack' },
     { step: 4, title: 'Move In', description: 'Sign digital agreement and get your keys!' }
@@ -316,29 +328,45 @@ const Home = () => {
 
             {/* Search Bar */}
             <form onSubmit={handleSearch} className="bg-white rounded-2xl shadow-soft p-4 md:p-6 flex flex-col md:flex-row gap-4 max-w-4xl mx-auto border border-gray-100">
+              {/* Property Type Dropdown */}
               <div className="flex-1 flex items-center space-x-3 px-4 border-r border-gray-200">
-                <Search className="text-dark-400" size={20} />
-                <input
-                  type="text"
-                  placeholder="Search by property type, area..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full outline-none text-dark-800 placeholder-dark-400"
-                />
+                <HomeIcon className="text-dark-400 flex-shrink-0" size={20} />
+                <div className="relative w-full">
+                  <select
+                    value={selectedPropertyType}
+                    onChange={(e) => setSelectedPropertyType(e.target.value)}
+                    className="w-full outline-none text-dark-800 appearance-none bg-transparent cursor-pointer pr-6"
+                  >
+                    <option value="">All Property Types</option>
+                    {propertyTypes.map(type => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-0 top-1/2 -translate-y-1/2 text-dark-400 pointer-events-none" size={16} />
+                </div>
               </div>
-              <div className="flex-1 flex items-center space-x-3 px-4">
-                <MapPin className="text-dark-400" size={20} />
-                <input
-                  type="text"
-                  placeholder="Location (e.g., Bukuru, Rayfield)"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  className="w-full outline-none text-dark-800 placeholder-dark-400"
-                />
+
+              {/* Location Dropdown */}
+              <div className="flex-1 flex items-center space-x-3 px-4 border-r border-gray-200">
+                <MapPin className="text-dark-400 flex-shrink-0" size={20} />
+                <div className="relative w-full">
+                  <select
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    className="w-full outline-none text-dark-800 appearance-none bg-transparent cursor-pointer pr-6"
+                  >
+                    <option value="">All Locations</option>
+                    {nigerianCities.map(city => (
+                      <option key={city} value={city}>{city}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-0 top-1/2 -translate-y-1/2 text-dark-400 pointer-events-none" size={16} />
+                </div>
               </div>
+
               <button type="submit" className="btn btn-primary btn-lg text-lg px-8 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all">
                 <Search size={20} />
-                <span>Search Properties</span>
+                <span>Search</span>
               </button>
             </form>
 

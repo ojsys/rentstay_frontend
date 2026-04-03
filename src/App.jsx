@@ -46,6 +46,15 @@ import NotFound from './pages/NotFound';
 import TenantInviteWizard from './pages/TenantInviteWizard';
 import InviteAccept from './pages/InviteAccept';
 
+// Agent Dashboard
+import AgentDashboardLayout from './pages/dashboard/AgentDashboardLayout';
+import AgentDashboardHome from './pages/dashboard/AgentDashboardHome';
+import AgentDashboardProperties from './pages/dashboard/AgentDashboardProperties';
+import AgentDashboardCommissions from './pages/dashboard/AgentDashboardCommissions';
+import AgentDashboardPayouts from './pages/dashboard/AgentDashboardPayouts';
+import AddPropertyForAgent from './pages/AddPropertyForAgent';
+import AgentEditProperty from './pages/AgentEditProperty';
+
 // Landlord Dashboard (tabbed)
 import LandlordDashboardLayout from './pages/dashboard/LandlordDashboardLayout';
 import LandlordDashboardHome from './pages/dashboard/LandlordDashboardHome';
@@ -109,6 +118,15 @@ function App() {
               <Route path="visits" element={<LandlordDashboardVisits />} />
               <Route path="stays" element={<LandlordDashboardStays />} />
               <Route path="reports" element={<LandlordDashboardReports />} />
+            </Route>
+            {/* Agent Dashboard */}
+            <Route path="/agent/add-property" element={<AddPropertyForAgent />} />
+            <Route path="/agent/edit-property/:id" element={<AgentEditProperty />} />
+            <Route path="/agent/dashboard" element={<AgentDashboardLayout />}>
+              <Route path="home" element={<AgentDashboardHome />} />
+              <Route path="properties" element={<AgentDashboardProperties />} />
+              <Route path="commissions" element={<AgentDashboardCommissions />} />
+              <Route path="payouts" element={<AgentDashboardPayouts />} />
             </Route>
             <Route path="/payment/callback" element={<PaymentCallback />} />
             <Route path="/messages" element={<Messages />} />

@@ -22,6 +22,7 @@ const AddProperty = () => {
     latitude: '', longitude: '',
     has_parking: false, has_kitchen: false, has_water: false, has_electricity: false,
     is_furnished: false, has_security: false, has_compound: false,
+    has_agent_fee: false, has_legal_fee: false,
     available_from: ''
   });
 
@@ -210,6 +211,38 @@ const AddProperty = () => {
           <div>
             <label className="label">Rent Amount (₦)</label>
             <input name="rent_amount" value={form.rent_amount} onChange={onChange} className="input" type="number" min="0" />
+          </div>
+          <div className="md:col-span-2">
+            <label className="label">Optional Tenant Fees</label>
+            <div className="space-y-2">
+              <label className="flex items-start gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                <input type="checkbox" name="has_agent_fee" checked={!!form.has_agent_fee} onChange={onChange} className="mt-0.5 w-4 h-4" />
+                <div>
+                  <p className="text-sm font-medium text-dark-800">Agent Affiliate Fee (5%)</p>
+                  <p className="text-xs text-dark-500">Adds 5% of rent to the tenant's total move-in cost.</p>
+                </div>
+              </label>
+              <label className="flex items-start gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                <input type="checkbox" name="has_legal_fee" checked={!!form.has_legal_fee} onChange={onChange} className="mt-0.5 w-4 h-4" />
+                <div>
+                  <p className="text-sm font-medium text-dark-800">Legal Service Fee (10%)</p>
+                  <p className="text-xs text-dark-500">Adds 10% of rent for legal documentation and tenancy agreement structuring.</p>
+                </div>
+              </label>
+            </div>
+            {form.rent_amount > 0 && (form.has_agent_fee || form.has_legal_fee) && (
+              <div className="mt-2 bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm space-y-1">
+                <p className="font-medium text-amber-800 mb-1">Tenant Cost Preview</p>
+                <div className="flex justify-between text-dark-600"><span>Base Rent</span><span>₦{Number(form.rent_amount).toLocaleString()}</span></div>
+                <div className="flex justify-between text-dark-600"><span>Caution Fee (10%)</span><span>₦{(Number(form.rent_amount) * 0.1).toLocaleString()}</span></div>
+                {form.has_agent_fee && <div className="flex justify-between text-amber-700"><span>Agent Affiliate Fee (5%)</span><span>₦{(Number(form.rent_amount) * 0.05).toLocaleString()}</span></div>}
+                {form.has_legal_fee && <div className="flex justify-between text-blue-700"><span>Legal Service Fee (10%)</span><span>₦{(Number(form.rent_amount) * 0.10).toLocaleString()}</span></div>}
+                <div className="flex justify-between font-bold border-t pt-1 text-dark-900">
+                  <span>Tenant Total</span>
+                  <span>₦{(Number(form.rent_amount) * (1.1 + (form.has_agent_fee ? 0.05 : 0) + (form.has_legal_fee ? 0.10 : 0))).toLocaleString()}</span>
+                </div>
+              </div>
+            )}
           </div>
           <div>
             <label className="label">Available From</label>

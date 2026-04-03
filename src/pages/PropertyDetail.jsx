@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { propertyAPI, messagingAPI, visitAPI } from '../services/api';
-import { MapPin, Bed, Bath, Home, Shield, Car, Plug, Droplets, Sofa, CheckCircle, Loader2, MessageSquare } from 'lucide-react';
+import { MapPin, Bed, Bath, Home, Shield, Car, Plug, Droplets, Sofa, CheckCircle, Loader2, MessageSquare, Clock, ArrowLeft } from 'lucide-react';
 import { applicationAPI } from '../services/api';
 import toast from 'react-hot-toast';
 import useAuthStore from '../store/authStore';
@@ -23,9 +23,10 @@ const Amenity = ({ icon: Icon, label, enabled }) => (
 const PropertyDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [property, setProperty] = useState(null);
+  const [pendingApproval, setPendingApproval] = useState(false);
   const [error, setError] = useState(null);
   const [starting, setStarting] = useState(false);
   const [similar, setSimilar] = useState([]);
@@ -38,7 +39,11 @@ const PropertyDetail = () => {
       const res = await propertyAPI.get(id);
       setProperty(res.data);
     } catch (e) {
-      setError('Failed to load property');
+      if (e?.response?.status === 403 && e?.response?.data?.pending_approval) {
+        setPendingApproval(true);
+      } else {
+        setError('Failed to load property');
+      }
     } finally {
       setLoading(false);
     }
@@ -155,9 +160,79 @@ const PropertyDetail = () => {
     );
   }
 
+  if (pendingApproval) {
+    const dashboardPath = user?.user_type === 'agent'
+      ? '/agent/dashboard/properties'
+      : user?.user_type === 'landlord'
+        ? '/dashboard/home'
+        : '/dashboard';
+
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center px-4">
+        <div className="max-w-lg w-full">
+          <div className="text-center mb-6">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-amber-100 mb-4">
+              <Clock className="text-amber-500" size={32} />
+            </div>
+            <h1 className="text-2xl font-display font-bold text-dark-900 mb-2">Pending Approval</h1>
+            <p className="text-dark-500">
+              This property is currently under review and is not yet publicly visible.
+              Once approved by our team, it will appear in search results and be open for applications.
+            </p>
+          </div>
+
+          {/* Steps / info */}
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 text-sm text-amber-800 space-y-2">
+            <p className="font-semibold text-amber-900">What happens next?</p>
+            <ul className="space-y-1 list-disc list-inside text-amber-700">
+              <li>Our team reviews new listings within 24–48 hours</li>
+              <li>You'll receive an email notification once it's approved</li>
+              <li>If there's an issue, we'll reach out with details</li>
+            </ul>
+          </div>
+
+          <div className="flex flex-col sm:flex-row justify-center gap-3">
+            <button
+              onClick={() => navigate(-1)}
+              className="btn btn-secondary inline-flex items-center justify-center gap-2"
+            >
+              <ArrowLeft size={16} /> Go Back
+            </button>
+            {isAuthenticated && (
+              <button
+                onClick={() => navigate(dashboardPath)}
+                className="btn btn-primary inline-flex items-center justify-center gap-2"
+              >
+                Back to Dashboard
+              </button>
+            )}
+            <a
+              href="mailto:support@myrentstay.com?subject=Property%20Approval%20Request"
+              className="btn btn-secondary inline-flex items-center justify-center gap-2 text-dark-700"
+            >
+              Contact Support
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (error || !property) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center text-red-600">{error || 'Property not found'}</div>
+      <div className="min-h-[60vh] flex items-center justify-center px-4">
+        <div className="text-center">
+          <p className="text-dark-500 mb-4">We couldn't load this property. It may have been removed or the link is incorrect.</p>
+          <div className="flex justify-center gap-3">
+            <button onClick={() => navigate(-1)} className="btn btn-secondary inline-flex items-center gap-2">
+              <ArrowLeft size={16} /> Go Back
+            </button>
+            <button onClick={() => navigate('/properties')} className="btn btn-primary">
+              Browse Properties
+            </button>
+          </div>
+        </div>
+      </div>
     );
   }
 
@@ -167,9 +242,30 @@ const PropertyDetail = () => {
     property.state?.name,
   ].filter(Boolean).join(', ');
 
+  const isOwnerOrAgent = user && (
+    user.id === property.landlord?.id || user.id === property.agent?.id
+  );
+  const PUBLICLY_VISIBLE = ['available', 'rented', 'maintenance'];
+  const isNotLive = !PUBLICLY_VISIBLE.includes(property.status);
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="container-custom space-y-8">
+
+        {/* Approval banner — shown to owner/agent when property isn't live */}
+        {isOwnerOrAgent && isNotLive && (
+          <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-sm">
+            <Clock size={18} className="mt-0.5 flex-shrink-0 text-amber-500" />
+            <div>
+              <p className="font-semibold">This property is not publicly visible yet</p>
+              <p className="text-amber-700 mt-0.5">
+                Status: <span className="capitalize font-medium">{property.status}</span>.
+                Only you and your assigned agent can view this page. It will become visible to tenants once approved.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div>
           <h1 className="text-3xl md:text-4xl font-display font-bold text-dark-900 mb-2">{property.title}</h1>

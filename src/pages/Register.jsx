@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Mail, Lock, User, Phone, UserPlus, Home, Building2, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, User, Phone, UserPlus, Home, Building2, Eye, EyeOff, Briefcase } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import useAuthStore from '../store/authStore';
@@ -32,7 +32,7 @@ const Register = () => {
   const onSubmit = async (data) => {
     // Validate user type is selected
     if (!userType) {
-      toast.error('Please select whether you are a tenant or landlord');
+      toast.error('Please select your account type to continue');
       return;
     }
 
@@ -49,6 +49,8 @@ const Register = () => {
         toast.success('Account created successfully!');
         if (inviteToken) {
           navigate(`/invite/${inviteToken}`);
+        } else if (userType === 'agent') {
+          navigate('/agent/dashboard/home');
         } else {
           navigate('/dashboard');
         }
@@ -80,39 +82,30 @@ const Register = () => {
               <label className="label text-center block mb-3">
                 Select Account Type <span className="text-red-500">*</span>
               </label>
-              <div className="grid grid-cols-2 gap-4">
-              <button
-                type="button"
-                onClick={() => setUserType('tenant')}
-                className={`p-6 rounded-xl border-2 transition-all ${
-                  userType === 'tenant'
-                    ? 'border-primary bg-primary-50 shadow-md'
-                    : userType === null
-                    ? 'border-gray-300 hover:border-primary-300 bg-white'
-                    : 'border-gray-200 hover:border-primary-200 bg-gray-50'
-                }`}
-              >
-                <Home className={`mx-auto mb-2 ${userType === 'tenant' ? 'text-primary' : 'text-dark-400'}`} size={32} />
-                <h3 className="font-semibold text-dark-900">I'm a Tenant</h3>
-                <p className="text-sm text-dark-600 mt-1">Looking for a property</p>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setUserType('landlord')}
-                className={`p-6 rounded-xl border-2 transition-all ${
-                  userType === 'landlord'
-                    ? 'border-primary bg-primary-50 shadow-md'
-                    : userType === null
-                    ? 'border-gray-300 hover:border-primary-300 bg-white'
-                    : 'border-gray-200 hover:border-primary-200 bg-gray-50'
-                }`}
-              >
-                <Building2 className={`mx-auto mb-2 ${userType === 'landlord' ? 'text-primary' : 'text-dark-400'}`} size={32} />
-                <h3 className="font-semibold text-dark-900">I'm a Landlord</h3>
-                <p className="text-sm text-dark-600 mt-1">List and manage properties</p>
-                <p className="text-xs text-dark-500 mt-2">Complete verification to access all features</p>
-              </button>
+              <div className="grid grid-cols-3 gap-3">
+              {[
+                { type: 'tenant', icon: Home, title: "I'm a Tenant", sub: 'Looking for a property', note: 'Browse and apply for listings' },
+                { type: 'landlord', icon: Building2, title: "I'm a Landlord", sub: 'List and manage properties', note: 'Verification required for full access' },
+                { type: 'agent', icon: Briefcase, title: "I'm an Agent", sub: 'Bring properties, earn commissions', note: '5% commission on each successful rental' },
+              ].map(({ type, icon: Icon, title, sub, note }) => (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => setUserType(type)}
+                  className={`p-4 rounded-xl border-2 transition-all text-left ${
+                    userType === type
+                      ? 'border-primary bg-primary-50 shadow-md'
+                      : userType === null
+                      ? 'border-gray-300 hover:border-primary-300 bg-white'
+                      : 'border-gray-200 hover:border-primary-200 bg-gray-50'
+                  }`}
+                >
+                  <Icon className={`mx-auto mb-2 ${userType === type ? 'text-primary' : 'text-dark-400'}`} size={28} />
+                  <h3 className="font-semibold text-dark-900 text-sm">{title}</h3>
+                  <p className="text-xs text-dark-600 mt-1">{sub}</p>
+                  <p className="text-xs text-dark-400 mt-1">{note}</p>
+                </button>
+              ))}
               </div>
               {userType === null && (
                 <p className="text-sm text-amber-600 text-center mt-2 flex items-center justify-center gap-1">

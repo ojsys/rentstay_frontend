@@ -1,4 +1,4 @@
-import { MapPin, Bed, Bath, Home, Heart, Eye, CalendarClock } from 'lucide-react';
+import { MapPin, Bed, Bath, Home, Heart, Eye, CalendarClock, BadgeCheck } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import useAuthStore from '../store/authStore';
@@ -61,6 +61,14 @@ const PropertyCard = ({ property }) => {
         <div className={`absolute top-4 left-4 px-3 py-1 rounded-full text-sm font-medium ${statusColors[property.status]}`}>
           {property.status.charAt(0).toUpperCase() + property.status.slice(1)}
         </div>
+
+        {/* Verified Badge */}
+        {property.is_verified && (
+          <div className="absolute bottom-4 left-4 flex items-center space-x-1 bg-emerald-500 text-white px-2 py-1 rounded-full text-xs font-medium shadow-md">
+            <BadgeCheck size={14} />
+            <span>Verified</span>
+          </div>
+        )}
 
         {/* View Count */}
         <div className="absolute bottom-4 right-4 flex items-center space-x-1 bg-dark-900/70 text-white px-2 py-1 rounded-full text-xs backdrop-blur-sm">

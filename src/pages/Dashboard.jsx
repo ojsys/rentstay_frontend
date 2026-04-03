@@ -16,6 +16,11 @@ const Dashboard = () => {
     return <Navigate to="/dashboard/home" replace />;
   }
 
+  // Agents get their own dashboard
+  if (user?.user_type === 'agent') {
+    return <Navigate to="/agent/dashboard/home" replace />;
+  }
+
   return (
     <DashboardShell>
       <ErrorBoundary>

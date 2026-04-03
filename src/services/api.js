@@ -267,3 +267,11 @@ export const inviteAPI = {
   // Landlord: generate rent schedule for an existing agreement
   generateSchedule: (agreementId, data) => api.post(`/agreements/${agreementId}/generate-schedule/`, data),
 };
+
+export const agentAPI = {
+  getDashboard: () => api.get('/agents/dashboard/'),
+  getProperties: (params) => api.get('/agents/properties/', { params }),
+  getCommissions: (params) => api.get('/agents/commissions/', { params }),
+  getPayouts: () => api.get('/agents/payouts/'),
+  requestPayout: (data) => api.post('/agents/payouts/', data),
+};
