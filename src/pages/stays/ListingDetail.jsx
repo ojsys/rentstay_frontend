@@ -183,7 +183,10 @@ const ListingDetail = () => {
       <div className="container-custom pb-4">
         <h1 className="text-2xl md:text-3xl font-display font-bold text-dark-900 mb-1">{listing.title}</h1>
         <div className="flex flex-wrap items-center gap-3 text-sm text-dark-600">
-          <span className="flex items-center gap-1"><Star size={13} className="fill-dark-800 text-dark-800" /> New</span>
+          {listing.avg_rating
+            ? <span className="flex items-center gap-1"><Star size={13} className="fill-yellow-400 text-yellow-400" /> {listing.avg_rating} <span className="text-dark-500">({listing.review_count} review{listing.review_count !== 1 ? 's' : ''})</span></span>
+            : <span className="flex items-center gap-1"><Star size={13} className="fill-dark-400 text-dark-400" /> New</span>
+          }
           {listing.property?.address && <span className="flex items-center gap-1"><MapPin size={13} /> {listing.property.address}</span>}
           <span className="capitalize px-2 py-0.5 bg-gray-100 rounded-full text-xs font-medium">{TYPE_LABELS[listing.listing_type] || listing.listing_type}</span>
           {listing.instant_book && <span className="flex items-center gap-1 px-2 py-0.5 bg-primary/10 text-primary rounded-full text-xs font-medium"><Zap size={11} /> Instant book</span>}
@@ -347,10 +350,13 @@ const ListingDetail = () => {
             </div>
 
             {/* Min/max nights */}
-            <div className="text-sm text-dark-600">
+            <div className="text-sm text-dark-600 border-b border-gray-100 pb-6">
               <span className="font-medium">{listing.min_nights}</span> night{listing.min_nights !== 1 ? 's' : ''} min
               {listing.max_nights < 365 && <> · <span className="font-medium">{listing.max_nights}</span> nights max</>}
             </div>
+
+            {/* Reviews */}
+            <ReviewsSection listingId={listing.id} avgRating={listing.avg_rating} reviewCount={listing.review_count} />
           </div>
 
           {/* Right column — Booking widget */}
@@ -516,6 +522,50 @@ const ListingDetail = () => {
           </div>
         </div>
       )}
+    </div>
+  );
+};
+
+const ReviewsSection = ({ listingId, avgRating, reviewCount }) => {
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    staysAPI.getReviews(listingId)
+      .then(r => setReviews(r.data.results || r.data || []))
+      .catch(() => setReviews([]))
+      .finally(() => setLoading(false));
+  }, [listingId]);
+
+  if (loading) return null;
+  if (!reviews.length) return null;
+
+  return (
+    <div className="border-b border-gray-100 pb-6">
+      <h2 className="text-xl font-semibold text-dark-900 mb-1 flex items-center gap-2">
+        <Star size={18} className="fill-yellow-400 text-yellow-400" />
+        {avgRating ? `${avgRating} · ` : ''}{reviewCount} Review{reviewCount !== 1 ? 's' : ''}
+      </h2>
+      <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+        {reviews.map(r => (
+          <div key={r.id} className="space-y-1">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm flex-shrink-0">
+                {(r.reviewer?.full_name || r.reviewer?.email || '?')[0].toUpperCase()}
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-dark-900">{r.reviewer?.full_name || r.reviewer?.email}</p>
+                <div className="flex gap-0.5">
+                  {[1,2,3,4,5].map(n => (
+                    <Star key={n} size={11} className={n <= r.rating ? 'fill-yellow-400 text-yellow-400' : 'fill-gray-200 text-gray-200'} />
+                  ))}
+                </div>
+              </div>
+            </div>
+            <p className="text-sm text-dark-700 leading-relaxed pl-10">{r.comment}</p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };

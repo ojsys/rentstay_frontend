@@ -227,6 +227,9 @@ export const staysAPI = {
   completeBooking: (id) => api.post(`/stays/bookings/${id}/set_status/`, { status: 'completed' }),
   getBooking: (id) => api.get(`/stays/bookings/${id}/`),
   initBookingPayment: (id) => api.post(`/stays/bookings/${id}/init_payment/`),
+  getReviews: (listingId) => api.get('/stays/reviews/', { params: { listing: listingId } }),
+  submitReview: (data) => api.post('/stays/reviews/', data),
+  deleteReview: (id) => api.delete(`/stays/reviews/${id}/`),
 };
 
 // Location API
