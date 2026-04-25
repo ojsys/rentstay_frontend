@@ -19,6 +19,8 @@ const AgreementDetail = () => {
   const [statusVal, setStatusVal] = useState('');
   const [savingStatus, setSavingStatus] = useState(false);
   const [paymentFrequency, setPaymentFrequency] = useState('annual');
+  const [newStartDate, setNewStartDate] = useState('');
+  const [adjustingDate, setAdjustingDate] = useState(false);
   const { user } = useAuthStore();
 
   useEffect(() => {
@@ -122,6 +124,21 @@ const AgreementDetail = () => {
     } catch {}
     setUploading(false);
     setFile(null);
+  };
+
+  const adjustDate = async () => {
+    if (!newStartDate || !agreement) return;
+    try {
+      setAdjustingDate(true);
+      const res = await rentalAPI.adjustStartDate(agreement.id, newStartDate);
+      setAgreement(res.data);
+      setNewStartDate('');
+      toast.success('Tenancy start date updated. End date shifted accordingly.');
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || 'Failed to adjust start date');
+    } finally {
+      setAdjustingDate(false);
+    }
   };
 
   const updateStatus = async () => {
@@ -294,6 +311,30 @@ const AgreementDetail = () => {
                   </select>
                   <button className="btn btn-primary" onClick={updateStatus} disabled={savingStatus || statusVal === agreement.status}>
                     {savingStatus ? 'Saving...' : 'Update'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-4 border-t border-gray-100 pt-4">
+                <label className="label flex items-center gap-1.5">
+                  <CalendarClock size={14} className="text-primary" /> Adjust Tenancy Start Date
+                </label>
+                <p className="text-xs text-dark-500 mb-2">
+                  Current: <span className="font-medium text-dark-700">{agreement.start_date}</span> → <span className="font-medium text-dark-700">{agreement.end_date}</span>. Shifting the start date will move the end date by the same number of days.
+                </p>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="date"
+                    className="input flex-1"
+                    value={newStartDate}
+                    onChange={(e) => setNewStartDate(e.target.value)}
+                  />
+                  <button
+                    className="btn btn-primary"
+                    onClick={adjustDate}
+                    disabled={adjustingDate || !newStartDate || newStartDate === agreement.start_date}
+                  >
+                    {adjustingDate ? 'Saving...' : 'Apply'}
                   </button>
                 </div>
               </div>

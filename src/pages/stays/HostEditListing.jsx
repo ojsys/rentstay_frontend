@@ -6,6 +6,12 @@ import { Loader2, Home, Upload, Trash2, Star, ArrowLeft, ArrowRight, Image as Im
 import RichTextEditor from '../../components/common/RichTextEditor';
 import toast from 'react-hot-toast';
 
+const AMENITY_OPTIONS = [
+  'WiFi', 'Air conditioning', 'Kitchen', 'Hot water', 'TV',
+  'Generator/backup power', 'Parking', 'Security', 'Washing machine',
+  'Swimming pool', 'Gym', 'Breakfast included', 'Pet friendly', 'Elevator',
+];
+
 const HostEditListing = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -38,6 +44,18 @@ const HostEditListing = () => {
   const onChange = (e) => {
     const { name, type, checked, value } = e.target;
     setForm(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+  };
+
+  const toggleAmenity = (amenity) => {
+    setForm(prev => {
+      const current = Array.isArray(prev.amenities) ? prev.amenities : [];
+      return {
+        ...prev,
+        amenities: current.includes(amenity)
+          ? current.filter(a => a !== amenity)
+          : [...current, amenity],
+      };
+    });
   };
 
   const submit = async (e) => {
@@ -214,8 +232,40 @@ const HostEditListing = () => {
           <input type="checkbox" name="require_guest_verification" checked={!!form.require_guest_verification} onChange={onChange} /> Require Guest Verification
         </label>
         <div className="md:col-span-2">
+          <label className="label">Cancellation Policy</label>
+          <select name="cancellation_policy" value={form.cancellation_policy || 'moderate'} onChange={onChange} className="input">
+            <option value="flexible">Flexible – full refund up to 24 hrs before check-in</option>
+            <option value="moderate">Moderate – full refund up to 5 days before check-in</option>
+            <option value="strict">Strict – 50% refund up to 7 days before check-in</option>
+          </select>
+        </div>
+        <div className="md:col-span-2">
+          <label className="label">Amenities</label>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {AMENITY_OPTIONS.map(a => (
+              <label key={a} className="inline-flex items-center gap-2 text-sm text-dark-700 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={Array.isArray(form.amenities) && form.amenities.includes(a)}
+                  onChange={() => toggleAmenity(a)}
+                  className="rounded"
+                />
+                {a}
+              </label>
+            ))}
+          </div>
+        </div>
+        <div className="md:col-span-2">
           <label className="label">House Rules</label>
           <textarea name="house_rules" value={form.house_rules || ''} onChange={onChange} className="input min-h-[80px]" />
+        </div>
+        <div>
+          <label className="label">Check-in Instructions</label>
+          <textarea name="check_in_instructions" value={form.check_in_instructions || ''} onChange={onChange} className="input min-h-[80px]" placeholder="Key lockbox at front gate, code: 1234…" />
+        </div>
+        <div>
+          <label className="label">Check-out Instructions</label>
+          <textarea name="check_out_instructions" value={form.check_out_instructions || ''} onChange={onChange} className="input min-h-[80px]" placeholder="Leave keys on table, check out by 11am…" />
         </div>
         <div className="md:col-span-2 flex justify-end">
           <button className="btn btn-primary" disabled={saving}>{saving ? (<><Loader2 className="animate-spin mr-2" size={16}/> Saving…</>) : 'Save Changes'}</button>

@@ -1,207 +1,75 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Search, MapPin, Home as HomeIcon, DollarSign, Shield, TrendingUp, CheckCircle, ArrowRight } from 'lucide-react';
-import useAuthStore from '../store/authStore';
-import { locationAPI } from '../services/api';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Search, MapPin, Home as HomeIcon, DollarSign, Shield, TrendingUp, CheckCircle, ArrowRight, ChevronDown, BedDouble } from 'lucide-react';
+
+const PROPERTY_TYPES = [
+  { value: '', label: 'Any Type' },
+  { value: 'apartment', label: 'Apartment' },
+  { value: 'house', label: 'House' },
+  { value: 'studio', label: 'Studio' },
+  { value: 'room', label: 'Room' },
+  { value: 'duplex', label: 'Duplex' },
+  { value: 'bungalow', label: 'Bungalow' },
+];
+
+const BEDROOMS = [
+  { value: '', label: 'Any Beds' },
+  { value: '1', label: '1 Bed' },
+  { value: '2', label: '2 Beds' },
+  { value: '3', label: '3 Beds' },
+  { value: '4', label: '4+ Beds' },
+];
+
+const PRICE_RANGES = [
+  { value: '', label: 'Any Price' },
+  { value: '100000', label: 'Under ₦100k' },
+  { value: '300000', label: 'Under ₦300k' },
+  { value: '500000', label: 'Under ₦500k' },
+  { value: '1000000', label: 'Under ₦1M' },
+];
 
 const Home = () => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [location, setLocation] = useState('');
-  const [userLocation, setUserLocation] = useState('Jos'); // Default location display
-  const [showLocationSelector, setShowLocationSelector] = useState(false);
-  const [locationDenied, setLocationDenied] = useState(false);
-  const { user, isAuthenticated } = useAuthStore();
-
-  // State and LGA data
-  const [states, setStates] = useState([]);
-  const [selectedState, setSelectedState] = useState(null);
-  const [lgas, setLGAs] = useState([]);
-  const [selectedLGA, setSelectedLGA] = useState(null);
-  const [loadingStates, setLoadingStates] = useState(true);
-
-  // Load states on component mount
-  useEffect(() => {
-    const loadStates = async () => {
-      try {
-        console.log('Loading states from API...');
-        const response = await locationAPI.getStates();
-        console.log('States response:', response);
-
-        // API now returns array directly (no pagination)
-        const statesData = Array.isArray(response.data) ? response.data : (response.data.results || []);
-        console.log(`Loaded ${statesData.length} states`);
-        setStates(statesData);
-
-        // Set default to Plateau state (Jos)
-        const plateauState = statesData.find(s => s.name === 'Plateau');
-        console.log('Plateau state:', plateauState);
-
-        if (plateauState) {
-          setSelectedState(plateauState);
-          // Load LGAs for Plateau
-          console.log('Loading LGAs for Plateau, ID:', plateauState.id);
-          const lgaResponse = await locationAPI.getLGAs(plateauState.id);
-          console.log('LGAs response:', lgaResponse);
-          setLGAs(lgaResponse.data);
-
-          // Find Jos North LGA
-          const josNorth = lgaResponse.data.find(l => l.name === 'Jos North');
-          if (josNorth) {
-            setSelectedLGA(josNorth);
-            setUserLocation('Jos North');
-          }
-        }
-      } catch (error) {
-        console.error('Error loading states:', error);
-        console.error('Error details:', error.response?.data);
-        console.error('Error status:', error.response?.status);
-      } finally {
-        setLoadingStates(false);
-      }
-    };
-
-    loadStates();
-  }, []);
-
-  // Detect user's location on component mount
-  useEffect(() => {
-    const detectLocation = async () => {
-      // Priority 1: Check if user is logged in and has a location
-      if (isAuthenticated && user?.lga) {
-        setUserLocation(user.lga.name);
-        setSelectedState(user.state);
-        setSelectedLGA(user.lga);
-        localStorage.setItem('userLocation', user.lga.name);
-        return;
-      }
-
-      // Priority 2: Try to get location from browser geolocation
-      if ('geolocation' in navigator) {
-        try {
-          const position = await new Promise((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, {
-              timeout: 10000,
-              enableHighAccuracy: true,
-              maximumAge: 0
-            });
-          });
-
-          try {
-            const { latitude, longitude } = position.coords;
-            const response = await locationAPI.reverseGeocode(latitude, longitude);
-            const data = response.data;
-            console.log('Geolocation data:', data);
-            const detectedLocation = data.city || 'Jos';
-            console.log('Detected location:', detectedLocation);
-            setUserLocation(detectedLocation);
-            localStorage.setItem('userLocation', detectedLocation);
-            return;
-          } catch (error) {
-            console.error('Geocoding error:', error);
-          }
-        } catch (error) {
-          console.log('Geolocation error:', error.message);
-          if (error.code === 1) {
-            setLocationDenied(true);
-            setShowLocationSelector(true);
-          }
-        }
-      }
-
-      // Priority 3: Check localStorage
-      const savedLocation = localStorage.getItem('userLocation');
-      if (savedLocation) {
-        setUserLocation(savedLocation);
-        return;
-      }
-
-      // Priority 4: Default to Jos
-      console.log('Using default location: Jos');
-      setShowLocationSelector(true);
-    };
-
-    if (!loadingStates) {
-      detectLocation();
-    }
-  }, [isAuthenticated, user, loadingStates]);
-
-  // Handle state selection
-  const handleStateChange = async (stateId) => {
-    const state = states.find(s => s.id === parseInt(stateId));
-    setSelectedState(state);
-    setSelectedLGA(null);
-
-    // Load LGAs for selected state
-    try {
-      const response = await locationAPI.getLGAs(stateId);
-      setLGAs(response.data);
-    } catch (error) {
-      console.error('Error loading LGAs:', error);
-    }
-  };
-
-  // Handle LGA selection
-  const handleLGAChange = (lgaId) => {
-    const lga = lgas.find(l => l.id === parseInt(lgaId));
-    setSelectedLGA(lga);
-    setUserLocation(lga.name);
-    localStorage.setItem('userLocation', lga.name);
-    localStorage.setItem('userState', selectedState.name);
-    setShowLocationSelector(false);
-    setLocationDenied(false);
-  };
+  const navigate = useNavigate();
+  const [where, setWhere] = useState('');
+  const [propertyType, setPropertyType] = useState('');
+  const [bedrooms, setBedrooms] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
 
   const handleSearch = (e) => {
     e.preventDefault();
-    // Navigate to properties with search params
     const params = new URLSearchParams();
-    if (searchQuery) params.append('search', searchQuery);
-    if (location) params.append('city', location);
-    window.location.href = `/properties?${params.toString()}`;
+    if (where) params.append('search', where);
+    if (propertyType) params.append('property_type', propertyType);
+    if (bedrooms) params.append('bedrooms', bedrooms);
+    if (maxPrice) params.append('max_price', maxPrice);
+    navigate(`/properties?${params.toString()}`);
   };
 
   const features = [
-    {
-      icon: Shield,
-      title: 'Verified Listings',
-      description: 'All properties are verified and agent-free for your peace of mind'
-    },
-    {
-      icon: DollarSign,
-      title: 'Transparent Pricing',
-      description: 'No hidden fees. See rent + refundable 10% caution fee upfront'
-    },
-    {
-      icon: TrendingUp,
-      title: 'Earn Interest',
-      description: 'Your caution fee earns 5% annual interest while you rent'
-    },
-    {
-      icon: HomeIcon,
-      title: 'Easy Management',
-      description: 'Track rent, maintenance, and communicate with landlords easily'
-    }
+    { icon: Shield, title: 'Verified Listings', description: 'All properties are verified and agent-free for your peace of mind' },
+    { icon: DollarSign, title: 'Transparent Pricing', description: 'No hidden fees. See rent + refundable 10% caution fee upfront' },
+    { icon: TrendingUp, title: 'Earn Interest', description: 'Your caution fee earns 5% annual interest while you rent' },
+    { icon: HomeIcon, title: 'Easy Management', description: 'Track rent, maintenance, and communicate with landlords easily' },
   ];
 
   const howItWorks = [
     { step: 1, title: 'Search Properties', description: 'Browse verified listings in your location with advanced filters' },
     { step: 2, title: 'Contact Landlord', description: 'Message landlords directly through our platform' },
     { step: 3, title: 'Secure Payment', description: 'Pay rent + refundable caution fee securely via Paystack' },
-    { step: 4, title: 'Move In', description: 'Sign digital agreement and get your keys!' }
+    { step: 4, title: 'Move In', description: 'Sign digital agreement and get your keys!' },
   ];
 
   const stats = [
     { number: '5+', label: 'Properties Listed' },
     { number: '10+', label: 'Happy Tenants' },
     { number: '₦0M+', label: 'Caution Fees Invested' },
-    { number: '98%', label: 'Satisfaction Rate' }
+    { number: '98%', label: 'Satisfaction Rate' },
   ];
 
   return (
     <div>
       {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-primary-50 via-white to-accent-50 min-h-[85vh] flex items-center">
-        {/* Decorative Elements */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-20 left-10 w-72 h-72 bg-primary-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
           <div className="absolute top-40 right-10 w-72 h-72 bg-accent-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
@@ -218,128 +86,106 @@ const Home = () => {
               </div>
             </div>
 
-            {/* Location Selector */}
-            {showLocationSelector && !loadingStates && (
-              <div className="mb-6 max-w-2xl mx-auto">
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 shadow-sm">
-                  {locationDenied ? (
-                    <div className="flex items-start space-x-3 mb-3">
-                      <MapPin className="text-amber-600 mt-1 flex-shrink-0" size={20} />
-                      <div>
-                        <p className="text-sm font-medium text-amber-900 mb-1">
-                          Location access denied
-                        </p>
-                        <p className="text-xs text-amber-700">
-                          Please select your state and LGA manually
-                        </p>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-center space-x-2 mb-3">
-                      <MapPin className="text-primary" size={18} />
-                      <p className="text-sm font-medium text-dark-700">
-                        Select your location
-                      </p>
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {/* State Selector */}
-                    <div>
-                      <label className="block text-xs font-medium text-dark-600 mb-1">
-                        State
-                      </label>
-                      <select
-                        value={selectedState?.id || ''}
-                        onChange={(e) => handleStateChange(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
-                      >
-                        <option value="">Select State</option>
-                        {states.map(state => (
-                          <option key={state.id} value={state.id}>
-                            {state.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* LGA Selector */}
-                    <div>
-                      <label className="block text-xs font-medium text-dark-600 mb-1">
-                        LGA
-                      </label>
-                      <select
-                        value={selectedLGA?.id || ''}
-                        onChange={(e) => handleLGAChange(e.target.value)}
-                        disabled={!selectedState}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
-                      >
-                        <option value="">Select LGA</option>
-                        {lgas.map(lga => (
-                          <option key={lga.id} value={lga.id}>
-                            {lga.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="mt-3 flex justify-end">
-                    <button
-                      onClick={() => setShowLocationSelector(false)}
-                      className="text-dark-500 hover:text-dark-700 text-sm font-medium"
-                    >
-                      Close ✕
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
             <h1 className="text-5xl md:text-7xl lg:text-8xl font-display font-bold text-dark-900 mb-6 leading-tight">
-              Find Your Perfect Home in{' '}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">{userLocation}</span>
+              Find Your{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">Perfect Home</span>
             </h1>
 
-            {/* Change Location Button */}
-            <button
-              onClick={() => setShowLocationSelector(true)}
-              className="inline-flex items-center space-x-2 text-primary hover:text-primary-600 font-medium text-sm mb-6 transition-colors"
-            >
-              <MapPin size={16} />
-              <span>Change location</span>
-            </button>
-            <p className="text-xl md:text-2xl text-dark-600 mb-12 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-xl md:text-2xl text-dark-600 mb-10 max-w-3xl mx-auto leading-relaxed">
               Discover verified rental properties with transparent pricing and{' '}
               <span className="text-primary font-semibold">earn 5% interest</span> on your caution fee
             </p>
 
-            {/* Search Bar */}
-            <form onSubmit={handleSearch} className="bg-white rounded-2xl shadow-soft p-4 md:p-6 flex flex-col md:flex-row gap-4 max-w-4xl mx-auto border border-gray-100">
-              <div className="flex-1 flex items-center space-x-3 px-4 border-r border-gray-200">
-                <Search className="text-dark-400" size={20} />
-                <input
-                  type="text"
-                  placeholder="Search by property type, area..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full outline-none text-dark-800 placeholder-dark-400"
-                />
+            {/* Airbnb-style Search Bar */}
+            <form onSubmit={handleSearch} className="bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden max-w-4xl mx-auto">
+              {/* Main row */}
+              <div className="flex flex-col md:flex-row">
+                {/* Where */}
+                <div className="flex-1 flex items-center gap-3 px-5 py-4 border-b md:border-b-0 md:border-r border-gray-100">
+                  <MapPin size={18} className="text-primary flex-shrink-0" />
+                  <div className="flex-1 text-left">
+                    <p className="text-[10px] font-semibold text-dark-500 uppercase tracking-wider mb-0.5">Where</p>
+                    <input
+                      type="text"
+                      placeholder="Search city, area, neighbourhood..."
+                      value={where}
+                      onChange={(e) => setWhere(e.target.value)}
+                      className="w-full outline-none text-dark-800 text-sm placeholder-dark-400 bg-transparent"
+                    />
+                  </div>
+                </div>
+
+                {/* Property Type */}
+                <div className="flex-1 border-b md:border-b-0 md:border-r border-gray-100">
+                  <div className="px-5 py-4">
+                    <p className="text-[10px] font-semibold text-dark-500 uppercase tracking-wider mb-0.5">Property Type</p>
+                    <div className="relative flex items-center">
+                      <HomeIcon size={14} className="text-dark-400 mr-2 flex-shrink-0" />
+                      <select
+                        value={propertyType}
+                        onChange={(e) => setPropertyType(e.target.value)}
+                        className="appearance-none w-full outline-none bg-transparent text-dark-800 text-sm cursor-pointer pr-5"
+                      >
+                        {PROPERTY_TYPES.map((o) => (
+                          <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                      </select>
+                      <ChevronDown size={13} className="absolute right-0 text-dark-400 pointer-events-none" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bedrooms */}
+                <div className="flex-1 border-b md:border-b-0 md:border-r border-gray-100">
+                  <div className="px-5 py-4">
+                    <p className="text-[10px] font-semibold text-dark-500 uppercase tracking-wider mb-0.5">Bedrooms</p>
+                    <div className="relative flex items-center">
+                      <BedDouble size={14} className="text-dark-400 mr-2 flex-shrink-0" />
+                      <select
+                        value={bedrooms}
+                        onChange={(e) => setBedrooms(e.target.value)}
+                        className="appearance-none w-full outline-none bg-transparent text-dark-800 text-sm cursor-pointer pr-5"
+                      >
+                        {BEDROOMS.map((o) => (
+                          <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                      </select>
+                      <ChevronDown size={13} className="absolute right-0 text-dark-400 pointer-events-none" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Max Price */}
+                <div className="flex-1 border-b md:border-b-0 md:border-r border-gray-100">
+                  <div className="px-5 py-4">
+                    <p className="text-[10px] font-semibold text-dark-500 uppercase tracking-wider mb-0.5">Max Price</p>
+                    <div className="relative flex items-center">
+                      <DollarSign size={14} className="text-dark-400 mr-2 flex-shrink-0" />
+                      <select
+                        value={maxPrice}
+                        onChange={(e) => setMaxPrice(e.target.value)}
+                        className="appearance-none w-full outline-none bg-transparent text-dark-800 text-sm cursor-pointer pr-5"
+                      >
+                        {PRICE_RANGES.map((o) => (
+                          <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                      </select>
+                      <ChevronDown size={13} className="absolute right-0 text-dark-400 pointer-events-none" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Search Button */}
+                <div className="flex items-center justify-center p-3">
+                  <button
+                    type="submit"
+                    className="w-full md:w-auto bg-primary hover:bg-primary-600 text-white rounded-xl px-6 py-3.5 flex items-center justify-center gap-2 font-semibold text-sm shadow-lg hover:shadow-xl transition-all hover:scale-105"
+                  >
+                    <Search size={18} />
+                    <span>Search</span>
+                  </button>
+                </div>
               </div>
-              <div className="flex-1 flex items-center space-x-3 px-4">
-                <MapPin className="text-dark-400" size={20} />
-                <input
-                  type="text"
-                  placeholder="Location (e.g., Bukuru, Rayfield)"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  className="w-full outline-none text-dark-800 placeholder-dark-400"
-                />
-              </div>
-              <button type="submit" className="btn btn-primary btn-lg text-lg px-8 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all">
-                <Search size={20} />
-                <span>Search Properties</span>
-              </button>
             </form>
 
             {/* Quick Stats */}
@@ -359,14 +205,11 @@ const Home = () => {
       <section className="py-20 bg-white">
         <div className="container-custom">
           <div className="text-center mb-12">
-            <h2 className="text-4xl font-display font-bold text-dark-900 mb-4">
-              Why Choose RentStay?
-            </h2>
+            <h2 className="text-4xl font-display font-bold text-dark-900 mb-4">Why Choose RentStay?</h2>
             <p className="text-xl text-dark-600 max-w-2xl mx-auto">
               We're revolutionizing the property rental market with transparency and technology
             </p>
           </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {features.map((feature, index) => (
               <div key={index} className="card text-center hover:shadow-xl transition-shadow">
@@ -385,14 +228,9 @@ const Home = () => {
       <section className="py-20 bg-gray-50">
         <div className="container-custom">
           <div className="text-center mb-12">
-            <h2 className="text-4xl font-display font-bold text-dark-900 mb-4">
-              How It Works
-            </h2>
-            <p className="text-xl text-dark-600 max-w-2xl mx-auto">
-              Finding your perfect home is easier than ever
-            </p>
+            <h2 className="text-4xl font-display font-bold text-dark-900 mb-4">How It Works</h2>
+            <p className="text-xl text-dark-600 max-w-2xl mx-auto">Finding your perfect home is easier than ever</p>
           </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {howItWorks.map((item, index) => (
               <div key={index} className="relative">
@@ -416,9 +254,7 @@ const Home = () => {
       <section className="py-20 bg-primary text-white">
         <div className="container-custom">
           <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-4xl font-display font-bold mb-6">
-              Your Caution Fee Works For You
-            </h2>
+            <h2 className="text-4xl font-display font-bold mb-6">Your Caution Fee Works For You</h2>
             <p className="text-xl mb-8 text-primary-100">
               Unlike traditional deposits that sit idle, your 10% caution fee earns 5% annual interest while you rent.
               It's fully refundable when you move out!
@@ -448,19 +284,11 @@ const Home = () => {
       <section className="py-20 bg-white">
         <div className="container-custom">
           <div className="bg-gradient-to-r from-primary to-accent rounded-2xl p-12 text-center text-white">
-            <h2 className="text-4xl font-display font-bold mb-4">
-              Ready to Find Your Home?
-            </h2>
-            <p className="text-xl mb-8 text-white/90">
-              Join thousands of tenants looking for the right place to call home.
-            </p>
+            <h2 className="text-4xl font-display font-bold mb-4">Ready to Find Your Home?</h2>
+            <p className="text-xl mb-8 text-white/90">Join thousands of tenants looking for the right place to call home.</p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/properties" className="btn btn-lg bg-white text-primary hover:bg-gray-100">
-                Browse Properties
-              </Link>
-              <Link to="/register" className="btn btn-lg bg-white/20 hover:bg-white/30 text-white border-2 border-white">
-                List Your Property
-              </Link>
+              <Link to="/properties" className="btn btn-lg bg-white text-primary hover:bg-gray-100">Browse Properties</Link>
+              <Link to="/register" className="btn btn-lg bg-white/20 hover:bg-white/30 text-white border-2 border-white">List Your Property</Link>
             </div>
           </div>
         </div>

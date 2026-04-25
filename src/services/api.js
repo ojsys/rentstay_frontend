@@ -123,6 +123,7 @@ export const rentalAPI = {
   saveTemplate: (body) => api.put('/agreements/template/', { body }),
   setDocumentSource: (agreementId, source) => api.post(`/agreements/${agreementId}/use_document/`, { source }),
   setAgreementStatus: (agreementId, status) => api.post(`/agreements/${agreementId}/set_status/`, { status }),
+  adjustStartDate: (agreementId, startDate) => api.post(`/agreements/${agreementId}/adjust_start_date/`, { start_date: startDate }),
   getDealSummary: (agreementId) => api.get(`/agreements/${agreementId}/deal-summary/`),
   confirmDeal: (agreementId) => api.post(`/agreements/${agreementId}/deal-summary/`),
 };
@@ -221,6 +222,10 @@ export const staysAPI = {
   setPrimary: (id, imageId) => api.post(`/stays/listings/${id}/images/${imageId}/set_primary/`),
   reorderImages: (id, order) => api.post(`/stays/listings/${id}/images/reorder/`, { order }),
   approveBooking: (id) => api.post(`/stays/bookings/${id}/set_status/`, { status: 'approved' }),
+  declineBooking: (id, reason) => api.post(`/stays/bookings/${id}/decline/`, { reason }),
+  cancelBooking: (id, reason) => api.post(`/stays/bookings/${id}/cancel/`, { reason }),
+  completeBooking: (id) => api.post(`/stays/bookings/${id}/set_status/`, { status: 'completed' }),
+  getBooking: (id) => api.get(`/stays/bookings/${id}/`),
   initBookingPayment: (id) => api.post(`/stays/bookings/${id}/init_payment/`),
 };
 

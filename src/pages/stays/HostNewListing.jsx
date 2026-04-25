@@ -5,6 +5,12 @@ import { Loader2, Home, CheckCircle } from 'lucide-react';
 import RichTextEditor from '../../components/common/RichTextEditor';
 import toast from 'react-hot-toast';
 
+const AMENITY_OPTIONS = [
+  'WiFi', 'Air conditioning', 'Kitchen', 'Hot water', 'TV',
+  'Generator/backup power', 'Parking', 'Security', 'Washing machine',
+  'Swimming pool', 'Gym', 'Breakfast included', 'Pet friendly', 'Elevator',
+];
+
 const HostNewListing = () => {
   const [loading, setLoading] = useState(false);
   const [properties, setProperties] = useState([]);
@@ -22,6 +28,11 @@ const HostNewListing = () => {
     max_nights: 30,
     instant_book: true,
     property_id: '',
+    amenities: [],
+    cancellation_policy: 'moderate',
+    check_in_instructions: '',
+    check_out_instructions: '',
+    house_rules: '',
   });
   const [created, setCreated] = useState(null);
 
@@ -38,6 +49,15 @@ const HostNewListing = () => {
   const onChange = (e) => {
     const { name, type, checked, value } = e.target;
     setForm(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+  };
+
+  const toggleAmenity = (amenity) => {
+    setForm(prev => ({
+      ...prev,
+      amenities: prev.amenities.includes(amenity)
+        ? prev.amenities.filter(a => a !== amenity)
+        : [...prev.amenities, amenity],
+    }));
   };
 
   const submit = async (e) => {
@@ -159,6 +179,42 @@ const HostNewListing = () => {
           <label className="inline-flex items-center gap-2 text-sm text-dark-700">
             <input type="checkbox" name="instant_book" checked={!!form.instant_book} onChange={onChange} /> Instant Book
           </label>
+          <div className="md:col-span-2">
+            <label className="label">Cancellation Policy</label>
+            <select name="cancellation_policy" value={form.cancellation_policy} onChange={onChange} className="input">
+              <option value="flexible">Flexible – full refund up to 24 hrs before check-in</option>
+              <option value="moderate">Moderate – full refund up to 5 days before check-in</option>
+              <option value="strict">Strict – 50% refund up to 7 days before check-in</option>
+            </select>
+          </div>
+          <div className="md:col-span-2">
+            <label className="label">Amenities</label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {AMENITY_OPTIONS.map(a => (
+                <label key={a} className="inline-flex items-center gap-2 text-sm text-dark-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={form.amenities.includes(a)}
+                    onChange={() => toggleAmenity(a)}
+                    className="rounded"
+                  />
+                  {a}
+                </label>
+              ))}
+            </div>
+          </div>
+          <div className="md:col-span-2">
+            <label className="label">House Rules</label>
+            <textarea name="house_rules" value={form.house_rules} onChange={onChange} className="input min-h-[80px]" placeholder="No smoking, no parties…" />
+          </div>
+          <div>
+            <label className="label">Check-in Instructions</label>
+            <textarea name="check_in_instructions" value={form.check_in_instructions} onChange={onChange} className="input min-h-[80px]" placeholder="Key lockbox at front gate, code: 1234…" />
+          </div>
+          <div>
+            <label className="label">Check-out Instructions</label>
+            <textarea name="check_out_instructions" value={form.check_out_instructions} onChange={onChange} className="input min-h-[80px]" placeholder="Leave keys on table, check out by 11am…" />
+          </div>
         </div>
         <div className="flex justify-end gap-2">
             <button className="btn btn-primary" disabled={loading}>{loading ? (<><Loader2 className="animate-spin mr-2" size={16} /> Saving...</>) : 'Create Listing'}</button>
