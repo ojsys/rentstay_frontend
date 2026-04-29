@@ -193,6 +193,8 @@ export const dashboardAPI = {
   createBankAccount: (data) => api.post('/bank-accounts/', data),
   updateBankAccount: (id, data) => api.patch(`/bank-accounts/${id}/`, data),
   deleteBankAccount: (id) => api.delete(`/bank-accounts/${id}/`),
+  // Bank list for selector
+  getBanksList: () => api.get('/payments/banks/'),
 };
 
 // Stays (short-term rentals)

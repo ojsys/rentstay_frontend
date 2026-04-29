@@ -57,7 +57,7 @@ const fallbackContent = `
 <h3>Caution Fee</h3>
 <p>Tenants pay a refundable caution fee equal to 10% of annual rent. This fee:</p>
 <ul>
-  <li>Earns 5% annual interest while active</li>
+  <li>Earns 5% annual cashback while active</li>
   <li>Is fully refundable upon lease termination (minus any deductions for damages)</li>
   <li>Is managed securely by RentStay</li>
 </ul>

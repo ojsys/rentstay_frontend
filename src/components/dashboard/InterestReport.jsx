@@ -1,5 +1,5 @@
 const InterestReport = ({ data }) => {
-  if (!data?.summary) return <p className="text-dark-600 text-sm">No interest data available.</p>;
+  if (!data?.summary) return <p className="text-dark-600 text-sm">No cashback data available.</p>;
 
   return (
     <div className="space-y-4">
@@ -14,7 +14,7 @@ const InterestReport = ({ data }) => {
           <p className="text-2xl font-bold text-emerald-600">
             &#8358;{Number(data.summary.total_interest || 0).toLocaleString()}
           </p>
-          <p className="text-xs text-dark-600">Total Interest</p>
+          <p className="text-xs text-dark-600">Total Cashback</p>
         </div>
       </div>
       {data.pools?.length > 0 && (
@@ -27,7 +27,7 @@ const InterestReport = ({ data }) => {
                   <th className="py-2 pr-3">Tenant</th>
                   <th className="py-2 pr-3">Property</th>
                   <th className="py-2 pr-3">Deposited</th>
-                  <th className="py-2 pr-3">Interest</th>
+                  <th className="py-2 pr-3">Cashback</th>
                   <th className="py-2">Status</th>
                 </tr>
               </thead>

@@ -10,7 +10,7 @@ import RentPerformanceReport from '../../components/dashboard/RentPerformanceRep
 const reportTypes = [
   { key: 'vacancy', label: 'Vacancy', icon: Home },
   { key: 'repairs', label: 'Repairs', icon: Wrench },
-  { key: 'interest', label: 'Caution Interest', icon: TrendingUp },
+  { key: 'interest', label: 'Caution Cashback', icon: TrendingUp },
   { key: 'rent_performance', label: 'Rent Performance', icon: CreditCard },
 ];
 

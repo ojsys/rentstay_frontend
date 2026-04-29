@@ -41,7 +41,7 @@ const LandlordDashboardPayments = () => {
           { label: 'Total Received', value: summary.total_received, icon: TrendingUp, color: 'text-green-600' },
           { label: 'Pending Rent', value: summary.pending_rent, icon: CreditCard, color: 'text-amber-600' },
           { label: 'Caution Held', value: summary.caution_held, icon: Wallet, color: 'text-indigo-600' },
-          { label: 'Interest Earned', value: summary.interest_earned, icon: TrendingUp, color: 'text-emerald-600' },
+          { label: 'Cashback', value: summary.interest_earned, icon: TrendingUp, color: 'text-emerald-600' },
           { label: 'Commissions', value: summary.commissions, icon: Building2, color: 'text-purple-600' },
           { label: 'Payouts', value: summary.payouts_total, icon: CreditCard, color: 'text-blue-600' },
         ].map((card) => (

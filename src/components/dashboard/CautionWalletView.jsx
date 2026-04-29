@@ -18,7 +18,7 @@ const CautionWalletView = ({ pools = [] }) => {
         <div className="card text-center">
           <TrendingUp size={20} className="mx-auto text-emerald-500 mb-1" />
           <p className="text-2xl font-bold text-dark-900">₦{totalInterest.toLocaleString()}</p>
-          <p className="text-xs text-dark-600">Total Interest Earned</p>
+          <p className="text-xs text-dark-600">Total Cashback</p>
         </div>
         <div className="card text-center">
           <ShieldCheck size={20} className="mx-auto text-green-500 mb-1" />
@@ -54,7 +54,7 @@ const CautionWalletView = ({ pools = [] }) => {
                 </div>
                 <div>
                   <p className="text-lg font-bold text-emerald-600">₦{Number(pool.interest_earned).toLocaleString()}</p>
-                  <p className="text-xs text-dark-500">Interest</p>
+                  <p className="text-xs text-dark-500">Cashback</p>
                 </div>
                 <div>
                   <p className="text-lg font-bold text-primary">₦{Number(pool.total_amount).toLocaleString()}</p>

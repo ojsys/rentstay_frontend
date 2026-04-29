@@ -271,7 +271,7 @@ const Payments = () => {
                       <p className="font-semibold">₦{Number(caution.principal || caution.expected || 0).toLocaleString()}</p>
                     </div>
                     <div className="bg-gray-50 p-3 rounded-lg">
-                      <p className="text-dark-600">Interest Accrued</p>
+                      <p className="text-dark-600">Cashback</p>
                       <p className="font-semibold text-green-700">₦{Number(caution.interest_accrued || 0).toLocaleString()}</p>
                     </div>
                     <div className="bg-gray-50 p-3 rounded-lg">
@@ -289,7 +289,7 @@ const Payments = () => {
                 </div>
                 <p className="text-sm text-dark-600 mb-3">
                   Caution fee of <span className="font-semibold">₦{cautionFee.toLocaleString()}</span> is required
-                  (10% of annual rent). This deposit earns interest and is refundable at end of tenancy.
+                  (10% of annual rent). This deposit earns cashback and is refundable at end of tenancy.
                 </p>
                 <button
                   onClick={handlePayCaution}

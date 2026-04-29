@@ -50,7 +50,7 @@ const HowItWorks = () => {
     {
       icon: CreditCard,
       title: 'Secure Payment',
-      description: 'Pay rent and caution fee securely via Paystack. Your caution fee earns 5% interest!',
+      description: 'Pay rent and caution fee securely via Paystack. Your caution fee earns 5% cashback!',
       color: 'bg-amber-500'
     },
     {
@@ -114,8 +114,8 @@ const HowItWorks = () => {
     },
     {
       icon: TrendingUp,
-      title: 'Earn Interest',
-      description: '5% annual interest on caution fees'
+      title: 'Earn Cashback',
+      description: '5% annual cashback on caution fees'
     },
     {
       icon: CreditCard,
@@ -132,11 +132,11 @@ const HowItWorks = () => {
   const faqs = [
     {
       question: 'How much is the caution fee?',
-      answer: 'The caution fee is 10% of the annual rent. It\'s fully refundable and earns 5% annual interest while you rent.'
+      answer: 'The caution fee is 10% of the annual rent. It\'s fully refundable and earns 5% annual cashback while you rent.'
     },
     {
       question: 'How do I get my caution fee back?',
-      answer: 'When your tenancy ends, the caution fee plus accrued interest is refunded within 30 days, minus any deductions for damages.'
+      answer: 'When your tenancy ends, the caution fee plus accrued cashback is refunded within 30 days, minus any deductions for damages.'
     },
     {
       question: 'Are the properties verified?',

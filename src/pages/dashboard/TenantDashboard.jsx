@@ -310,7 +310,7 @@ const TenantDashboard = () => {
                 <p className="text-lg md:text-2xl font-semibold text-dark-900">₦{Number(caution.principal).toLocaleString()}</p>
               </div>
               <div className="bg-gray-50 rounded-lg p-2 md:p-0 md:bg-transparent">
-                <p className="text-xs md:text-sm text-dark-600">Interest</p>
+                <p className="text-xs md:text-sm text-dark-600">Cashback</p>
                 <p className="text-lg md:text-2xl font-semibold text-dark-900">₦{Number(caution.interest_accrued).toLocaleString()}</p>
               </div>
               <div className="bg-gray-50 rounded-lg p-2 md:p-0 md:bg-transparent">

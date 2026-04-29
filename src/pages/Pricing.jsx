@@ -33,7 +33,7 @@ const Pricing = () => {
     { text: 'Submit rental applications', included: true },
     { text: 'Secure payment processing', included: true },
     { text: 'Digital rental agreements', included: true },
-    { text: '5% interest on caution fee', included: true },
+    { text: '5% cashback on caution fee', included: true },
     { text: 'Maintenance request system', included: true },
     { text: 'Priority support', included: true },
   ];
@@ -108,13 +108,13 @@ const Pricing = () => {
     },
     {
       icon: TrendingUp,
-      title: '5% Annual Interest',
+      title: '5% Annual Cashback',
       description: 'Your deposit grows while you rent - earn passive income'
     },
     {
       icon: CreditCard,
       title: '100% Refundable',
-      description: 'Get your full deposit back plus interest when you move out'
+      description: 'Get your full deposit back plus cashback when you move out'
     }
   ];
 

@@ -48,7 +48,7 @@ const Home = () => {
   const features = [
     { icon: Shield, title: 'Verified Listings', description: 'All properties are verified and agent-free for your peace of mind' },
     { icon: DollarSign, title: 'Transparent Pricing', description: 'No hidden fees. See rent + refundable 10% caution fee upfront' },
-    { icon: TrendingUp, title: 'Earn Interest', description: 'Your caution fee earns 5% annual interest while you rent' },
+    { icon: TrendingUp, title: 'Earn Cashback', description: 'Your caution fee earns 5% annual cashback while you rent' },
     { icon: HomeIcon, title: 'Easy Management', description: 'Track rent, maintenance, and communicate with landlords easily' },
   ];
 
@@ -93,7 +93,7 @@ const Home = () => {
 
             <p className="text-xl md:text-2xl text-dark-600 mb-10 max-w-3xl mx-auto leading-relaxed">
               Discover verified rental properties with transparent pricing and{' '}
-              <span className="text-primary font-semibold">earn 5% interest</span> on your caution fee
+              <span className="text-primary font-semibold">earn 5% cashback</span> on your caution fee
             </p>
 
             {/* Airbnb-style Search Bar */}
@@ -256,7 +256,7 @@ const Home = () => {
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-4xl font-display font-bold mb-6">Your Caution Fee Works For You</h2>
             <p className="text-xl mb-8 text-primary-100">
-              Unlike traditional deposits that sit idle, your 10% caution fee earns 5% annual interest while you rent.
+              Unlike traditional deposits that sit idle, your 10% caution fee earns 5% annual cashback while you rent.
               It's fully refundable when you move out!
             </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -267,7 +267,7 @@ const Home = () => {
               </div>
               <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6">
                 <TrendingUp className="mx-auto mb-4" size={48} />
-                <h3 className="font-semibold text-lg mb-2">Earns 5% Interest</h3>
+                <h3 className="font-semibold text-lg mb-2">Earns 5% Cashback</h3>
                 <p className="text-primary-100">Your deposit grows while you live comfortably</p>
               </div>
               <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6">

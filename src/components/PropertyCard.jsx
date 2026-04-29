@@ -133,7 +133,7 @@ const PropertyCard = ({ property }) => {
               <p className="text-sm font-semibold text-accent">
                 {formatPrice(property.caution_fee)}
               </p>
-              <p className="text-xs text-green-600">+5% interest</p>
+              <p className="text-xs text-green-600">+5% cashback</p>
             </div>
           </div>
         </div>

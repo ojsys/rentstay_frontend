@@ -59,7 +59,7 @@ const About = () => {
   const features = [
     'Verified property listings',
     'Transparent pricing with no hidden fees',
-    '5% interest on caution fees',
+    '5% cashback on caution fees',
     'Digital rental agreements',
     'Direct landlord communication',
     'Secure payment processing'
