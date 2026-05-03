@@ -23,7 +23,6 @@ const HostNewListing = () => {
     bathrooms: 1,
     nightly_rate: '',
     cleaning_fee: 0,
-    service_fee_rate: 5,
     min_nights: 1,
     max_nights: 30,
     instant_book: true,
@@ -74,7 +73,6 @@ const HostNewListing = () => {
       payload.bathrooms = Number(payload.bathrooms);
       payload.nightly_rate = Number(payload.nightly_rate);
       payload.cleaning_fee = Number(payload.cleaning_fee || 0);
-      payload.service_fee_rate = Number(payload.service_fee_rate || 5);
       payload.min_nights = Number(payload.min_nights || 1);
       payload.max_nights = Number(payload.max_nights || 30);
       if (!payload.property_id) delete payload.property_id; else payload.property_id = Number(payload.property_id);
@@ -163,10 +161,6 @@ const HostNewListing = () => {
           <div>
             <label className="label">Cleaning Fee (₦)</label>
             <input name="cleaning_fee" value={form.cleaning_fee} onChange={onChange} type="number" min="0" className="input" />
-          </div>
-          <div>
-            <label className="label">Service Fee (%)</label>
-            <input name="service_fee_rate" value={form.service_fee_rate} onChange={onChange} type="number" min="0" className="input" />
           </div>
           <div>
             <label className="label">Min Nights</label>

@@ -66,7 +66,7 @@ const HostEditListing = () => {
       // Clean read-only fields
       delete payload.owner; delete payload.property; delete payload.images; delete payload.primary_image; delete payload.created_at; delete payload.updated_at; delete payload.status; delete payload.is_published;
       // Numeric coercion
-      ['capacity_adults','beds','bathrooms','nightly_rate','cleaning_fee','service_fee_rate','min_nights','max_nights'].forEach(k => {
+      ['capacity_adults','beds','bathrooms','nightly_rate','cleaning_fee','min_nights','max_nights'].forEach(k => {
         if (payload[k] !== undefined && payload[k] !== null && payload[k] !== '') payload[k] = Number(payload[k]);
       });
       if (!payload.property_id) delete payload.property_id; else payload.property_id = Number(payload.property_id);
@@ -212,10 +212,6 @@ const HostEditListing = () => {
         <div>
           <label className="label">Cleaning Fee (₦)</label>
           <input name="cleaning_fee" value={form.cleaning_fee || 0} onChange={onChange} type="number" min="0" className="input" />
-        </div>
-        <div>
-          <label className="label">Service Fee (%)</label>
-          <input name="service_fee_rate" value={form.service_fee_rate || 5} onChange={onChange} type="number" min="0" className="input" />
         </div>
         <div>
           <label className="label">Min Nights</label>
