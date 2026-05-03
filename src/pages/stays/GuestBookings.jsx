@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import DashboardShell from '../../components/dashboard/DashboardShell';
 import { staysAPI } from '../../services/api';
-import { Loader2, CalendarDays, Users, MapPin, X, CreditCard, AlertCircle, Star, MessageSquarePlus } from 'lucide-react';
+import { Loader2, CalendarDays, Users, MapPin, X, CreditCard, AlertCircle, Star, MessageSquarePlus, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const STATUS_STYLES = {
@@ -15,6 +15,29 @@ const STATUS_STYLES = {
 };
 
 const CANCELLABLE = ['pending', 'approved', 'confirmed'];
+
+const HostScoreBadge = ({ owner }) => {
+  if (!owner) return null;
+  const score = owner.host_score;
+  const count = owner.host_review_count || 0;
+  return (
+    <span className="inline-flex items-center gap-1.5 text-xs">
+      {owner.is_verified && (
+        <span className="inline-flex items-center gap-0.5 text-sky-600 font-medium">
+          <ShieldCheck size={11} /> Verified host
+        </span>
+      )}
+      {score ? (
+        <span className="inline-flex items-center gap-0.5 text-amber-600 font-medium">
+          <Star size={11} className="fill-amber-400 stroke-amber-400" />
+          {score} <span className="text-dark-400 font-normal">({count})</span>
+        </span>
+      ) : (
+        <span className="text-dark-400 italic">New host</span>
+      )}
+    </span>
+  );
+};
 
 const GuestBookings = () => {
   const [loading, setLoading] = useState(true);
@@ -62,10 +85,16 @@ const GuestBookings = () => {
     if (!reviewComment.trim()) { toast.error('Please write a comment'); return; }
     setSubmittingReview(true);
     try {
-      await staysAPI.submitReview({ booking_id: reviewModal.id, rating: reviewRating, comment: reviewComment.trim() });
+      await staysAPI.submitStayReview({
+        booking_id: reviewModal.id,
+        review_type: 'guest_to_host',
+        rating: reviewRating,
+        comment: reviewComment.trim(),
+      });
       toast.success('Review submitted');
       setReviewedBookings(prev => new Set([...prev, reviewModal.id]));
       setReviewModal(null);
+      load();
     } catch (e) {
       toast.error(e?.response?.data?.detail || 'Failed to submit review');
     } finally { setSubmittingReview(false); }
@@ -132,11 +161,14 @@ const GuestBookings = () => {
                     <span className={`text-xs font-semibold px-2 py-1 rounded-full flex-shrink-0 ${s.cls}`}>{s.label}</span>
                   </div>
 
-                  {b.listing?.city && (
-                    <div className="flex items-center gap-1 text-xs text-dark-500 mt-1">
-                      <MapPin size={11} /> {b.listing.city}
-                    </div>
-                  )}
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-0.5">
+                    {(b.listing?.location?.display || b.listing?.city) && (
+                      <span className="flex items-center gap-1 text-xs text-dark-500">
+                        <MapPin size={11} /> {b.listing.location?.display || b.listing.city}
+                      </span>
+                    )}
+                    <HostScoreBadge owner={b.listing?.owner} />
+                  </div>
 
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-dark-600 mt-2">
                     <span className="flex items-center gap-1"><CalendarDays size={12} /> {b.check_in} → {b.check_out}{nights ? ` (${nights} night${nights !== 1 ? 's' : ''})` : ''}</span>
@@ -152,13 +184,19 @@ const GuestBookings = () => {
                         <CreditCard size={14} /> Pay Now
                       </button>
                     )}
-                    {b.status === 'completed' && !reviewedBookings.has(b.id) && (
+                    {b.status === 'completed' && !reviewedBookings.has(b.id) && !b.my_review && (
                       <button
                         className="btn btn-sm border border-primary text-primary hover:bg-primary/10 flex items-center gap-1"
                         onClick={() => openReview(b)}
                       >
-                        <MessageSquarePlus size={14} /> Leave a Review
+                        <MessageSquarePlus size={14} /> Review this stay
                       </button>
+                    )}
+                    {b.status === 'completed' && (reviewedBookings.has(b.id) || b.my_review) && (
+                      <span className="text-xs text-green-600 flex items-center gap-1 font-medium">
+                        <Star size={12} className="fill-green-500 stroke-green-500" />
+                        Review submitted ({b.my_review?.rating || reviewRating}★)
+                      </span>
                     )}
                     {CANCELLABLE.includes(b.status) && (
                       <button

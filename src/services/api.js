@@ -193,8 +193,9 @@ export const dashboardAPI = {
   createBankAccount: (data) => api.post('/bank-accounts/', data),
   updateBankAccount: (id, data) => api.patch(`/bank-accounts/${id}/`, data),
   deleteBankAccount: (id) => api.delete(`/bank-accounts/${id}/`),
-  // Bank list for selector
+  // Bank list + account verification for selector
   getBanksList: () => api.get('/payments/banks/'),
+  verifyBankAccount: (data) => api.post('/payments/verify-account/', data),
 };
 
 // Stays (short-term rentals)
@@ -232,6 +233,10 @@ export const staysAPI = {
   getReviews: (listingId) => api.get('/stays/reviews/', { params: { listing: listingId } }),
   submitReview: (data) => api.post('/stays/reviews/', data),
   deleteReview: (id) => api.delete(`/stays/reviews/${id}/`),
+  // Bidirectional stay reviews (v2)
+  getStayReviews: (params) => api.get('/stays/stay-reviews/', { params }),
+  submitStayReview: (data) => api.post('/stays/stay-reviews/', data),
+  deleteStayReview: (id) => api.delete(`/stays/stay-reviews/${id}/`),
 };
 
 // Location API

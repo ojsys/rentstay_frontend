@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import DashboardShell from '../../components/dashboard/DashboardShell';
 import { staysAPI } from '../../services/api';
-import { Loader2, CalendarDays, Users, Check, X, AlertCircle } from 'lucide-react';
+import { Loader2, CalendarDays, Users, Check, X, AlertCircle, Star, ShieldCheck, MessageSquarePlus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import useAuthStore from '../../store/authStore';
 
@@ -15,6 +15,31 @@ const STATUS_STYLES = {
   cancelled_host:   { label: 'Declined',      cls: 'bg-red-100 text-red-700' },
 };
 
+const StayerBadge = ({ guest }) => {
+  if (!guest) return null;
+  const score = guest.stayer_score;
+  const count = guest.stayer_review_count || 0;
+  const verified = guest.is_verified;
+
+  return (
+    <span className="inline-flex items-center gap-1.5 flex-wrap">
+      {verified && (
+        <span className="inline-flex items-center gap-0.5 text-sky-600 text-xs font-medium">
+          <ShieldCheck size={11} /> Verified
+        </span>
+      )}
+      {score ? (
+        <span className="inline-flex items-center gap-0.5 text-amber-600 text-xs font-medium">
+          <Star size={11} className="fill-amber-400 stroke-amber-400" />
+          {score} <span className="text-dark-400 font-normal">({count} review{count !== 1 ? 's' : ''})</span>
+        </span>
+      ) : (
+        <span className="text-xs text-dark-400 italic">New stayer</span>
+      )}
+    </span>
+  );
+};
+
 const HostBookings = () => {
   const { user } = useAuthStore();
   const [loading, setLoading] = useState(true);
@@ -22,6 +47,11 @@ const HostBookings = () => {
   const [declineModal, setDeclineModal] = useState(null);
   const [declineReason, setDeclineReason] = useState('');
   const [declining, setDeclining] = useState(false);
+  const [reviewModal, setReviewModal] = useState(null);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [reviewedBookings, setReviewedBookings] = useState(new Set());
 
   const load = async () => {
     try {
@@ -55,6 +85,31 @@ const HostBookings = () => {
     } catch (e) {
       toast.error(e?.response?.data?.detail || 'Failed to decline');
     } finally { setDeclining(false); }
+  };
+
+  const openReview = (booking) => {
+    setReviewModal(booking);
+    setReviewRating(5);
+    setReviewComment('');
+  };
+
+  const submitReview = async () => {
+    if (!reviewComment.trim()) { toast.error('Please write a comment'); return; }
+    setSubmittingReview(true);
+    try {
+      await staysAPI.submitStayReview({
+        booking_id: reviewModal.id,
+        review_type: 'host_to_guest',
+        rating: reviewRating,
+        comment: reviewComment.trim(),
+      });
+      toast.success('Stayer review submitted');
+      setReviewedBookings(prev => new Set([...prev, reviewModal.id]));
+      setReviewModal(null);
+      load();
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || 'Failed to submit review');
+    } finally { setSubmittingReview(false); }
   };
 
   return (
@@ -104,10 +159,13 @@ const HostBookings = () => {
                     <span className={`text-xs font-semibold px-2 py-1 rounded-full flex-shrink-0 ${s.cls}`}>{s.label}</span>
                   </div>
 
-                  <p className="text-sm text-dark-600 mt-0.5">
-                    Guest: <span className="font-medium">{b.guest?.full_name || b.guest?.email}</span>
-                    {b.guest_phone && <> · {b.guest_phone}</>}
-                  </p>
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
+                    <p className="text-sm text-dark-600">
+                      Guest: <span className="font-medium">{b.guest?.first_name} {b.guest?.last_name?.charAt(0) || b.guest?.full_name || b.guest?.email}</span>
+                      {b.guest_phone && <span className="text-dark-400"> · {b.guest_phone}</span>}
+                    </p>
+                    <StayerBadge guest={b.guest} />
+                  </div>
 
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-dark-600 mt-2">
                     <span className="flex items-center gap-1"><CalendarDays size={12} /> {b.check_in} → {b.check_out}{nights ? ` (${nights} night${nights !== 1 ? 's' : ''})` : ''}</span>
@@ -138,6 +196,20 @@ const HostBookings = () => {
                         </button>
                       </>
                     )}
+                    {b.status === 'completed' && !reviewedBookings.has(b.id) && !b.my_review && (
+                      <button
+                        className="btn btn-sm border border-primary text-primary hover:bg-primary/10 flex items-center gap-1"
+                        onClick={() => openReview(b)}
+                      >
+                        <MessageSquarePlus size={14} /> Review stayer
+                      </button>
+                    )}
+                    {b.status === 'completed' && (reviewedBookings.has(b.id) || b.my_review) && (
+                      <span className="text-xs text-green-600 flex items-center gap-1 font-medium">
+                        <Star size={12} className="fill-green-500 stroke-green-500" />
+                        Stayer reviewed ({b.my_review?.rating || reviewRating}★)
+                      </span>
+                    )}
                     {b.cancellation_reason && (
                       <p className="text-xs text-red-500 flex items-center gap-1 self-center">
                         <AlertCircle size={12} /> {b.cancellation_reason}
@@ -148,6 +220,51 @@ const HostBookings = () => {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Review stayer modal */}
+      {reviewModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+            <h3 className="text-lg font-semibold text-dark-900 mb-1">Review your stayer</h3>
+            <p className="text-sm text-dark-500 mb-4">
+              How was <span className="font-medium">{reviewModal.guest?.first_name}</span> as a guest at <span className="font-medium">{reviewModal.listing?.title}</span>?
+            </p>
+            <div className="mb-4">
+              <label className="label mb-2">Rating</label>
+              <div className="flex gap-2">
+                {[1, 2, 3, 4, 5].map(n => (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => setReviewRating(n)}
+                    className={`p-1 transition-transform hover:scale-110 ${n <= reviewRating ? 'text-yellow-400' : 'text-gray-300'}`}
+                  >
+                    <Star size={28} className="fill-current" />
+                  </button>
+                ))}
+              </div>
+            </div>
+            <label className="label">Your feedback</label>
+            <textarea
+              value={reviewComment}
+              onChange={e => setReviewComment(e.target.value)}
+              className="input min-h-[100px] mb-4"
+              placeholder="Were they respectful of the property? Did they follow house rules? Would you host them again?"
+            />
+            <div className="flex gap-3 justify-end">
+              <button className="btn btn-sm" onClick={() => setReviewModal(null)}>Cancel</button>
+              <button
+                className="btn btn-sm btn-primary flex items-center gap-1"
+                disabled={submittingReview}
+                onClick={submitReview}
+              >
+                {submittingReview ? <Loader2 size={14} className="animate-spin" /> : <Star size={14} />}
+                Submit Review
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

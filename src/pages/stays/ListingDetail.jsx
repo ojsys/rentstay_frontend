@@ -6,11 +6,11 @@ import {
   ChefHat, Droplets, Tv, Zap, Car, Shield, WashingMachine, Waves, Dumbbell,
   Coffee, PawPrint, ArrowUpDown, ArrowLeft, ArrowRight, X, Upload, Trash2,
   CheckCircle, AlertCircle, Clock, Info, ChevronLeft, Grid3x3, CreditCard,
+  Building2, Sofa, SquareStack, Navigation, BadgeCheck, CalendarDays,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import useAuthStore from '../../store/authStore';
 
-// Amenity → icon mapping
 const AMENITY_ICONS = {
   'WiFi': Wifi, 'Air conditioning': Wind, 'Kitchen': ChefHat, 'Hot water': Droplets,
   'TV': Tv, 'Generator': Zap, 'Parking': Car, 'Security': Shield,
@@ -27,7 +27,28 @@ const CANCELLATION_LABELS = {
 
 const TYPE_LABELS = { entire: 'Entire place', private_room: 'Private room', shared_room: 'Shared room' };
 
+const PROP_TYPE_ICONS = { apartment: Building2, house: Home, duplex: SquareStack, flat: SquareStack, room: DoorOpen, self_contain: DoorOpen, bungalow: Home };
+
 const today = () => new Date().toISOString().split('T')[0];
+
+const StarRow = ({ score, size = 14 }) => (
+  <span className="flex items-center gap-0.5">
+    {[1, 2, 3, 4, 5].map(n => (
+      <Star key={n} size={size} className={n <= Math.round(score || 0) ? 'fill-yellow-400 text-yellow-400' : 'fill-gray-200 text-gray-200'} />
+    ))}
+  </span>
+);
+
+const ScoreBadge = ({ score, count, label = 'reviews', className = '' }) => {
+  if (!score) return <span className={`text-xs text-dark-400 ${className}`}>No reviews yet</span>;
+  return (
+    <span className={`flex items-center gap-1 text-sm ${className}`}>
+      <Star size={13} className="fill-yellow-400 text-yellow-400" />
+      <span className="font-semibold text-dark-900">{score}</span>
+      <span className="text-dark-400">({count} {label})</span>
+    </span>
+  );
+};
 
 const ListingDetail = () => {
   const { id } = useParams();
@@ -37,7 +58,6 @@ const ListingDetail = () => {
   const [loading, setLoading] = useState(true);
   const [listing, setListing] = useState(null);
 
-  // Booking widget state
   const [checkIn, setCheckIn] = useState(searchParams.get('check_in') || '');
   const [checkOut, setCheckOut] = useState(searchParams.get('check_out') || '');
   const [guests, setGuests] = useState(Number(searchParams.get('guests') || 1));
@@ -45,16 +65,12 @@ const ListingDetail = () => {
   const [quoteLoading, setQuoteLoading] = useState(false);
   const [bookingLoading, setBookingLoading] = useState(false);
 
-  // Guest detail modal
   const [guestModal, setGuestModal] = useState(false);
   const [guestInfo, setGuestInfo] = useState({ name: '', phone: '', note: '' });
 
-  // Photo gallery
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
-  const [showAllPhotos, setShowAllPhotos] = useState(false);
 
-  // Owner image management
   const [uploading, setUploading] = useState(false);
 
   const isOwner = listing && user && listing.owner?.id === user.id;
@@ -69,7 +85,6 @@ const ListingDetail = () => {
 
   useEffect(() => { load(); }, [load]);
 
-  // Auto-get quote when dates + guests are all set
   useEffect(() => {
     if (checkIn && checkOut && listing) getQuote();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -84,15 +99,12 @@ const ListingDetail = () => {
     } catch (e) {
       setQuote(null);
       toast.error(e?.response?.data?.detail || 'Dates not available');
-    } finally {
-      setQuoteLoading(false);
-    }
+    } finally { setQuoteLoading(false); }
   };
 
   const handleBook = () => {
     if (!user) { toast.error('Please log in to book'); return; }
     if (!quote) { toast.error('Select dates first'); return; }
-    // Pre-fill guest name from profile
     setGuestInfo(g => ({ ...g, name: g.name || `${user.first_name || ''} ${user.last_name || ''}`.trim() }));
     setGuestModal(true);
   };
@@ -101,15 +113,7 @@ const ListingDetail = () => {
     if (!guestInfo.name || !guestInfo.phone) { toast.error('Name and phone are required'); return; }
     setBookingLoading(true);
     try {
-      const payload = {
-        listing_id: Number(id),
-        check_in: checkIn,
-        check_out: checkOut,
-        guests,
-        guest_full_name: guestInfo.name,
-        guest_phone: guestInfo.phone,
-        guest_note: guestInfo.note,
-      };
+      const payload = { listing_id: Number(id), check_in: checkIn, check_out: checkOut, guests, guest_full_name: guestInfo.name, guest_phone: guestInfo.phone, guest_note: guestInfo.note };
       const res = await staysAPI.createBooking(payload);
       setGuestModal(false);
       const booking = res.data?.booking;
@@ -118,17 +122,14 @@ const ListingDetail = () => {
           const pay = await staysAPI.initBookingPayment(booking.id);
           const url = pay.data?.authorization_url;
           if (url) { window.location.href = url; return; }
-        } catch { /* fall through to success message */ }
+        } catch { /* fall through */ }
       }
       toast.success(listing?.instant_book ? 'Booking created! Check your bookings to pay.' : 'Request sent! The host will review and approve shortly.');
     } catch (e) {
       toast.error(e?.response?.data?.detail || 'Failed to create booking');
-    } finally {
-      setBookingLoading(false);
-    }
+    } finally { setBookingLoading(false); }
   };
 
-  // Image management (owner only)
   const onUpload = async (e) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
@@ -162,13 +163,25 @@ const ListingDetail = () => {
 
   if (!listing) return (
     <div className="min-h-screen bg-white flex items-center justify-center">
-      <div className="text-center"><p className="text-xl font-semibold text-dark-900 mb-4">Listing not found</p><Link to="/stays" className="btn btn-primary">Browse stays</Link></div>
+      <div className="text-center">
+        <p className="text-xl font-semibold text-dark-900 mb-4">Listing not found</p>
+        <Link to="/stays" className="btn btn-primary">Browse stays</Link>
+      </div>
     </div>
   );
 
   const images = listing.images || [];
   const policy = CANCELLATION_LABELS[listing.cancellation_policy] || CANCELLATION_LABELS.moderate;
   const nights = (checkIn && checkOut) ? Math.max(0, (new Date(checkOut) - new Date(checkIn)) / 86400000) : 0;
+  const loc = listing.location;
+  const propDetails = listing.property_details;
+  const PropTypeIcon = propDetails ? (PROP_TYPE_ICONS[propDetails.type] || Building2) : Building2;
+
+  const mapsUrl = loc?.latitude && loc?.longitude
+    ? `https://www.google.com/maps?q=${loc.latitude},${loc.longitude}`
+    : loc?.display
+      ? `https://www.google.com/maps/search/${encodeURIComponent(loc.display)}`
+      : null;
 
   return (
     <div className="min-h-screen bg-white">
@@ -185,15 +198,18 @@ const ListingDetail = () => {
         <div className="flex flex-wrap items-center gap-3 text-sm text-dark-600">
           {listing.avg_rating
             ? <span className="flex items-center gap-1"><Star size={13} className="fill-yellow-400 text-yellow-400" /> {listing.avg_rating} <span className="text-dark-500">({listing.review_count} review{listing.review_count !== 1 ? 's' : ''})</span></span>
-            : <span className="flex items-center gap-1"><Star size={13} className="fill-dark-400 text-dark-400" /> New</span>
+            : <span className="flex items-center gap-1 text-dark-400"><Star size={13} /> New listing</span>
           }
-          {listing.property?.address && <span className="flex items-center gap-1"><MapPin size={13} /> {listing.property.address}</span>}
+          {loc?.display && (
+            <span className="flex items-center gap-1"><MapPin size={13} /> {loc.display}</span>
+          )}
           <span className="capitalize px-2 py-0.5 bg-gray-100 rounded-full text-xs font-medium">{TYPE_LABELS[listing.listing_type] || listing.listing_type}</span>
           {listing.instant_book && <span className="flex items-center gap-1 px-2 py-0.5 bg-primary/10 text-primary rounded-full text-xs font-medium"><Zap size={11} /> Instant book</span>}
+          {listing.require_guest_verification && <span className="flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-700 rounded-full text-xs font-medium"><BadgeCheck size={11} /> Verification required</span>}
         </div>
       </div>
 
-      {/* Photo Gallery Grid */}
+      {/* Photo Gallery */}
       <div className="container-custom mb-8">
         {images.length === 0 && !isOwner ? (
           <div className="aspect-[16/7] bg-gray-100 rounded-2xl flex items-center justify-center text-dark-400">No photos yet</div>
@@ -201,11 +217,9 @@ const ListingDetail = () => {
           <div className="relative">
             {images.length >= 2 ? (
               <div className="grid grid-cols-2 md:grid-cols-4 grid-rows-2 gap-2 h-[320px] md:h-[420px] rounded-2xl overflow-hidden">
-                {/* Main large image */}
                 <div className="col-span-2 row-span-2 cursor-pointer" onClick={() => { setGalleryIndex(0); setGalleryOpen(true); }}>
                   <img src={images[0]?.image || listing.primary_image} alt="" className="w-full h-full object-cover hover:opacity-95 transition-opacity" />
                 </div>
-                {/* Side images */}
                 {images.slice(1, 5).map((img, i) => (
                   <div key={img.id} className="cursor-pointer overflow-hidden" onClick={() => { setGalleryIndex(i + 1); setGalleryOpen(true); }}>
                     <img src={img.image} alt="" className="w-full h-full object-cover hover:opacity-95 transition-opacity" />
@@ -217,18 +231,11 @@ const ListingDetail = () => {
                 <img src={images[0]?.image || listing.primary_image} alt="" className="w-full h-full object-cover" />
               </div>
             )}
-
-            {/* Show all photos button */}
             {images.length > 0 && (
-              <button
-                onClick={() => { setGalleryIndex(0); setGalleryOpen(true); }}
-                className="absolute bottom-3 right-3 flex items-center gap-1.5 bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-sm font-medium text-dark-800 hover:bg-gray-50 shadow-sm"
-              >
+              <button onClick={() => { setGalleryIndex(0); setGalleryOpen(true); }} className="absolute bottom-3 right-3 flex items-center gap-1.5 bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-sm font-medium text-dark-800 hover:bg-gray-50 shadow-sm">
                 <Grid3x3 size={14} /> Show all photos ({images.length})
               </button>
             )}
-
-            {/* Owner image controls */}
             {isOwner && (
               <div className="absolute top-3 left-3">
                 <label className="flex items-center gap-1.5 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-lg px-3 py-1.5 text-sm font-medium text-dark-800 cursor-pointer hover:bg-white shadow-sm">
@@ -239,8 +246,6 @@ const ListingDetail = () => {
             )}
           </div>
         )}
-
-        {/* Owner per-image controls */}
         {isOwner && images.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-2">
             {images.map(img => (
@@ -263,25 +268,53 @@ const ListingDetail = () => {
           {/* Left column */}
           <div className="lg:col-span-2 space-y-8">
 
-            {/* Capacity row */}
+            {/* Capacity + property type row */}
             <div className="border-b border-gray-100 pb-6">
               <div className="flex flex-wrap gap-6 text-dark-700">
                 <span className="flex items-center gap-2"><Users size={18} className="text-primary" /> <span className="font-medium">{listing.capacity_adults}</span> guest{listing.capacity_adults !== 1 ? 's' : ''}</span>
                 <span className="flex items-center gap-2"><BedDouble size={18} className="text-primary" /> <span className="font-medium">{listing.beds}</span> bed{listing.beds !== 1 ? 's' : ''}</span>
                 <span className="flex items-center gap-2"><Bath size={18} className="text-primary" /> <span className="font-medium">{listing.bathrooms}</span> bath{listing.bathrooms !== 1 ? 's' : ''}</span>
+                {propDetails && (
+                  <span className="flex items-center gap-2"><PropTypeIcon size={18} className="text-primary" /> {propDetails.label}</span>
+                )}
+                {propDetails?.is_furnished && (
+                  <span className="flex items-center gap-2"><Sofa size={18} className="text-primary" /> Furnished</span>
+                )}
               </div>
             </div>
 
-            {/* Host verification badge */}
-            {listing.owner?.is_verified && (
-              <div className="flex items-center gap-3 border border-gray-100 rounded-xl p-4 bg-gray-50">
-                <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-bold flex-shrink-0">
-                  {(listing.owner.first_name?.[0] || '?').toUpperCase()}
+            {/* Host profile card */}
+            <HostCard owner={listing.owner} />
+
+            {/* Location section */}
+            {loc?.display && (
+              <div className="border-b border-gray-100 pb-6">
+                <h2 className="text-xl font-semibold text-dark-900 mb-4 flex items-center gap-2">
+                  <MapPin size={18} className="text-primary" /> Location
+                </h2>
+                <div className="flex flex-wrap gap-3 text-sm text-dark-700 mb-3">
+                  {loc.area && (
+                    <span className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5">
+                      <Navigation size={13} className="text-primary" /> {loc.area}
+                    </span>
+                  )}
+                  {loc.lga && (
+                    <span className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5">
+                      <MapPin size={13} className="text-dark-400" /> {loc.lga} LGA
+                    </span>
+                  )}
+                  {loc.state && (
+                    <span className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5">
+                      <MapPin size={13} className="text-dark-400" /> {loc.state} State
+                    </span>
+                  )}
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-dark-900">{listing.owner.first_name} {listing.owner.last_name}</p>
-                  <p className="text-xs text-dark-500 flex items-center gap-1"><CheckCircle size={11} className="text-green-500" /> Verified host</p>
-                </div>
+                <p className="text-sm text-dark-500 mb-3">Exact address is provided after booking confirmation.</p>
+                {mapsUrl && (
+                  <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline font-medium">
+                    <Navigation size={14} /> View on Google Maps
+                  </a>
+                )}
               </div>
             )}
 
@@ -319,7 +352,7 @@ const ListingDetail = () => {
               </div>
             )}
 
-            {/* Check-in / Check-out instructions */}
+            {/* Check-in / Check-out */}
             {(listing.check_in_instructions || listing.check_out_instructions) && (
               <div className="border-b border-gray-100 pb-6 space-y-4">
                 {listing.check_in_instructions && (
@@ -355,7 +388,7 @@ const ListingDetail = () => {
               {listing.max_nights < 365 && <> · <span className="font-medium">{listing.max_nights}</span> nights max</>}
             </div>
 
-            {/* Reviews */}
+            {/* Guest reviews section */}
             <ReviewsSection listingId={listing.id} avgRating={listing.avg_rating} reviewCount={listing.review_count} />
           </div>
 
@@ -363,13 +396,10 @@ const ListingDetail = () => {
           <div className="lg:col-span-1">
             <div className="sticky top-24">
               <div className="border border-gray-200 rounded-2xl shadow-soft p-6 bg-white">
-                {/* Price */}
                 <div className="flex items-baseline gap-1 mb-5">
                   <span className="text-2xl font-bold text-dark-900">₦{Number(listing.nightly_rate).toLocaleString()}</span>
                   <span className="text-dark-500 text-sm">/ night</span>
                 </div>
-
-                {/* Date inputs */}
                 <div className="border border-gray-200 rounded-xl overflow-hidden mb-3">
                   <div className="grid grid-cols-2">
                     <div className="p-3 border-r border-gray-200">
@@ -392,56 +422,37 @@ const ListingDetail = () => {
                   </div>
                 </div>
 
-                {/* Price breakdown */}
-                {quoteLoading && (
-                  <div className="flex items-center gap-2 text-sm text-dark-500 mb-3"><Loader2 size={14} className="animate-spin" /> Checking availability…</div>
-                )}
+                {quoteLoading && <div className="flex items-center gap-2 text-sm text-dark-500 mb-3"><Loader2 size={14} className="animate-spin" /> Checking availability…</div>}
                 {quote && !quoteLoading && (
                   <div className="bg-gray-50 rounded-xl p-4 mb-4 space-y-2 text-sm">
                     <div className="flex justify-between text-dark-700">
                       <span>₦{Number(listing.nightly_rate).toLocaleString()} × {quote.nights} night{quote.nights !== 1 ? 's' : ''}</span>
                       <span>₦{Number(quote.amount_subtotal).toLocaleString()}</span>
                     </div>
-                    {Number(quote.cleaning_fee) > 0 && (
-                      <div className="flex justify-between text-dark-700">
-                        <span>Cleaning fee</span>
-                        <span>₦{Number(quote.cleaning_fee).toLocaleString()}</span>
-                      </div>
-                    )}
-                    {Number(quote.service_fee) > 0 && (
-                      <div className="flex justify-between text-dark-700">
-                        <span>Service fee</span>
-                        <span>₦{Number(quote.service_fee).toLocaleString()}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between font-bold text-dark-900 border-t border-gray-200 pt-2 mt-2">
-                      <span>Total</span>
-                      <span>₦{Number(quote.amount_total).toLocaleString()}</span>
-                    </div>
+                    {Number(quote.cleaning_fee) > 0 && <div className="flex justify-between text-dark-700"><span>Cleaning fee</span><span>₦{Number(quote.cleaning_fee).toLocaleString()}</span></div>}
+                    {Number(quote.service_fee) > 0 && <div className="flex justify-between text-dark-700"><span>Service fee</span><span>₦{Number(quote.service_fee).toLocaleString()}</span></div>}
+                    <div className="flex justify-between font-bold text-dark-900 border-t border-gray-200 pt-2 mt-2"><span>Total</span><span>₦{Number(quote.amount_total).toLocaleString()}</span></div>
                   </div>
                 )}
 
-                {/* Book button */}
                 {!isOwner ? (
-                  <button
-                    onClick={handleBook}
-                    disabled={bookingLoading || !checkIn || !checkOut}
-                    className="btn btn-primary w-full py-3 text-base font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
+                  <button onClick={handleBook} disabled={bookingLoading || !checkIn || !checkOut} className="btn btn-primary w-full py-3 text-base font-semibold disabled:opacity-50 disabled:cursor-not-allowed">
                     {bookingLoading ? <Loader2 size={18} className="animate-spin mx-auto" /> : listing.instant_book ? <span className="flex items-center justify-center gap-2"><Zap size={16} /> Reserve</span> : 'Request to book'}
                   </button>
                 ) : (
-                  <Link to={`/stays/listings/${id}/edit`} className="btn btn-secondary w-full py-3 text-center font-semibold block">
-                    Edit listing
-                  </Link>
+                  <Link to={`/stays/listings/${id}/edit`} className="btn btn-secondary w-full py-3 text-center font-semibold block">Edit listing</Link>
                 )}
 
-                {!checkIn || !checkOut ? (
+                {listing.require_guest_verification && !user?.is_verified && !isOwner && (
+                  <p className="mt-3 text-xs text-amber-600 flex items-center gap-1.5 bg-amber-50 p-2 rounded-lg">
+                    <BadgeCheck size={13} className="flex-shrink-0" /> This host requires verified guests. <Link to="/profile" className="underline font-medium">Get verified</Link>
+                  </p>
+                )}
+
+                {(!checkIn || !checkOut) ? (
                   <p className="text-center text-xs text-dark-400 mt-3">Add dates to see pricing</p>
                 ) : (
-                  <p className="text-center text-xs text-dark-400 mt-3">
-                    {listing.instant_book ? "You won't be charged yet" : 'Host approval required before payment'}
-                  </p>
+                  <p className="text-center text-xs text-dark-400 mt-3">{listing.instant_book ? "You won't be charged yet" : 'Host approval required before payment'}</p>
                 )}
               </div>
             </div>
@@ -457,8 +468,6 @@ const ListingDetail = () => {
               <h3 className="text-lg font-semibold text-dark-900">Confirm your booking</h3>
               <button onClick={() => setGuestModal(false)} className="text-dark-400 hover:text-dark-700 p-1"><X size={20} /></button>
             </div>
-
-            {/* Booking summary */}
             <div className="p-5 bg-gray-50 border-b border-gray-100">
               <div className="flex items-start gap-3">
                 <img src={listing.primary_image || '/placeholder-property.jpg'} alt="" className="w-16 h-16 rounded-lg object-cover flex-shrink-0" />
@@ -469,7 +478,6 @@ const ListingDetail = () => {
                 </div>
               </div>
             </div>
-
             <div className="p-5 space-y-4">
               <div>
                 <label className="label">Full name <span className="text-red-500">*</span></label>
@@ -483,12 +491,10 @@ const ListingDetail = () => {
                 <label className="label">Note to host <span className="text-dark-400 font-normal text-xs">(optional)</span></label>
                 <textarea className="input min-h-[70px] resize-none" value={guestInfo.note} onChange={(e) => setGuestInfo(g => ({ ...g, note: e.target.value }))} placeholder="Special requests, ETA, etc." />
               </div>
-
               <div className={`flex items-start gap-2 text-xs p-3 rounded-lg ${listing.instant_book ? 'bg-primary/5 text-primary' : 'bg-amber-50 text-amber-700'}`}>
                 {listing.instant_book ? <Zap size={13} className="mt-0.5 flex-shrink-0" /> : <AlertCircle size={13} className="mt-0.5 flex-shrink-0" />}
                 <span>{listing.instant_book ? "This is an instant book — you'll be taken to payment immediately." : "The host will need to approve before you pay."}</span>
               </div>
-
               <div className="flex gap-3 pt-1">
                 <button className="btn flex-1" onClick={() => setGuestModal(false)}>Cancel</button>
                 <button className="btn btn-primary flex-1 flex items-center justify-center gap-2" onClick={submitBooking} disabled={bookingLoading}>
@@ -500,7 +506,7 @@ const ListingDetail = () => {
         </div>
       )}
 
-      {/* Full-screen gallery lightbox */}
+      {/* Lightbox */}
       {galleryOpen && images.length > 0 && (
         <div className="fixed inset-0 bg-black z-50 flex flex-col">
           <div className="flex items-center justify-between px-4 py-3 text-white">
@@ -512,7 +518,6 @@ const ListingDetail = () => {
             <img src={images[galleryIndex]?.image} alt="" className="max-h-[80vh] max-w-full object-contain rounded-lg" />
             <button onClick={() => setGalleryIndex(i => (i + 1) % images.length)} className="text-white p-3 rounded-full hover:bg-white/10 flex-shrink-0 transition"><ArrowRight size={24} /></button>
           </div>
-          {/* Thumbnails */}
           <div className="flex justify-center gap-2 p-4 overflow-x-auto">
             {images.map((img, i) => (
               <button key={img.id} onClick={() => setGalleryIndex(i)} className={`flex-shrink-0 w-14 h-10 rounded overflow-hidden border-2 transition-all ${i === galleryIndex ? 'border-white' : 'border-transparent opacity-60 hover:opacity-100'}`}>
@@ -526,19 +531,79 @@ const ListingDetail = () => {
   );
 };
 
+/* ── Host profile card ── */
+const HostCard = ({ owner }) => {
+  if (!owner) return null;
+  const initials = `${owner.first_name?.[0] || ''}${owner.last_name?.[0] || ''}`.toUpperCase() || '?';
+  return (
+    <div className="border border-gray-100 rounded-2xl p-5 bg-gray-50 border-b border-gray-100 pb-6">
+      <h2 className="text-lg font-semibold text-dark-900 mb-4">Your host</h2>
+      <div className="flex items-start gap-4">
+        {/* Avatar */}
+        <div className="flex-shrink-0">
+          {owner.profile_picture ? (
+            <img src={owner.profile_picture} alt={owner.first_name} className="w-16 h-16 rounded-full object-cover border-2 border-white shadow-sm" />
+          ) : (
+            <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center text-white text-xl font-bold shadow-sm">{initials}</div>
+          )}
+        </div>
+        {/* Info */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="font-semibold text-dark-900">{owner.first_name} {owner.last_name?.[0]}.</p>
+            {owner.is_verified && (
+              <span className="flex items-center gap-1 text-xs text-green-700 bg-green-50 px-2 py-0.5 rounded-full font-medium">
+                <CheckCircle size={11} /> Verified host
+              </span>
+            )}
+            {owner.verification_tier === 'verified_plus' && (
+              <span className="flex items-center gap-1 text-xs text-primary bg-primary/10 px-2 py-0.5 rounded-full font-medium">
+                <BadgeCheck size={11} /> Verified+
+              </span>
+            )}
+          </div>
+          {/* Host score */}
+          <div className="mt-1.5 flex flex-wrap items-center gap-3">
+            {owner.host_score ? (
+              <span className="flex items-center gap-1 text-sm">
+                <Star size={13} className="fill-yellow-400 text-yellow-400" />
+                <span className="font-semibold text-dark-900">{owner.host_score}</span>
+                <span className="text-dark-400 text-xs">({owner.host_review_count} review{owner.host_review_count !== 1 ? 's' : ''})</span>
+              </span>
+            ) : (
+              <span className="text-xs text-dark-400">No host reviews yet</span>
+            )}
+            {owner.member_since && (
+              <span className="flex items-center gap-1 text-xs text-dark-500">
+                <CalendarDays size={11} /> Hosting since {owner.member_since}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ── Reviews section (guest → host/listing) ── */
 const ReviewsSection = ({ listingId, avgRating, reviewCount }) => {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    staysAPI.getReviews(listingId)
+    staysAPI.getStayReviews({ listing: listingId })
       .then(r => setReviews(r.data.results || r.data || []))
       .catch(() => setReviews([]))
       .finally(() => setLoading(false));
   }, [listingId]);
 
   if (loading) return null;
-  if (!reviews.length) return null;
+  if (!reviews.length) return (
+    <div className="border-b border-gray-100 pb-6">
+      <h2 className="text-xl font-semibold text-dark-900 mb-1">Guest reviews</h2>
+      <p className="text-sm text-dark-400 mt-2">No reviews yet for this listing.</p>
+    </div>
+  );
 
   return (
     <div className="border-b border-gray-100 pb-6">
@@ -547,24 +612,26 @@ const ReviewsSection = ({ listingId, avgRating, reviewCount }) => {
         {avgRating ? `${avgRating} · ` : ''}{reviewCount} Review{reviewCount !== 1 ? 's' : ''}
       </h2>
       <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-        {reviews.map(r => (
-          <div key={r.id} className="space-y-1">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm flex-shrink-0">
-                {(r.reviewer?.full_name || r.reviewer?.email || '?')[0].toUpperCase()}
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-dark-900">{r.reviewer?.full_name || r.reviewer?.email}</p>
-                <div className="flex gap-0.5">
-                  {[1,2,3,4,5].map(n => (
-                    <Star key={n} size={11} className={n <= r.rating ? 'fill-yellow-400 text-yellow-400' : 'fill-gray-200 text-gray-200'} />
-                  ))}
+        {reviews.map(r => {
+          const reviewer = r.reviewer;
+          const initials = `${reviewer?.first_name?.[0] || ''}${reviewer?.last_name?.[0] || ''}`.toUpperCase() || '?';
+          return (
+            <div key={r.id} className="space-y-1">
+              <div className="flex items-center gap-2">
+                {reviewer?.profile_picture ? (
+                  <img src={reviewer.profile_picture} alt="" className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm flex-shrink-0">{initials}</div>
+                )}
+                <div>
+                  <p className="text-sm font-semibold text-dark-900">{reviewer?.first_name} {reviewer?.last_name?.[0]}.</p>
+                  <div className="flex gap-0.5">{[1,2,3,4,5].map(n => <Star key={n} size={11} className={n <= r.rating ? 'fill-yellow-400 text-yellow-400' : 'fill-gray-200 text-gray-200'} />)}</div>
                 </div>
               </div>
+              <p className="text-sm text-dark-700 leading-relaxed pl-10">{r.comment}</p>
             </div>
-            <p className="text-sm text-dark-700 leading-relaxed pl-10">{r.comment}</p>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
