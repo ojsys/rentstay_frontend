@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { staysAPI } from '../../services/api';
-import { Loader2, Upload, Plus, Eye, Edit, Bed, TrendingUp, Calendar, CheckCircle, X, AlertCircle, Star } from 'lucide-react';
+import { staysAPI, dashboardAPI } from '../../services/api';
+import { Loader2, Upload, Plus, Eye, Edit, Bed, TrendingUp, Calendar, CheckCircle, X, AlertCircle, Star, Banknote, ArrowDownToLine, Clock } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const STATUS_STYLES = {
@@ -13,7 +13,9 @@ const STATUS_STYLES = {
   cancelled_host:  { label: 'Declined',   cls: 'bg-red-100 text-red-700' },
 };
 
-const StatCard = ({ icon: Icon, label, value, sub }) => (
+const StatCard = ({ icon, label, value, sub }) => {
+  const Icon = icon;
+  return (
   <div className="card p-5 flex items-start gap-4">
     <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
       <Icon size={18} className="text-primary" />
@@ -24,7 +26,8 @@ const StatCard = ({ icon: Icon, label, value, sub }) => (
       {sub && <p className="text-xs text-dark-500 mt-0.5">{sub}</p>}
     </div>
   </div>
-);
+  );
+};
 
 const LandlordDashboardStays = () => {
   const [activeSection, setActiveSection] = useState('listings');
@@ -40,6 +43,15 @@ const LandlordDashboardStays = () => {
   const [declineModal, setDeclineModal] = useState(null);
   const [declineReason, setDeclineReason] = useState('');
   const [declining, setDeclining] = useState(false);
+
+  // Earnings / payouts
+  const [earningsData, setEarningsData] = useState(null);
+  const [earningsLoading, setEarningsLoading] = useState(false);
+  const [bankAccounts, setBankAccounts] = useState([]);
+  const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [withdrawAccount, setWithdrawAccount] = useState('');
+  const [withdrawing, setWithdrawing] = useState(false);
+  const [showWithdrawForm, setShowWithdrawForm] = useState(false);
 
   const loadListings = async () => {
     try {
@@ -61,12 +73,44 @@ const LandlordDashboardStays = () => {
     } finally { setBookingsLoading(false); }
   };
 
+  const loadEarnings = async () => {
+    setEarningsLoading(true);
+    try {
+      const [earnRes, bankRes] = await Promise.all([
+        staysAPI.getHostEarnings(),
+        dashboardAPI.getBankAccounts(),
+      ]);
+      setEarningsData(earnRes.data);
+      setBankAccounts(bankRes.data.results || bankRes.data || []);
+    } catch { /* silent */ }
+    finally { setEarningsLoading(false); }
+  };
+
   useEffect(() => { loadListings(); }, [filters]); // eslint-disable-line
   useEffect(() => { if (activeSection !== 'listings') loadBookings(); }, [activeSection]);
+  useEffect(() => { if (activeSection === 'earnings') loadEarnings(); }, [activeSection]);
 
   const publish = async (id) => { try { await staysAPI.publish(id); loadListings(); toast.success('Published'); } catch { toast.error('Failed'); } };
   const unpublish = async (id) => { try { await staysAPI.unpublish(id); loadListings(); toast.success('Unpublished'); } catch { toast.error('Failed'); } };
   const approve = async (id) => { try { await staysAPI.approveBooking(id); toast.success('Approved'); loadBookings(); } catch { toast.error('Failed'); } };
+
+  const requestWithdraw = async (e) => {
+    e.preventDefault();
+    if (!withdrawAccount) { toast.error('Select a bank account'); return; }
+    if (!withdrawAmount || Number(withdrawAmount) <= 0) { toast.error('Enter a valid amount'); return; }
+    const available = Number(earningsData?.available_balance || 0);
+    if (Number(withdrawAmount) > available) { toast.error(`Amount exceeds available balance of ₦${available.toLocaleString()}`); return; }
+    setWithdrawing(true);
+    try {
+      await staysAPI.requestHostPayout({ bank_account_id: Number(withdrawAccount), amount: Number(withdrawAmount) });
+      toast.success('Withdrawal request submitted — we\'ll process it within 24 hours');
+      setShowWithdrawForm(false);
+      setWithdrawAmount('');
+      loadEarnings();
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || 'Failed to submit request');
+    } finally { setWithdrawing(false); }
+  };
 
   const openDecline = (b) => { setDeclineModal(b); setDeclineReason(''); };
   const confirmDecline = async () => {
@@ -262,16 +306,123 @@ const LandlordDashboardStays = () => {
       {/* Earnings */}
       {activeSection === 'earnings' && (
         <div className="space-y-6">
-          {bookingsLoading ? (
+          {(bookingsLoading || earningsLoading) ? (
             <div className="flex items-center justify-center py-12 text-dark-500"><Loader2 className="animate-spin mr-2" /> Loading...</div>
           ) : (
             <>
+              {/* Booking revenue stats */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatCard icon={TrendingUp} label="Total Revenue" value={`₦${earnings.total.toLocaleString()}`} sub="Confirmed + completed bookings" />
                 <StatCard icon={Calendar} label="Nights Booked" value={earnings.nights} sub="Paid bookings" />
                 <StatCard icon={CheckCircle} label="Completed Stays" value={earnings.completed} />
                 <StatCard icon={AlertCircle} label="Pending Requests" value={earnings.pending} sub="Awaiting approval" />
               </div>
+
+              {/* Withdrawal wallet */}
+              {earningsData && (
+                <div className="card border border-primary/20 bg-primary/5">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+                    <div>
+                      <p className="text-xs text-dark-500 font-medium uppercase tracking-wide mb-1">Available for Withdrawal</p>
+                      <p className="text-3xl font-bold text-primary">₦{Number(earningsData.available_balance).toLocaleString()}</p>
+                      <p className="text-xs text-dark-500 mt-1">
+                        Total earned: ₦{Number(earningsData.total_earned).toLocaleString()} &nbsp;·&nbsp;
+                        Withdrawn: ₦{Number(earningsData.total_withdrawn).toLocaleString()}
+                      </p>
+                    </div>
+                    {Number(earningsData.available_balance) > 0 && (
+                      <button
+                        className="btn btn-primary flex items-center gap-2 self-start sm:self-center"
+                        onClick={() => setShowWithdrawForm(v => !v)}
+                      >
+                        <ArrowDownToLine size={16} /> Withdraw Funds
+                      </button>
+                    )}
+                  </div>
+
+                  {showWithdrawForm && (
+                    <form onSubmit={requestWithdraw} className="border-t border-primary/20 pt-4 space-y-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="label">Bank Account</label>
+                          {bankAccounts.length === 0 ? (
+                            <p className="text-sm text-dark-500">
+                              No bank accounts added.{' '}
+                              <Link to="/dashboard/payments" className="text-primary underline">Add one here.</Link>
+                            </p>
+                          ) : (
+                            <select
+                              className="input"
+                              value={withdrawAccount}
+                              onChange={e => setWithdrawAccount(e.target.value)}
+                              required
+                            >
+                              <option value="">— Select account —</option>
+                              {bankAccounts.map(ba => (
+                                <option key={ba.id} value={ba.id}>
+                                  {ba.bank_name} — {ba.account_number} ({ba.account_name})
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                        </div>
+                        <div>
+                          <label className="label">
+                            Amount (₦) — max ₦{Number(earningsData.available_balance).toLocaleString()}
+                          </label>
+                          <input
+                            type="number"
+                            className="input"
+                            min="1"
+                            max={earningsData.available_balance}
+                            value={withdrawAmount}
+                            onChange={e => setWithdrawAmount(e.target.value)}
+                            placeholder="0.00"
+                            required
+                          />
+                        </div>
+                      </div>
+                      <p className="text-xs text-dark-500">
+                        Requests are reviewed within 24 hours and transferred directly to your bank account.
+                      </p>
+                      <div className="flex gap-2">
+                        <button type="submit" disabled={withdrawing || bankAccounts.length === 0} className="btn btn-primary btn-sm flex items-center gap-1">
+                          {withdrawing ? <Loader2 size={14} className="animate-spin" /> : <Banknote size={14} />}
+                          Submit Request
+                        </button>
+                        <button type="button" className="btn btn-sm" onClick={() => setShowWithdrawForm(false)}>Cancel</button>
+                      </div>
+                    </form>
+                  )}
+
+                  {/* Payout history */}
+                  {earningsData.recent_payouts?.length > 0 && (
+                    <div className="mt-4 border-t border-primary/20 pt-4">
+                      <h4 className="text-sm font-semibold text-dark-900 mb-3">Withdrawal History</h4>
+                      <div className="space-y-2">
+                        {earningsData.recent_payouts.map(p => {
+                          const statusCls = {
+                            pending: 'bg-yellow-100 text-yellow-800',
+                            processing: 'bg-blue-100 text-blue-800',
+                            completed: 'bg-green-100 text-green-800',
+                            failed: 'bg-red-100 text-red-700',
+                          }[p.status] || 'bg-gray-100 text-gray-700';
+                          return (
+                            <div key={p.id} className="flex items-center justify-between text-sm gap-2 flex-wrap">
+                              <span className="flex items-center gap-1.5 text-dark-600">
+                                <Clock size={12} /> {new Date(p.created_at).toLocaleDateString()}
+                              </span>
+                              <span className="font-semibold text-dark-900">₦{Number(p.amount).toLocaleString()}</span>
+                              <span className="text-dark-500 text-xs">{p.bank_account?.bank_name} — {p.bank_account?.account_number}</span>
+                              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${statusCls}`}>{p.status}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {earnings.topListings.length > 0 && (
                 <div className="card">
@@ -307,19 +458,23 @@ const LandlordDashboardStays = () => {
                           <th className="pb-3 pr-4">Listing</th>
                           <th className="pb-3 pr-4">Guest</th>
                           <th className="pb-3 pr-4">Dates</th>
-                          <th className="pb-3 pr-4">Amount</th>
+                          <th className="pb-3 pr-4">Host Earnings</th>
                           <th className="pb-3">Status</th>
                         </tr>
                       </thead>
                       <tbody>
                         {bookings.filter(b => ['confirmed', 'completed'].includes(b.status)).map(b => {
                           const s = STATUS_STYLES[b.status] || { label: b.status, cls: 'bg-gray-100 text-gray-700' };
+                          const hostEarning = Number(b.amount_subtotal || 0) + Number(b.cleaning_fee || 0);
                           return (
                             <tr key={b.id} className="border-t border-gray-50">
                               <td className="py-2.5 pr-4 font-medium text-dark-900 max-w-[150px] truncate">{b.listing?.title}</td>
-                              <td className="py-2.5 pr-4 text-dark-600">{b.guest?.full_name || b.guest?.email}</td>
+                              <td className="py-2.5 pr-4 text-dark-600">{b.guest?.first_name || b.guest?.full_name || b.guest?.email}</td>
                               <td className="py-2.5 pr-4 text-dark-600 whitespace-nowrap">{b.check_in} → {b.check_out}</td>
-                              <td className="py-2.5 pr-4 font-semibold text-dark-900">₦{Number(b.amount_total).toLocaleString()}</td>
+                              <td className="py-2.5 pr-4">
+                                <span className="font-semibold text-dark-900">₦{hostEarning.toLocaleString()}</span>
+                                <span className="text-xs text-dark-400 ml-1">(of ₦{Number(b.amount_total).toLocaleString()} paid)</span>
+                              </td>
                               <td className="py-2.5"><span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${s.cls}`}>{s.label}</span></td>
                             </tr>
                           );

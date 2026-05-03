@@ -237,6 +237,9 @@ export const staysAPI = {
   getStayReviews: (params) => api.get('/stays/stay-reviews/', { params }),
   submitStayReview: (data) => api.post('/stays/stay-reviews/', data),
   deleteStayReview: (id) => api.delete(`/stays/stay-reviews/${id}/`),
+  // Host earnings & withdrawals
+  getHostEarnings: () => api.get('/stays/host/earnings/'),
+  requestHostPayout: (data) => api.post('/stays/host/request-payout/', data),
 };
 
 // Location API
