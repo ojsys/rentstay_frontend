@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import DashboardShell from '../../components/dashboard/DashboardShell';
-import { staysAPI, propertyAPI } from '../../services/api';
-import { Loader2, Home, CheckCircle } from 'lucide-react';
+import { staysAPI, propertyAPI, locationAPI } from '../../services/api';
+import { Loader2, Home, CheckCircle, MapPin } from 'lucide-react';
 import RichTextEditor from '../../components/common/RichTextEditor';
 import toast from 'react-hot-toast';
 
@@ -14,6 +14,8 @@ const AMENITY_OPTIONS = [
 const HostNewListing = () => {
   const [loading, setLoading] = useState(false);
   const [properties, setProperties] = useState([]);
+  const [states, setStates] = useState([]);
+  const [lgas, setLgas] = useState([]);
   const [form, setForm] = useState({
     title: '',
     description: '',
@@ -32,18 +34,41 @@ const HostNewListing = () => {
     check_in_instructions: '',
     check_out_instructions: '',
     house_rules: '',
+    address: '',
+    area: '',
+    state_id: '',
+    lga_id: '',
+    latitude: '',
+    longitude: '',
   });
   const [created, setCreated] = useState(null);
 
   useEffect(() => {
-    const loadProps = async () => {
+    const init = async () => {
       try {
-        const res = await propertyAPI.getAll({ mine: 1, ordering: '-created_at' });
-        setProperties(res.data.results || res.data || []);
+        const [propsRes, statesRes] = await Promise.all([
+          propertyAPI.getAll({ mine: 1, ordering: '-created_at' }),
+          locationAPI.getStates(),
+        ]);
+        setProperties(propsRes.data.results || propsRes.data || []);
+        setStates(statesRes.data.results || statesRes.data || []);
       } catch { setProperties([]); }
     };
-    loadProps();
+    init();
   }, []);
+
+  const onStateChange = async (e) => {
+    const stateId = e.target.value;
+    setForm(prev => ({ ...prev, state_id: stateId, lga_id: '' }));
+    if (stateId) {
+      try {
+        const res = await locationAPI.getLGAs(stateId);
+        setLgas(res.data.results || res.data || []);
+      } catch { setLgas([]); }
+    } else {
+      setLgas([]);
+    }
+  };
 
   const onChange = (e) => {
     const { name, type, checked, value } = e.target;
@@ -76,6 +101,10 @@ const HostNewListing = () => {
       payload.min_nights = Number(payload.min_nights || 1);
       payload.max_nights = Number(payload.max_nights || 30);
       if (!payload.property_id) delete payload.property_id; else payload.property_id = Number(payload.property_id);
+      if (!payload.state_id) delete payload.state_id; else payload.state_id = Number(payload.state_id);
+      if (!payload.lga_id) delete payload.lga_id; else payload.lga_id = Number(payload.lga_id);
+      if (!payload.latitude) delete payload.latitude;
+      if (!payload.longitude) delete payload.longitude;
 
       const res = await staysAPI.createListing(payload);
       setCreated(res.data);
@@ -173,6 +202,57 @@ const HostNewListing = () => {
           <label className="inline-flex items-center gap-2 text-sm text-dark-700">
             <input type="checkbox" name="instant_book" checked={!!form.instant_book} onChange={onChange} /> Instant Book
           </label>
+
+          {/* Location */}
+          <div className="md:col-span-2">
+            <div className="flex items-center gap-2 mb-3 mt-2">
+              <MapPin size={16} className="text-primary" />
+              <h3 className="font-semibold text-dark-900">Location</h3>
+              <span className="text-xs text-dark-400">(used when not linked to a property)</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="md:col-span-2">
+                <label className="label">Street Address</label>
+                <input name="address" value={form.address} onChange={onChange} className="input" placeholder="12 Adeola Odeku Street, Victoria Island" />
+              </div>
+              <div>
+                <label className="label">Neighborhood / Area</label>
+                <input name="area" value={form.area} onChange={onChange} className="input" placeholder="Victoria Island" />
+              </div>
+              <div>
+                <label className="label">State</label>
+                <select value={form.state_id} onChange={onStateChange} className="input">
+                  <option value="">— Select state —</option>
+                  {states.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="label">LGA</label>
+                <select name="lga_id" value={form.lga_id} onChange={onChange} className="input" disabled={!form.state_id}>
+                  <option value="">— Select LGA —</option>
+                  {lgas.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="label">Latitude <span className="text-dark-400 font-normal">(optional)</span></label>
+                <input name="latitude" value={form.latitude} onChange={onChange} className="input" placeholder="6.431433" type="number" step="any" />
+              </div>
+              <div>
+                <label className="label">Longitude <span className="text-dark-400 font-normal">(optional)</span></label>
+                <input name="longitude" value={form.longitude} onChange={onChange} className="input" placeholder="3.421860" type="number" step="any" />
+              </div>
+            </div>
+            {form.latitude && form.longitude && (
+              <div className="mt-3 rounded-xl overflow-hidden border border-gray-200 h-52">
+                <iframe
+                  title="listing-map"
+                  className="w-full h-full"
+                  src={`https://www.openstreetmap.org/export/embed.html?bbox=${Number(form.longitude)-0.01},${Number(form.latitude)-0.01},${Number(form.longitude)+0.01},${Number(form.latitude)+0.01}&layer=mapnik&marker=${form.latitude},${form.longitude}`}
+                />
+              </div>
+            )}
+          </div>
+
           <div className="md:col-span-2">
             <label className="label">Cancellation Policy</label>
             <select name="cancellation_policy" value={form.cancellation_policy} onChange={onChange} className="input">

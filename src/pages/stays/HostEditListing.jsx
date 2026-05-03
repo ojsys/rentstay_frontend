@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import DashboardShell from '../../components/dashboard/DashboardShell';
-import { staysAPI, propertyAPI } from '../../services/api';
-import { Loader2, Home, Upload, Trash2, Star, ArrowLeft, ArrowRight, Image as ImageIcon } from 'lucide-react';
+import { staysAPI, propertyAPI, locationAPI } from '../../services/api';
+import { Loader2, Home, Upload, Trash2, Star, ArrowLeft, ArrowRight, Image as ImageIcon, MapPin } from 'lucide-react';
 import RichTextEditor from '../../components/common/RichTextEditor';
 import toast from 'react-hot-toast';
 
@@ -18,6 +18,8 @@ const HostEditListing = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [properties, setProperties] = useState([]);
+  const [states, setStates] = useState([]);
+  const [lgas, setLgas] = useState([]);
   const [form, setForm] = useState({});
   const [listing, setListing] = useState(null);
   const [newImages, setNewImages] = useState([]);
@@ -26,14 +28,33 @@ const HostEditListing = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const [ls, props] = await Promise.all([
+        const [ls, props, statesRes] = await Promise.all([
           staysAPI.getListing(id),
           propertyAPI.getAll({ mine: 1, ordering: '-created_at' }),
+          locationAPI.getStates(),
         ]);
-        setListing(ls.data);
-        setForm({ ...ls.data, property_id: ls.data?.property?.id || '' });
+        const data = ls.data;
+        setListing(data);
+        setForm({
+          ...data,
+          property_id: data?.property?.id || '',
+          state_id: data?.state_id || '',
+          lga_id: data?.lga_id || '',
+          latitude: data?.latitude || '',
+          longitude: data?.longitude || '',
+          address: data?.address || '',
+          area: data?.area || '',
+        });
         setProperties(props.data.results || props.data || []);
-      } catch (e) {
+        setStates(statesRes.data.results || statesRes.data || []);
+        // Pre-load LGAs if a state is set
+        if (data?.state_id) {
+          try {
+            const lgaRes = await locationAPI.getLGAs(data.state_id);
+            setLgas(lgaRes.data.results || lgaRes.data || []);
+          } catch { /* silent */ }
+        }
+      } catch {
         toast.error('Failed to load listing');
         navigate('/stays/host/listings');
       } finally { setLoading(false); }
@@ -44,6 +65,19 @@ const HostEditListing = () => {
   const onChange = (e) => {
     const { name, type, checked, value } = e.target;
     setForm(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+  };
+
+  const onStateChange = async (e) => {
+    const stateId = e.target.value;
+    setForm(prev => ({ ...prev, state_id: stateId, lga_id: '' }));
+    if (stateId) {
+      try {
+        const res = await locationAPI.getLGAs(stateId);
+        setLgas(res.data.results || res.data || []);
+      } catch { setLgas([]); }
+    } else {
+      setLgas([]);
+    }
   };
 
   const toggleAmenity = (amenity) => {
@@ -70,6 +104,13 @@ const HostEditListing = () => {
         if (payload[k] !== undefined && payload[k] !== null && payload[k] !== '') payload[k] = Number(payload[k]);
       });
       if (!payload.property_id) delete payload.property_id; else payload.property_id = Number(payload.property_id);
+      if (!payload.state_id) payload.state_id = null; else payload.state_id = Number(payload.state_id);
+      if (!payload.lga_id) payload.lga_id = null; else payload.lga_id = Number(payload.lga_id);
+      if (!payload.latitude) payload.latitude = null;
+      if (!payload.longitude) payload.longitude = null;
+      // Strip computed/read-only location fields returned by API
+      delete payload.location; delete payload.lga_name; delete payload.state_name;
+      delete payload.lga; delete payload.state;
       await staysAPI.updateListing(id, payload);
       toast.success('Listing updated');
       navigate('/stays/host/listings');
@@ -83,7 +124,7 @@ const HostEditListing = () => {
       const res = await staysAPI.getListing(id);
       setListing(res.data);
       setForm(prev => ({ ...prev, images: res.data?.images || [], primary_image: res.data?.primary_image || null }));
-    } catch {}
+    } catch { /* silent */ }
   };
 
   // Existing images actions
@@ -224,6 +265,56 @@ const HostEditListing = () => {
         <label className="inline-flex items-center gap-2 text-sm text-dark-700">
           <input type="checkbox" name="instant_book" checked={!!form.instant_book} onChange={onChange} /> Instant Book
         </label>
+
+        {/* Location */}
+        <div className="md:col-span-2">
+          <div className="flex items-center gap-2 mb-3 mt-2">
+            <MapPin size={16} className="text-primary" />
+            <h3 className="font-semibold text-dark-900">Location</h3>
+            <span className="text-xs text-dark-400">(overrides linked property location)</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="md:col-span-2">
+              <label className="label">Street Address</label>
+              <input name="address" value={form.address || ''} onChange={onChange} className="input" placeholder="12 Adeola Odeku Street, Victoria Island" />
+            </div>
+            <div>
+              <label className="label">Neighborhood / Area</label>
+              <input name="area" value={form.area || ''} onChange={onChange} className="input" placeholder="Victoria Island" />
+            </div>
+            <div>
+              <label className="label">State</label>
+              <select value={form.state_id || ''} onChange={onStateChange} className="input">
+                <option value="">— Select state —</option>
+                {states.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="label">LGA</label>
+              <select name="lga_id" value={form.lga_id || ''} onChange={onChange} className="input" disabled={!form.state_id}>
+                <option value="">— Select LGA —</option>
+                {lgas.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="label">Latitude <span className="text-dark-400 font-normal">(optional)</span></label>
+              <input name="latitude" value={form.latitude || ''} onChange={onChange} className="input" placeholder="6.431433" type="number" step="any" />
+            </div>
+            <div>
+              <label className="label">Longitude <span className="text-dark-400 font-normal">(optional)</span></label>
+              <input name="longitude" value={form.longitude || ''} onChange={onChange} className="input" placeholder="3.421860" type="number" step="any" />
+            </div>
+          </div>
+          {form.latitude && form.longitude && (
+            <div className="mt-3 rounded-xl overflow-hidden border border-gray-200 h-52">
+              <iframe
+                title="listing-map"
+                className="w-full h-full"
+                src={`https://www.openstreetmap.org/export/embed.html?bbox=${Number(form.longitude)-0.01},${Number(form.latitude)-0.01},${Number(form.longitude)+0.01},${Number(form.latitude)+0.01}&layer=mapnik&marker=${form.latitude},${form.longitude}`}
+              />
+            </div>
+          )}
+        </div>
         <label className="inline-flex items-center gap-2 text-sm text-dark-700">
           <input type="checkbox" name="require_guest_verification" checked={!!form.require_guest_verification} onChange={onChange} /> Require Guest Verification
         </label>

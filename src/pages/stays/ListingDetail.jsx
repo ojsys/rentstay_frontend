@@ -292,7 +292,7 @@ const ListingDetail = () => {
                 <h2 className="text-xl font-semibold text-dark-900 mb-4 flex items-center gap-2">
                   <MapPin size={18} className="text-primary" /> Location
                 </h2>
-                <div className="flex flex-wrap gap-3 text-sm text-dark-700 mb-3">
+                <div className="flex flex-wrap gap-2 text-sm text-dark-700 mb-3">
                   {loc.area && (
                     <span className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5">
                       <Navigation size={13} className="text-primary" /> {loc.area}
@@ -309,12 +309,34 @@ const ListingDetail = () => {
                     </span>
                   )}
                 </div>
-                <p className="text-sm text-dark-500 mb-3">Exact address is provided after booking confirmation.</p>
-                {mapsUrl && (
-                  <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline font-medium">
-                    <Navigation size={14} /> View on Google Maps
-                  </a>
+
+                {/* Embedded map */}
+                {loc.latitude && loc.longitude ? (
+                  <div className="rounded-2xl overflow-hidden border border-gray-200 mb-3" style={{ height: '280px' }}>
+                    <iframe
+                      title="listing-location"
+                      className="w-full h-full"
+                      loading="lazy"
+                      src={`https://www.openstreetmap.org/export/embed.html?bbox=${Number(loc.longitude)-0.015},${Number(loc.latitude)-0.015},${Number(loc.longitude)+0.015},${Number(loc.latitude)+0.015}&layer=mapnik&marker=${loc.latitude},${loc.longitude}`}
+                    />
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-gray-200 bg-gray-50 h-40 flex items-center justify-center mb-3">
+                    <div className="text-center text-dark-400">
+                      <MapPin size={28} className="mx-auto mb-1 opacity-40" />
+                      <p className="text-sm">{loc.display}</p>
+                    </div>
+                  </div>
                 )}
+
+                <div className="flex flex-wrap items-center gap-3">
+                  <p className="text-sm text-dark-500">Exact address provided after booking confirmation.</p>
+                  {mapsUrl && (
+                    <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline font-medium flex-shrink-0">
+                      <Navigation size={14} /> Open in Google Maps
+                    </a>
+                  )}
+                </div>
               </div>
             )}
 
