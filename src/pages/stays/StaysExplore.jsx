@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { staysAPI } from '../../services/api';
-import { Search, MapPin, Calendar, Users, SlidersHorizontal, Star, Zap, Home, DoorOpen, BedDouble, Loader2, X } from 'lucide-react';
+import { Search, MapPin, Calendar, Users, SlidersHorizontal, Star, Zap, Home, DoorOpen, BedDouble, Loader2, X, ArrowRight } from 'lucide-react';
 
 const TYPE_LABELS = { entire: 'Entire place', private_room: 'Private room', shared_room: 'Shared room' };
 const TYPE_ICONS = { entire: Home, private_room: DoorOpen, shared_room: BedDouble };
@@ -265,10 +265,15 @@ const ListingCard = ({ listing, checkIn, checkOut, guests }) => {
           <span>·</span>
           <span>{listing.beds} bed{listing.beds !== 1 ? 's' : ''}</span>
         </div>
-        <p className="text-sm text-dark-900">
-          <span className="font-semibold">₦{Number(listing.nightly_rate).toLocaleString()}</span>
-          <span className="text-dark-500 font-normal"> / night</span>
-        </p>
+        <div className="flex items-center justify-between pt-1">
+          <p className="text-sm text-dark-900">
+            <span className="font-semibold">₦{Number(listing.nightly_rate).toLocaleString()}</span>
+            <span className="text-dark-500 font-normal"> / night</span>
+          </p>
+          <span className="inline-flex items-center gap-1 text-xs font-semibold text-white bg-primary hover:bg-primary-600 px-3 py-1.5 rounded-lg transition-colors">
+            View <ArrowRight size={12} />
+          </span>
+        </div>
       </div>
     </Link>
   );
