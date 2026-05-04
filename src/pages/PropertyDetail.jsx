@@ -351,11 +351,10 @@ const PropertyDetail = () => {
                 <h3 className="text-lg font-semibold text-dark-900 mb-2">Listed By</h3>
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-full bg-primary-100 text-primary flex items-center justify-center font-semibold">
-                    {(property.landlord.first_name || property.landlord.email || 'L').charAt(0).toUpperCase()}
+                    {(property.landlord.first_name || 'L').charAt(0).toUpperCase()}
                   </div>
                   <div>
                     <p className="font-medium text-dark-900">{property.landlord.full_name || property.landlord.first_name || 'Landlord'}</p>
-                    {property.landlord.email && <p className="text-sm text-dark-600">{property.landlord.email}</p>}
                   </div>
                 </div>
               </div>
