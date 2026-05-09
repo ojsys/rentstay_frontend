@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   Home, Building2, LogIn, UserPlus, LayoutDashboard, LogOut, Menu, X,
   User as UserIcon, ChevronDown, Edit, Shield, FileText, Mail,
@@ -16,8 +16,12 @@ const Navbar = () => {
   const { isAuthenticated, user, logout } = useAuthStore();
   const { settings } = useSiteSettings();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const isLandlord = user?.user_type === 'landlord';
+  const isDashboardRoute =
+    location.pathname.startsWith('/dashboard/') ||
+    location.pathname.startsWith('/agent/dashboard/');
 
   const handleLogout = () => {
     logout();
@@ -54,7 +58,7 @@ const Navbar = () => {
   ];
 
   return (
-    <nav className="bg-white shadow-md sticky top-0 z-50">
+    <nav className={`bg-white shadow-md sticky top-0 z-50 ${isDashboardRoute ? 'hidden md:block' : ''}`}>
       <div className="container-custom">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}

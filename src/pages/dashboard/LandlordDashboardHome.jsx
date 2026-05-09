@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { dashboardAPI, maintenanceAPI, applicationAPI, propertyAPI } from '../../services/api';
-import { Loader2, Home, Users, Briefcase, Wrench, TrendingUp, AlertTriangle, CheckCircle, Play, XCircle, Send, ArrowRight } from 'lucide-react';
+import { Loader2, Home, Users, Briefcase, Wrench, TrendingUp, AlertTriangle, CheckCircle, Play, XCircle, Send, ArrowRight, UserPlus, MessageSquare, PlusCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import LegalDocumentsCard from '../../components/dashboard/LegalDocumentsCard';
 
@@ -50,6 +50,13 @@ const KPI = ({ icon: Icon, label, value, sub, gradient = gradients[0], trend, to
   );
   if (to) return <Link to={to}>{content}</Link>;
   return content;
+};
+
+const formatAmount = (n) => {
+  const num = Number(n || 0);
+  if (num >= 1_000_000) return `₦${(num / 1_000_000).toFixed(2)}M`;
+  if (num >= 1_000) return `₦${(num / 1_000).toFixed(0)}K`;
+  return `₦${num.toLocaleString()}`;
 };
 
 const LandlordDashboardHome = () => {
@@ -173,12 +180,132 @@ const LandlordDashboardHome = () => {
     }
   };
 
+  const occupancy = m.properties
+    ? Math.round(((statusCounts.rented || 0) / m.properties) * 100)
+    : 0;
+
+  const recentActivity = [
+    ...(recent || []).slice(0, 2).map((r) => ({
+      type: 'payment',
+      icon: TrendingUp,
+      color: 'bg-green-500',
+      title: 'Rent Received',
+      sub: r.property_title || '—',
+      amount: `₦${Number(r.amount).toLocaleString()}`,
+      time: new Date(r.due_date).toLocaleDateString(),
+    })),
+    ...(maintenance || []).slice(0, 1).map((mt) => ({
+      type: 'maintenance',
+      icon: Wrench,
+      color: 'bg-amber-500',
+      title: 'Maintenance Request',
+      sub: mt.title,
+      amount: mt.priority,
+      time: 'Open',
+    })),
+  ].slice(0, 3);
+
   return (
     <>
-      <div className="space-y-8">
-        {/* Alerts / Tasks */}
+      <div className="space-y-5 md:space-y-8">
+
+        {/* ── Mobile-only: Overview + Quick Actions + Recent Activity ── */}
+        <div className="md:hidden space-y-4">
+
+          {/* Overview Card */}
+          <div className="bg-white rounded-2xl shadow-sm p-4">
+            <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Overview</h2>
+            <div className="grid grid-cols-4 gap-1">
+              {[
+                { icon: Home, label: 'Properties', value: m.properties || 0, to: '/dashboard/properties' },
+                { icon: Users, label: 'Tenants', value: m.tenants || 0, to: '/dashboard/leases' },
+                { label: 'Rent Collected', value: formatAmount(m.revenue_mtd), to: '/dashboard/payments', naira: true },
+                { icon: TrendingUp, label: 'Occupancy', value: `${occupancy}%`, to: '/dashboard/properties' },
+              ].map((item, i) => (
+                <Link key={i} to={item.to} className="flex flex-col items-center gap-1 py-2">
+                  <div className="text-gray-500">
+                    {item.naira ? (
+                      <span className="text-lg font-bold text-gray-600">₦</span>
+                    ) : (
+                      <item.icon size={18} />
+                    )}
+                  </div>
+                  <span className="text-sm font-bold text-gray-900 leading-tight">{item.value}</span>
+                  <span className="text-[10px] text-gray-400 text-center leading-tight">{item.label}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* Quick Actions */}
+          <div>
+            <h2 className="text-sm font-semibold text-gray-700 mb-2">Quick Actions</h2>
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { icon: PlusCircle, label: 'Add Property', to: '/properties/new' },
+                { icon: UserPlus, label: 'Add Tenant', to: '/dashboard/invite-tenant' },
+                { icon: MessageSquare, label: 'Message', to: '/dashboard/messages' },
+              ].map((action) => (
+                <Link
+                  key={action.to}
+                  to={action.to}
+                  className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-[#0C3B2E] text-white"
+                >
+                  <action.icon size={22} className="text-amber-400" />
+                  <span className="text-[11px] font-medium text-white/90 text-center leading-tight">
+                    {action.label}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* Recent Activity */}
+          {recentActivity.length > 0 && (
+            <div>
+              <h2 className="text-sm font-semibold text-gray-700 mb-2">Recent Activity</h2>
+              <div className="bg-white rounded-2xl shadow-sm divide-y divide-gray-50">
+                {recentActivity.map((item, i) => (
+                  <div key={i} className="flex items-center gap-3 px-4 py-3">
+                    <div className={`w-8 h-8 rounded-full ${item.color} flex items-center justify-center flex-shrink-0`}>
+                      <item.icon size={14} className="text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900">{item.title}</p>
+                      <p className="text-xs text-gray-400 truncate">{item.sub}</p>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <p className="text-xs font-semibold text-gray-700">{item.amount}</p>
+                      <p className="text-[10px] text-gray-400">{item.time}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Pending Tasks Alert (mobile) */}
+          {(Number(m.applications_pending || 0) > 0 || arrears.length > 0 || Number(m.maintenance_open || 0) > 0) && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+              <h3 className="text-sm font-semibold text-amber-800 mb-2">Pending Tasks</h3>
+              <ul className="text-sm text-amber-700 space-y-1">
+                {Number(m.applications_pending || 0) > 0 && (
+                  <li><Link to="/dashboard/leases" className="underline">{m.applications_pending} pending application(s)</Link> need review</li>
+                )}
+                {arrears.length > 0 && (
+                  <li><Link to="/dashboard/payments" className="underline">{arrears.length} rent arrear(s)</Link> outstanding</li>
+                )}
+                {Number(m.maintenance_open || 0) > 0 && (
+                  <li><Link to="/dashboard/maintenance" className="underline">{m.maintenance_open} maintenance request(s)</Link> open</li>
+                )}
+              </ul>
+            </div>
+          )}
+        </div>
+
+        {/* Alerts / Tasks (desktop only — mobile version is in the section above) */}
         {(Number(m.applications_pending || 0) > 0 || arrears.length > 0 || Number(m.maintenance_open || 0) > 0) && (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+          <div className="hidden md:block bg-amber-50 border border-amber-200 rounded-xl p-4">
             <h3 className="text-sm font-semibold text-amber-800 mb-2">Pending Tasks</h3>
             <ul className="text-sm text-amber-700 space-y-1">
               {Number(m.applications_pending || 0) > 0 && (

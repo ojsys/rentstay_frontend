@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Building2, Mail, Phone, MapPin, Facebook, Twitter, Instagram, Linkedin } from 'lucide-react';
 import useSiteSettings from '../../hooks/useSiteSettings';
 import useAuthStore from '../../store/authStore';
@@ -7,13 +7,18 @@ const Footer = () => {
   const currentYear = new Date().getFullYear();
   const { settings } = useSiteSettings();
   const { isAuthenticated } = useAuthStore();
+  const location = useLocation();
+
+  const isDashboardRoute =
+    location.pathname.startsWith('/dashboard/') ||
+    location.pathname.startsWith('/agent/dashboard/');
 
   // Check if any social links are available
   const hasSocialLinks = settings?.facebook_url || settings?.twitter_url ||
                          settings?.instagram_url || settings?.linkedin_url;
 
   return (
-    <footer className="bg-dark-800 text-gray-300">
+    <footer className={`bg-dark-800 text-gray-300 ${isDashboardRoute ? 'hidden md:block' : ''}`}>
       <div className="container-custom py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Company Info */}
