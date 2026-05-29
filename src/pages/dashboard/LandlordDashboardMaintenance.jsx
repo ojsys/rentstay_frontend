@@ -4,19 +4,28 @@ import { Loader2, Wrench, CheckCircle, Play, Clock, AlertTriangle } from 'lucide
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 
-const priorityColors = {
-  urgent: 'bg-red-100 text-red-700',
-  high: 'bg-amber-100 text-amber-700',
-  medium: 'bg-blue-100 text-blue-700',
-  low: 'bg-gray-100 text-dark-600',
+const PRIORITY_COLORS = {
+  urgent: 'bg-red-100 text-red-700 border-red-200',
+  high:   'bg-amber-100 text-amber-700 border-amber-200',
+  medium: 'bg-blue-100 text-blue-700 border-blue-200',
+  low:    'bg-gray-100 text-gray-600 border-gray-200',
 };
 
-const statusColors = {
-  pending: 'bg-amber-100 text-amber-700',
+const STATUS_COLORS = {
+  pending:     'bg-amber-100 text-amber-700',
   in_progress: 'bg-blue-100 text-blue-700',
-  completed: 'bg-green-100 text-green-700',
-  cancelled: 'bg-gray-100 text-dark-600',
+  completed:   'bg-green-100 text-green-700',
+  cancelled:   'bg-gray-100 text-gray-500',
 };
+
+const PRIORITY_DOT = {
+  urgent: 'bg-red-500',
+  high:   'bg-amber-500',
+  medium: 'bg-blue-500',
+  low:    'bg-gray-400',
+};
+
+const FILTERS = ['', 'pending', 'in_progress', 'completed', 'cancelled'];
 
 const LandlordDashboardMaintenance = () => {
   const queryClient = useQueryClient();
@@ -32,7 +41,7 @@ const LandlordDashboardMaintenance = () => {
   const handleSetStatus = async (id, newStatus) => {
     try {
       await maintenanceAPI.setStatus(id, newStatus);
-      toast.success(`Status updated to ${newStatus.replace('_', ' ')}`);
+      toast.success(`Marked as ${newStatus.replace('_', ' ')}`);
       queryClient.invalidateQueries({ queryKey: ['maintenance-list'] });
     } catch {
       toast.error('Failed to update');
@@ -40,74 +49,111 @@ const LandlordDashboardMaintenance = () => {
   };
 
   const counts = {
-    pending: allRequests.filter(r => r.status === 'pending').length,
+    pending:     allRequests.filter(r => r.status === 'pending').length,
     in_progress: allRequests.filter(r => r.status === 'in_progress').length,
-    completed: allRequests.filter(r => r.status === 'completed').length,
+    completed:   allRequests.filter(r => r.status === 'completed').length,
   };
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-xl font-bold text-dark-900">Maintenance Requests</h2>
+    <div className="space-y-4 md:space-y-6">
+      <h2 className="text-lg md:text-xl font-bold text-gray-900">Maintenance Requests</h2>
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="card text-center">
-          <Clock size={20} className="mx-auto text-amber-500 mb-1" />
-          <p className="text-2xl font-bold text-dark-900">{counts.pending}</p>
-          <p className="text-xs text-dark-600">Pending</p>
-        </div>
-        <div className="card text-center">
-          <Play size={20} className="mx-auto text-blue-500 mb-1" />
-          <p className="text-2xl font-bold text-dark-900">{counts.in_progress}</p>
-          <p className="text-xs text-dark-600">In Progress</p>
-        </div>
-        <div className="card text-center">
-          <CheckCircle size={20} className="mx-auto text-green-500 mb-1" />
-          <p className="text-2xl font-bold text-dark-900">{counts.completed}</p>
-          <p className="text-xs text-dark-600">Completed</p>
-        </div>
+      {/* Stats row */}
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          { icon: Clock,         label: 'Pending',     value: counts.pending,     color: 'text-amber-500', bg: 'bg-amber-50' },
+          { icon: Play,          label: 'In Progress', value: counts.in_progress, color: 'text-blue-500',  bg: 'bg-blue-50' },
+          { icon: CheckCircle,   label: 'Completed',   value: counts.completed,   color: 'text-green-500', bg: 'bg-green-50' },
+        ].map(({ icon: Icon, label, value, color, bg }) => (
+          <div key={label} className="bg-white rounded-2xl p-3 shadow-sm flex flex-col items-center gap-1">
+            <div className={`w-8 h-8 ${bg} rounded-xl flex items-center justify-center`}>
+              <Icon size={16} className={color} />
+            </div>
+            <p className="text-xl font-bold text-gray-900 leading-tight">{value}</p>
+            <p className="text-[10px] text-gray-400 font-medium text-center leading-tight">{label}</p>
+          </div>
+        ))}
       </div>
 
-      {/* Filter */}
-      <div className="flex gap-2 flex-wrap">
-        {['', 'pending', 'in_progress', 'completed', 'cancelled'].map(s => (
-          <button key={s} onClick={() => setFilter(s)} className={`px-3 py-1.5 rounded-full text-sm font-medium ${filter === s ? 'bg-primary text-white' : 'bg-gray-100 text-dark-600 hover:bg-gray-200'}`}>
+      {/* Filter pills */}
+      <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+        {FILTERS.map(s => (
+          <button
+            key={s}
+            onClick={() => setFilter(s)}
+            className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+              filter === s ? 'bg-[#0C3B2E] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
             {s === '' ? 'All' : s.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
           </button>
         ))}
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-12 text-dark-500"><Loader2 className="animate-spin mr-2" /> Loading...</div>
+        <div className="flex items-center justify-center py-16 text-gray-400">
+          <Loader2 className="animate-spin mr-2" /> Loading...
+        </div>
       ) : requests.length === 0 ? (
-        <div className="card text-center py-12">
-          <Wrench size={48} className="mx-auto text-dark-300 mb-3" />
-          <p className="text-dark-600">No maintenance requests.</p>
+        <div className="bg-white rounded-2xl p-10 text-center shadow-sm">
+          <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <Wrench size={28} className="text-gray-400" />
+          </div>
+          <p className="text-gray-600 font-medium">No maintenance requests</p>
+          <p className="text-sm text-gray-400 mt-1">Tenant requests will appear here</p>
         </div>
       ) : (
         <div className="space-y-3">
           {requests.map((r) => (
-            <div key={r.id} className="card">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <h3 className="font-semibold text-dark-900">{r.title}</h3>
-                  <p className="text-sm text-dark-600 mt-0.5">{r.property?.title || 'Unknown property'}</p>
-                  <p className="text-sm text-dark-500 mt-1">{r.description?.substring(0, 120)}{r.description?.length > 120 ? '...' : ''}</p>
-                  <div className="flex gap-2 mt-2">
-                    <span className={`px-2 py-0.5 rounded text-xs font-medium capitalize ${priorityColors[r.priority] || ''}`}>{r.priority}</span>
-                    <span className={`px-2 py-0.5 rounded text-xs font-medium capitalize ${statusColors[r.status] || ''}`}>{r.status?.replace('_', ' ')}</span>
-                    <span className="text-xs text-dark-400">{new Date(r.created_at).toLocaleDateString()}</span>
+            <div key={r.id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
+              {/* Priority bar at top */}
+              <div className={`h-1 w-full ${PRIORITY_DOT[r.priority] || 'bg-gray-300'}`} />
+              <div className="p-4">
+                <div className="flex items-start justify-between gap-3 mb-2">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-gray-900 leading-tight">{r.title}</h3>
+                    <p className="text-sm text-gray-500 mt-0.5">{r.property?.title || 'Unknown property'}</p>
                   </div>
-                  {r.tenant && <p className="text-xs text-dark-500 mt-1">Reported by: {r.tenant.full_name || r.tenant.email}</p>}
+                  <span className={`flex-shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold ${STATUS_COLORS[r.status] || 'bg-gray-100 text-gray-600'}`}>
+                    {r.status?.replace('_', ' ')}
+                  </span>
                 </div>
-                <div className="flex gap-2 flex-shrink-0">
-                  {r.status === 'pending' && (
-                    <button onClick={() => handleSetStatus(r.id, 'in_progress')} className="btn btn-secondary btn-sm inline-flex items-center gap-1"><Play size={14} /> Start</button>
-                  )}
-                  {(r.status === 'pending' || r.status === 'in_progress') && (
-                    <button onClick={() => handleSetStatus(r.id, 'completed')} className="btn btn-primary btn-sm inline-flex items-center gap-1"><CheckCircle size={14} /> Complete</button>
+
+                {r.description && (
+                  <p className="text-sm text-gray-500 mb-3 line-clamp-2">{r.description}</p>
+                )}
+
+                <div className="flex items-center gap-2 mb-4 flex-wrap">
+                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border capitalize ${PRIORITY_COLORS[r.priority] || ''}`}>
+                    {r.priority} priority
+                  </span>
+                  <span className="text-xs text-gray-400">{new Date(r.created_at).toLocaleDateString()}</span>
+                  {r.tenant && (
+                    <span className="text-xs text-gray-400">
+                      · {r.tenant.full_name || r.tenant.email}
+                    </span>
                   )}
                 </div>
+
+                {/* Action buttons */}
+                {(r.status === 'pending' || r.status === 'in_progress') && (
+                  <div className="flex gap-2">
+                    {r.status === 'pending' && (
+                      <button
+                        onClick={() => handleSetStatus(r.id, 'in_progress')}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-blue-200 text-blue-600 text-sm font-semibold hover:bg-blue-50 transition"
+                      >
+                        <Play size={14} /> Start
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handleSetStatus(r.id, 'completed')}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-green-500 text-white text-sm font-semibold hover:bg-green-600 transition"
+                    >
+                      <CheckCircle size={14} /> Mark Complete
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           ))}

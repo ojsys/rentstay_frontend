@@ -21,6 +21,11 @@ const Dashboard = () => {
     return <Navigate to="/agent/dashboard/home" replace />;
   }
 
+  // Super agents get the platform-wide dashboard
+  if (user?.user_type === 'super_agent') {
+    return <Navigate to="/super-agent/dashboard" replace />;
+  }
+
   return (
     <DashboardShell>
       <ErrorBoundary>

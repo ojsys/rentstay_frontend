@@ -4,6 +4,40 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Primary colour tokens ──────────────────────────────────────────────────
+   Public pages use sky blue; the .dashboard-theme wrapper overrides to dark green.
+   Values are plain RGB channels so Tailwind's opacity modifier (bg-primary/50) works.
+   ──────────────────────────────────────────────────────────────────────────── */
+:root {
+  /* Sky blue – public-facing */
+  --color-primary:     14 165 233;   /* #0EA5E9 */
+  --color-primary-50:  240 249 255;  /* #F0F9FF */
+  --color-primary-100: 224 242 254;  /* #E0F2FE */
+  --color-primary-200: 186 230 253;  /* #BAE6FD */
+  --color-primary-300: 125 211 252;  /* #7DD3FC */
+  --color-primary-400:  56 189 248;  /* #38BDF8 */
+  --color-primary-500:  14 165 233;  /* #0EA5E9 */
+  --color-primary-600:   2 132 199;  /* #0284C7 */
+  --color-primary-700:   3 105 161;  /* #0369A1 */
+  --color-primary-800:   7  89 133;  /* #075985 */
+  --color-primary-900:  12  74 110;  /* #0C4A6E */
+}
+
+.dashboard-theme {
+  /* Dark green – dashboard */
+  --color-primary:     12  59  46;   /* #0C3B2E */
+  --color-primary-50:  240 247 244;  /* #F0F7F4 */
+  --color-primary-100: 217 237 229;  /* #D9EDE5 */
+  --color-primary-200: 174 207 188;  /* #AECFBC */
+  --color-primary-300: 125 175 149;  /* #7DAF95 */
+  --color-primary-400:  74 142 108;  /* #4A8E6C */
+  --color-primary-500:  31 106  71;  /* #1F6A47 */
+  --color-primary-600:  10  50  38;  /* #0a3226 */
+  --color-primary-700:   8  39  29;  /* #08271D */
+  --color-primary-800:   5  28  19;  /* #051C13 */
+  --color-primary-900:   3  16  11;  /* #03100B */
+}
+
 @layer base {
   * {
     @apply box-border;
@@ -51,7 +85,7 @@
 
   /* Input Styles */
   .input {
-    @apply w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors;
+    @apply w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors;
   }
 
   .label {

@@ -15,15 +15,15 @@ import {
 const PRIMARY_TABS = [
   { to: '/dashboard/home', icon: Home, label: 'Dashboard', badgeKey: null },
   { to: '/dashboard/properties', icon: Building2, label: 'Properties', badgeKey: null },
-  { to: '/dashboard/leases', icon: Users, label: 'Tenants', badgeKey: 'leases' },
+  { to: '/dashboard/stays', icon: Bed, label: 'Stays', badgeKey: null },
 ];
 
 const MORE_TABS = [
+  { to: '/dashboard/leases', icon: Users, label: 'Tenants', badgeKey: 'leases' },
   { to: '/dashboard/payments', icon: CreditCard, label: 'Payments', badgeKey: null },
   { to: '/dashboard/maintenance', icon: Wrench, label: 'Maintenance', badgeKey: 'maintenance' },
   { to: '/dashboard/messages', icon: Mail, label: 'Messages', badgeKey: 'messages' },
   { to: '/dashboard/visits', icon: Calendar, label: 'Visits', badgeKey: null },
-  { to: '/dashboard/stays', icon: Bed, label: 'Stays', badgeKey: null },
   { to: '/dashboard/reports', icon: BarChart3, label: 'Reports', badgeKey: null },
 ];
 
@@ -65,7 +65,7 @@ const LandlordDashboardLayout = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="dashboard-theme min-h-screen bg-gray-50">
 
       {/* ── Mobile: Dark green header ───────────────────────────── */}
       <div className="md:hidden bg-[#0C3B2E] px-4 pt-4 pb-8">

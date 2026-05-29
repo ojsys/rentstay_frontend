@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import DashboardShell from '../../components/dashboard/DashboardShell';
 import { staysAPI, propertyAPI, locationAPI } from '../../services/api';
-import { Loader2, Home, Upload, Trash2, Star, ArrowLeft, ArrowRight, Image as ImageIcon, MapPin } from 'lucide-react';
+import {
+  Loader2, ArrowLeft, Save, Upload, Trash2, Star,
+  ChevronLeft, ChevronRight, Image as ImageIcon,
+  Home, DoorOpen, Users, MapPin, Shield, Clock,
+  Sparkles, ChevronDown, ChevronUp,
+} from 'lucide-react';
 import RichTextEditor from '../../components/common/RichTextEditor';
 import toast from 'react-hot-toast';
 
@@ -11,6 +15,50 @@ const AMENITY_OPTIONS = [
   'Generator/backup power', 'Parking', 'Security', 'Washing machine',
   'Swimming pool', 'Gym', 'Breakfast included', 'Pet friendly', 'Elevator',
 ];
+
+const LISTING_TYPES = [
+  { value: 'entire', icon: Home, label: 'Entire place', desc: 'Guests have the whole place to themselves' },
+  { value: 'private_room', icon: DoorOpen, label: 'Private room', desc: 'Guests have their own room, shared common areas' },
+  { value: 'shared_room', icon: Users, label: 'Shared room', desc: 'Guests sleep in a shared room' },
+];
+
+const CANCELLATION_OPTIONS = [
+  { value: 'flexible', label: 'Flexible', desc: 'Full refund up to 24 hrs before check-in' },
+  { value: 'moderate', label: 'Moderate', desc: 'Full refund up to 5 days before check-in' },
+  { value: 'strict', label: 'Strict', desc: '50% refund up to 7 days before check-in' },
+];
+
+const SectionCard = ({ title, icon: Icon, children }) => (
+  <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+    <div className="px-4 py-3 border-b border-gray-50 flex items-center gap-2">
+      {Icon && <Icon size={16} className="text-[#0C3B2E]" />}
+      <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
+    </div>
+    <div className="p-4 space-y-4">{children}</div>
+  </div>
+);
+
+const FieldLabel = ({ children, optional }) => (
+  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+    {children}{optional && <span className="ml-1 text-gray-400 normal-case font-normal">(optional)</span>}
+  </label>
+);
+
+const StepperInput = ({ label, name, value, onChange, min = 0, max = 99, step = 1 }) => {
+  const num = Number(value) || min;
+  const dec = () => onChange({ target: { name, value: Math.max(min, +(num - step).toFixed(1)) } });
+  const inc = () => onChange({ target: { name, value: Math.min(max, +(num + step).toFixed(1)) } });
+  return (
+    <div className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+      <span className="text-sm text-gray-700 font-medium">{label}</span>
+      <div className="flex items-center gap-3">
+        <button type="button" onClick={dec} className="w-8 h-8 rounded-full border-2 border-gray-200 flex items-center justify-center text-gray-600 font-bold hover:border-[#0C3B2E] hover:text-[#0C3B2E] transition disabled:opacity-30" disabled={num <= min}>−</button>
+        <span className="w-8 text-center text-sm font-semibold text-gray-900">{num}</span>
+        <button type="button" onClick={inc} className="w-8 h-8 rounded-full border-2 border-gray-200 flex items-center justify-center text-gray-600 font-bold hover:border-[#0C3B2E] hover:text-[#0C3B2E] transition disabled:opacity-30" disabled={num >= max}>+</button>
+      </div>
+    </div>
+  );
+};
 
 const HostEditListing = () => {
   const { id } = useParams();
@@ -24,6 +72,8 @@ const HostEditListing = () => {
   const [listing, setListing] = useState(null);
   const [newImages, setNewImages] = useState([]);
   const [progress, setProgress] = useState({});
+  const [showGps, setShowGps] = useState(false);
+  const [uploadLoading, setUploadLoading] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -47,16 +97,16 @@ const HostEditListing = () => {
         });
         setProperties(props.data.results || props.data || []);
         setStates(statesRes.data.results || statesRes.data || []);
-        // Pre-load LGAs if a state is set
         if (data?.state_id) {
           try {
             const lgaRes = await locationAPI.getLGAs(data.state_id);
             setLgas(lgaRes.data.results || lgaRes.data || []);
           } catch { /* silent */ }
         }
+        if (data?.latitude && data?.longitude) setShowGps(true);
       } catch {
         toast.error('Failed to load listing');
-        navigate('/stays/host/listings');
+        navigate('/dashboard/stays');
       } finally { setLoading(false); }
     };
     load();
@@ -75,9 +125,7 @@ const HostEditListing = () => {
         const res = await locationAPI.getLGAs(stateId);
         setLgas(res.data.results || res.data || []);
       } catch { setLgas([]); }
-    } else {
-      setLgas([]);
-    }
+    } else { setLgas([]); }
   };
 
   const toggleAmenity = (amenity) => {
@@ -97,9 +145,9 @@ const HostEditListing = () => {
     setSaving(true);
     try {
       const payload = { ...form };
-      // Clean read-only fields
-      delete payload.owner; delete payload.property; delete payload.images; delete payload.primary_image; delete payload.created_at; delete payload.updated_at; delete payload.status; delete payload.is_published;
-      // Numeric coercion
+      delete payload.owner; delete payload.property; delete payload.images;
+      delete payload.primary_image; delete payload.created_at; delete payload.updated_at;
+      delete payload.status; delete payload.is_published;
       ['capacity_adults','beds','bathrooms','nightly_rate','cleaning_fee','min_nights','max_nights'].forEach(k => {
         if (payload[k] !== undefined && payload[k] !== null && payload[k] !== '') payload[k] = Number(payload[k]);
       });
@@ -108,14 +156,12 @@ const HostEditListing = () => {
       if (!payload.lga_id) payload.lga_id = null; else payload.lga_id = Number(payload.lga_id);
       if (!payload.latitude) payload.latitude = null;
       if (!payload.longitude) payload.longitude = null;
-      // Strip computed/read-only location fields returned by API
       delete payload.location; delete payload.lga_name; delete payload.state_name;
       delete payload.lga; delete payload.state;
       await staysAPI.updateListing(id, payload);
-      toast.success('Listing updated');
-      navigate('/stays/host/listings');
-    } catch (e) {
-      toast.error(e?.response?.data?.detail || 'Failed to update');
+      toast.success('Listing updated!');
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || 'Failed to update');
     } finally { setSaving(false); }
   };
 
@@ -127,12 +173,13 @@ const HostEditListing = () => {
     } catch { /* silent */ }
   };
 
-  // Existing images actions
   const setPrimary = async (imageId) => {
-    try { await staysAPI.setPrimary(id, imageId); await reload(); } catch { toast.error('Failed to set primary'); }
+    try { await staysAPI.setPrimary(id, imageId); await reload(); toast.success('Primary image set'); }
+    catch { toast.error('Failed to set primary'); }
   };
   const removeImage = async (imageId) => {
-    try { await staysAPI.deleteImage(id, imageId); await reload(); } catch { toast.error('Failed to delete'); }
+    try { await staysAPI.deleteImage(id, imageId); await reload(); }
+    catch { toast.error('Failed to delete'); }
   };
   const moveImage = async (imageId, dir) => {
     const imgs = [...(listing?.images || [])];
@@ -140,14 +187,11 @@ const HostEditListing = () => {
     if (idx < 0) return;
     const swapWith = dir === 'left' ? idx - 1 : idx + 1;
     if (swapWith < 0 || swapWith >= imgs.length) return;
-    const tmp = imgs[idx];
-    imgs[idx] = imgs[swapWith];
-    imgs[swapWith] = tmp;
-    const order = imgs.map(i => i.id);
-    try { await staysAPI.reorderImages(id, order); await reload(); } catch { toast.error('Reorder failed'); }
+    const tmp = imgs[idx]; imgs[idx] = imgs[swapWith]; imgs[swapWith] = tmp;
+    try { await staysAPI.reorderImages(id, imgs.map(i => i.id)); await reload(); }
+    catch { toast.error('Reorder failed'); }
   };
 
-  // Local new images queue
   const onSelect = (e) => {
     const files = Array.from(e.target.files || []);
     if (files.length) setNewImages(prev => [...prev, ...files]);
@@ -166,11 +210,11 @@ const HostEditListing = () => {
       return arr;
     });
   };
-  const removeLocal = (idx) => {
-    setNewImages(prev => prev.filter((_, i) => i !== idx));
-  };
+  const removeLocal = (idx) => setNewImages(prev => prev.filter((_, i) => i !== idx));
+
   const uploadImages = async () => {
-    if (!newImages.length) { toast.error('Select images'); return; }
+    if (!newImages.length) { toast.error('Select images first'); return; }
+    setUploadLoading(true);
     const hadPrimary = !!listing?.primary_image;
     for (let i = 0; i < newImages.length; i++) {
       const file = newImages[i];
@@ -181,246 +225,435 @@ const HostEditListing = () => {
         await staysAPI.uploadImage(id, fd, {
           onUploadProgress: (evt) => {
             const pct = Math.round((evt.loaded / (evt.total || 1)) * 100);
-            setProgress((p) => ({ ...p, [i]: pct }));
+            setProgress(p => ({ ...p, [i]: pct }));
           }
         });
-      } catch {
-        toast.error('Failed to upload one of the images');
-      }
+      } catch { toast.error('Failed to upload one image'); }
     }
     setNewImages([]);
     setProgress({});
     await reload();
     toast.success('Images uploaded');
+    setUploadLoading(false);
   };
 
   if (loading) {
     return (
-      <DashboardShell>
-        <div className="flex items-center text-dark-600"><Loader2 className="animate-spin mr-2"/> Loading…</div>
-      </DashboardShell>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="flex items-center gap-2 text-gray-400">
+          <Loader2 className="animate-spin" size={20} /> Loading listing…
+        </div>
+      </div>
     );
   }
 
   return (
-    <DashboardShell>
-      <div className="flex items-center mb-4"><Home className="text-primary mr-2"/><h1 className="text-2xl font-display font-bold text-dark-900">Edit Listing</h1></div>
-      <form onSubmit={submit} className="card grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="label">Title</label>
-          <input name="title" value={form.title || ''} onChange={onChange} className="input" />
+    <div className="dashboard-theme min-h-screen bg-gray-50 pb-32 md:pb-12">
+      {/* Sticky header */}
+      <div className="sticky top-0 z-40 bg-[#0C3B2E] md:bg-white md:border-b md:border-gray-100 shadow-sm">
+        <div className="flex items-center justify-between px-4 py-3 md:py-4 max-w-4xl mx-auto">
+          <button
+            type="button"
+            onClick={() => navigate('/dashboard/stays')}
+            className="flex items-center gap-1.5 text-white md:text-gray-600 hover:text-gray-900 transition font-medium text-sm"
+          >
+            <ArrowLeft size={18} />
+            <span className="hidden md:inline">Back</span>
+          </button>
+          <h1 className="text-base font-bold text-white md:text-gray-900">Edit Listing</h1>
+          <button
+            type="button"
+            onClick={submit}
+            disabled={saving}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white/20 md:bg-[#0C3B2E] text-white text-sm font-semibold hover:bg-white/30 md:hover:bg-[#0a3226] transition disabled:opacity-60"
+          >
+            {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+            {saving ? 'Saving…' : 'Save'}
+          </button>
         </div>
-        <div>
-          <label className="label">Link to Property</label>
-          <select name="property_id" value={form.property_id || ''} onChange={onChange} className="input">
-            <option value="">— None —</option>
-            {properties.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
-          </select>
-        </div>
-        <div className="md:col-span-2">
-          <label className="label">Description</label>
-          <div className="border rounded-lg overflow-hidden">
-            <RichTextEditor
-              value={form.description || ''}
-              onChange={(val) => setForm(prev => ({ ...prev, description: val }))}
+      </div>
+
+      <form onSubmit={submit} className="max-w-4xl mx-auto px-4 pt-5 space-y-4">
+
+        {/* Photos */}
+        <SectionCard title="Photos" icon={ImageIcon}>
+          {/* Existing images */}
+          {listing?.images?.length > 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {listing.images.map((img, idx) => (
+                <div key={img.id} className="relative rounded-xl overflow-hidden aspect-square">
+                  <img src={img.image} alt="" className="w-full h-full object-cover" />
+                  {img.is_primary && (
+                    <span className="absolute top-2 left-2 bg-[#0C3B2E] text-white text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <Star size={10} fill="currentColor" /> Primary
+                    </span>
+                  )}
+                  {/* Tap-accessible action bar at bottom */}
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">
+                    <div className="flex items-center justify-between gap-1">
+                      <button
+                        type="button"
+                        onClick={() => moveImage(img.id, 'left')}
+                        disabled={idx === 0}
+                        className="flex-1 flex items-center justify-center p-1.5 rounded-lg bg-white/20 text-white disabled:opacity-30 hover:bg-white/30 transition"
+                      >
+                        <ChevronLeft size={14} />
+                      </button>
+                      {!img.is_primary && (
+                        <button
+                          type="button"
+                          onClick={() => setPrimary(img.id)}
+                          className="flex-1 flex items-center justify-center p-1.5 rounded-lg bg-amber-500/90 text-white hover:bg-amber-500 transition"
+                        >
+                          <Star size={12} />
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => removeImage(img.id)}
+                        className="flex-1 flex items-center justify-center p-1.5 rounded-lg bg-red-500/80 text-white hover:bg-red-500 transition"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moveImage(img.id, 'right')}
+                        disabled={idx === listing.images.length - 1}
+                        className="flex-1 flex items-center justify-center p-1.5 rounded-lg bg-white/20 text-white disabled:opacity-30 hover:bg-white/30 transition"
+                      >
+                        <ChevronRight size={14} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-400 text-center py-4">No photos yet. Add some below.</p>
+          )}
+
+          {/* New images preview */}
+          {newImages.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Ready to upload ({newImages.length})</p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {newImages.map((file, idx) => (
+                  <div key={idx} className="relative rounded-xl overflow-hidden aspect-square bg-gray-100">
+                    <img src={URL.createObjectURL(file)} alt="preview" className="w-full h-full object-cover" />
+                    {progress[idx] > 0 && (
+                      <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-300">
+                        <div className="h-1 bg-[#0C3B2E] transition-all" style={{ width: `${progress[idx]}%` }} />
+                      </div>
+                    )}
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
+                      <div className="flex items-center justify-between gap-1">
+                        <button type="button" onClick={() => idx > 0 && moveLocal(idx, idx - 1)} disabled={idx === 0}
+                          className="flex-1 flex items-center justify-center p-1.5 rounded-lg bg-white/20 text-white disabled:opacity-30">
+                          <ChevronLeft size={14} />
+                        </button>
+                        <button type="button" onClick={() => removeLocal(idx)}
+                          className="flex-1 flex items-center justify-center p-1.5 rounded-lg bg-red-500/80 text-white">
+                          <Trash2 size={12} />
+                        </button>
+                        <button type="button" onClick={() => idx < newImages.length - 1 && moveLocal(idx, idx + 1)} disabled={idx === newImages.length - 1}
+                          className="flex-1 flex items-center justify-center p-1.5 rounded-lg bg-white/20 text-white disabled:opacity-30">
+                          <ChevronRight size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={uploadImages}
+                disabled={uploadLoading}
+                className="mt-3 w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-[#0C3B2E] text-white text-sm font-semibold hover:bg-[#0a3226] transition disabled:opacity-60"
+              >
+                {uploadLoading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+                {uploadLoading ? 'Uploading…' : `Upload ${newImages.length} Photo${newImages.length > 1 ? 's' : ''}`}
+              </button>
+            </div>
+          )}
+
+          {/* Drop zone */}
+          <div
+            className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center cursor-pointer hover:border-[#0C3B2E] hover:bg-green-50/30 transition"
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={onDrop}
+          >
+            <label className="cursor-pointer flex flex-col items-center gap-2">
+              <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                <Upload size={18} className="text-gray-400" />
+              </div>
+              <p className="text-sm text-gray-500">Tap to add photos or drag &amp; drop</p>
+              <span className="text-xs text-gray-400">JPG, PNG, WebP up to 10 MB each</span>
+              <input type="file" multiple accept="image/*" onChange={onSelect} hidden />
+            </label>
+          </div>
+        </SectionCard>
+
+        {/* Basics */}
+        <SectionCard title="Basics" icon={Home}>
+          <div>
+            <FieldLabel>Listing title</FieldLabel>
+            <input
+              name="title"
+              value={form.title || ''}
+              onChange={onChange}
+              className="input w-full"
+              placeholder="Cozy studio in Lekki Phase 1"
             />
           </div>
-        </div>
-        <div>
-          <label className="label">Type</label>
-          <select name="listing_type" value={form.listing_type || 'entire'} onChange={onChange} className="input">
-            <option value="entire">Entire place</option>
-            <option value="private_room">Private room</option>
-            <option value="shared_room">Shared room</option>
-          </select>
-        </div>
-        <div>
-          <label className="label">Adults</label>
-          <input name="capacity_adults" value={form.capacity_adults || 1} onChange={onChange} type="number" min="1" className="input" />
-        </div>
-        <div>
-          <label className="label">Beds</label>
-          <input name="beds" value={form.beds || 1} onChange={onChange} type="number" min="1" className="input" />
-        </div>
-        <div>
-          <label className="label">Bathrooms</label>
-          <input name="bathrooms" value={form.bathrooms || 1} onChange={onChange} type="number" min="0" step="0.5" className="input" />
-        </div>
-        <div>
-          <label className="label">Nightly Rate (₦)</label>
-          <input name="nightly_rate" value={form.nightly_rate || 0} onChange={onChange} type="number" min="0" className="input" />
-        </div>
-        <div>
-          <label className="label">Cleaning Fee (₦)</label>
-          <input name="cleaning_fee" value={form.cleaning_fee || 0} onChange={onChange} type="number" min="0" className="input" />
-        </div>
-        <div>
-          <label className="label">Min Nights</label>
-          <input name="min_nights" value={form.min_nights || 1} onChange={onChange} type="number" min="1" className="input" />
-        </div>
-        <div>
-          <label className="label">Max Nights</label>
-          <input name="max_nights" value={form.max_nights || 30} onChange={onChange} type="number" min="1" className="input" />
-        </div>
-        <label className="inline-flex items-center gap-2 text-sm text-dark-700">
-          <input type="checkbox" name="instant_book" checked={!!form.instant_book} onChange={onChange} /> Instant Book
-        </label>
+          <div>
+            <FieldLabel optional>Link to long-term property</FieldLabel>
+            <select name="property_id" value={form.property_id || ''} onChange={onChange} className="input w-full">
+              <option value="">— None —</option>
+              {properties.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
+            </select>
+          </div>
+          <div>
+            <FieldLabel>Description</FieldLabel>
+            <div className="border rounded-xl overflow-hidden">
+              <RichTextEditor
+                value={form.description || ''}
+                onChange={(val) => setForm(prev => ({ ...prev, description: val }))}
+              />
+            </div>
+          </div>
+          <div>
+            <FieldLabel>Space type</FieldLabel>
+            <div className="space-y-2">
+              {LISTING_TYPES.map(({ value, icon: Icon, label, desc }) => (
+                <label
+                  key={value}
+                  className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition ${
+                    form.listing_type === value ? 'border-[#0C3B2E] bg-green-50/40' : 'border-gray-100 hover:border-gray-200'
+                  }`}
+                >
+                  <input type="radio" name="listing_type" value={value} checked={form.listing_type === value} onChange={onChange} className="sr-only" />
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${form.listing_type === value ? 'bg-[#0C3B2E]' : 'bg-gray-100'}`}>
+                    <Icon size={16} className={form.listing_type === value ? 'text-white' : 'text-gray-500'} />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-gray-900">{label}</p>
+                    <p className="text-xs text-gray-400">{desc}</p>
+                  </div>
+                  <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 ${form.listing_type === value ? 'border-[#0C3B2E] bg-[#0C3B2E]' : 'border-gray-300'}`}>
+                    {form.listing_type === value && (
+                      <svg viewBox="0 0 20 20" fill="white" className="w-full h-full"><circle cx="10" cy="10" r="4" /></svg>
+                    )}
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
+        </SectionCard>
+
+        {/* Capacity & Pricing */}
+        <SectionCard title="Capacity & Pricing" icon={Users}>
+          <div className="space-y-1">
+            <StepperInput label="Guests" name="capacity_adults" value={form.capacity_adults || 1} onChange={onChange} min={1} max={30} />
+            <StepperInput label="Beds" name="beds" value={form.beds || 1} onChange={onChange} min={1} max={20} />
+            <StepperInput label="Bathrooms" name="bathrooms" value={form.bathrooms || 1} onChange={onChange} min={0} max={10} step={0.5} />
+            <StepperInput label="Min nights" name="min_nights" value={form.min_nights || 1} onChange={onChange} min={1} max={365} />
+            <StepperInput label="Max nights" name="max_nights" value={form.max_nights || 30} onChange={onChange} min={1} max={365} />
+          </div>
+          <div className="grid grid-cols-2 gap-3 pt-2">
+            <div>
+              <FieldLabel>Nightly rate (₦)</FieldLabel>
+              <input name="nightly_rate" value={form.nightly_rate || 0} onChange={onChange} type="number" min="0" className="input w-full" />
+            </div>
+            <div>
+              <FieldLabel optional>Cleaning fee (₦)</FieldLabel>
+              <input name="cleaning_fee" value={form.cleaning_fee || 0} onChange={onChange} type="number" min="0" className="input w-full" />
+            </div>
+          </div>
+          {/* Instant Book toggle */}
+          <div className="flex items-center justify-between pt-2 border-t border-gray-50">
+            <div>
+              <p className="text-sm font-semibold text-gray-900">Instant Book</p>
+              <p className="text-xs text-gray-400">Guests can book without approval</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setForm(prev => ({ ...prev, instant_book: !prev.instant_book }))}
+              className={`relative w-12 h-6 rounded-full transition-colors ${form.instant_book ? 'bg-[#0C3B2E]' : 'bg-gray-200'}`}
+            >
+              <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${form.instant_book ? 'translate-x-7' : 'translate-x-1'}`} />
+            </button>
+          </div>
+        </SectionCard>
 
         {/* Location */}
-        <div className="md:col-span-2">
-          <div className="flex items-center gap-2 mb-3 mt-2">
-            <MapPin size={16} className="text-primary" />
-            <h3 className="font-semibold text-dark-900">Location</h3>
-            <span className="text-xs text-dark-400">(overrides linked property location)</span>
+        <SectionCard title="Location" icon={MapPin}>
+          <div>
+            <FieldLabel>Street address</FieldLabel>
+            <input name="address" value={form.address || ''} onChange={onChange} className="input w-full" placeholder="12 Adeola Odeku Street" />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div className="md:col-span-2">
-              <label className="label">Street Address</label>
-              <input name="address" value={form.address || ''} onChange={onChange} className="input" placeholder="12 Adeola Odeku Street, Victoria Island" />
-            </div>
+          <div>
+            <FieldLabel optional>Neighborhood / Area</FieldLabel>
+            <input name="area" value={form.area || ''} onChange={onChange} className="input w-full" placeholder="Victoria Island" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="label">Neighborhood / Area</label>
-              <input name="area" value={form.area || ''} onChange={onChange} className="input" placeholder="Victoria Island" />
-            </div>
-            <div>
-              <label className="label">State</label>
-              <select value={form.state_id || ''} onChange={onStateChange} className="input">
+              <FieldLabel>State</FieldLabel>
+              <select value={form.state_id || ''} onChange={onStateChange} className="input w-full">
                 <option value="">— Select state —</option>
                 {states.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </div>
             <div>
-              <label className="label">LGA</label>
-              <select name="lga_id" value={form.lga_id || ''} onChange={onChange} className="input" disabled={!form.state_id}>
+              <FieldLabel>LGA</FieldLabel>
+              <select name="lga_id" value={form.lga_id || ''} onChange={onChange} className="input w-full" disabled={!form.state_id}>
                 <option value="">— Select LGA —</option>
                 {lgas.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
               </select>
             </div>
-            <div>
-              <label className="label">Latitude <span className="text-dark-400 font-normal">(optional)</span></label>
-              <input name="latitude" value={form.latitude || ''} onChange={onChange} className="input" placeholder="6.431433" type="number" step="any" />
-            </div>
-            <div>
-              <label className="label">Longitude <span className="text-dark-400 font-normal">(optional)</span></label>
-              <input name="longitude" value={form.longitude || ''} onChange={onChange} className="input" placeholder="3.421860" type="number" step="any" />
-            </div>
           </div>
-          {form.latitude && form.longitude && (
-            <div className="mt-3 rounded-xl overflow-hidden border border-gray-200 h-52">
-              <iframe
-                title="listing-map"
-                className="w-full h-full"
-                src={`https://www.openstreetmap.org/export/embed.html?bbox=${Number(form.longitude)-0.01},${Number(form.latitude)-0.01},${Number(form.longitude)+0.01},${Number(form.latitude)+0.01}&layer=mapnik&marker=${form.latitude},${form.longitude}`}
-              />
+          {/* GPS toggle */}
+          <button
+            type="button"
+            onClick={() => setShowGps(v => !v)}
+            className="flex items-center gap-2 text-sm text-[#0C3B2E] font-medium"
+          >
+            {showGps ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            GPS coordinates (optional)
+          </button>
+          {showGps && (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <FieldLabel optional>Latitude</FieldLabel>
+                <input name="latitude" value={form.latitude || ''} onChange={onChange} className="input w-full" placeholder="6.431433" type="number" step="any" />
+              </div>
+              <div>
+                <FieldLabel optional>Longitude</FieldLabel>
+                <input name="longitude" value={form.longitude || ''} onChange={onChange} className="input w-full" placeholder="3.421860" type="number" step="any" />
+              </div>
+              {form.latitude && form.longitude && (
+                <div className="col-span-2 rounded-xl overflow-hidden border border-gray-200 h-44">
+                  <iframe
+                    title="listing-map"
+                    className="w-full h-full"
+                    src={`https://www.openstreetmap.org/export/embed.html?bbox=${Number(form.longitude)-0.01},${Number(form.latitude)-0.01},${Number(form.longitude)+0.01},${Number(form.latitude)+0.01}&layer=mapnik&marker=${form.latitude},${form.longitude}`}
+                  />
+                </div>
+              )}
             </div>
           )}
-        </div>
-        <label className="inline-flex items-center gap-2 text-sm text-dark-700">
-          <input type="checkbox" name="require_guest_verification" checked={!!form.require_guest_verification} onChange={onChange} /> Require Guest Verification
-        </label>
-        <div className="md:col-span-2">
-          <label className="label">Cancellation Policy</label>
-          <select name="cancellation_policy" value={form.cancellation_policy || 'moderate'} onChange={onChange} className="input">
-            <option value="flexible">Flexible – full refund up to 24 hrs before check-in</option>
-            <option value="moderate">Moderate – full refund up to 5 days before check-in</option>
-            <option value="strict">Strict – 50% refund up to 7 days before check-in</option>
-          </select>
-        </div>
-        <div className="md:col-span-2">
-          <label className="label">Amenities</label>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {AMENITY_OPTIONS.map(a => (
-              <label key={a} className="inline-flex items-center gap-2 text-sm text-dark-700 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={Array.isArray(form.amenities) && form.amenities.includes(a)}
-                  onChange={() => toggleAmenity(a)}
-                  className="rounded"
-                />
-                {a}
-              </label>
-            ))}
+        </SectionCard>
+
+        {/* Policies */}
+        <SectionCard title="Policies" icon={Shield}>
+          <div>
+            <FieldLabel>Cancellation policy</FieldLabel>
+            <div className="space-y-2">
+              {CANCELLATION_OPTIONS.map(({ value, label, desc }) => (
+                <label
+                  key={value}
+                  className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition ${
+                    form.cancellation_policy === value ? 'border-[#0C3B2E] bg-green-50/40' : 'border-gray-100 hover:border-gray-200'
+                  }`}
+                >
+                  <input type="radio" name="cancellation_policy" value={value} checked={form.cancellation_policy === value} onChange={onChange} className="sr-only" />
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-gray-900">{label}</p>
+                    <p className="text-xs text-gray-400">{desc}</p>
+                  </div>
+                  <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 ${form.cancellation_policy === value ? 'border-[#0C3B2E] bg-[#0C3B2E]' : 'border-gray-300'}`}>
+                    {form.cancellation_policy === value && (
+                      <svg viewBox="0 0 20 20" fill="white" className="w-full h-full"><circle cx="10" cy="10" r="4" /></svg>
+                    )}
+                  </div>
+                </label>
+              ))}
+            </div>
           </div>
-        </div>
-        <div className="md:col-span-2">
-          <label className="label">House Rules</label>
-          <textarea name="house_rules" value={form.house_rules || ''} onChange={onChange} className="input min-h-[80px]" />
-        </div>
-        <div>
-          <label className="label">Check-in Instructions</label>
-          <textarea name="check_in_instructions" value={form.check_in_instructions || ''} onChange={onChange} className="input min-h-[80px]" placeholder="Key lockbox at front gate, code: 1234…" />
-        </div>
-        <div>
-          <label className="label">Check-out Instructions</label>
-          <textarea name="check_out_instructions" value={form.check_out_instructions || ''} onChange={onChange} className="input min-h-[80px]" placeholder="Leave keys on table, check out by 11am…" />
-        </div>
-        <div className="md:col-span-2 flex justify-end">
-          <button className="btn btn-primary" disabled={saving}>{saving ? (<><Loader2 className="animate-spin mr-2" size={16}/> Saving…</>) : 'Save Changes'}</button>
+          <div className="flex items-center justify-between pt-2 border-t border-gray-50">
+            <div>
+              <p className="text-sm font-semibold text-gray-900">Require guest verification</p>
+              <p className="text-xs text-gray-400">Only verified guests can book</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setForm(prev => ({ ...prev, require_guest_verification: !prev.require_guest_verification }))}
+              className={`relative w-12 h-6 rounded-full transition-colors ${form.require_guest_verification ? 'bg-[#0C3B2E]' : 'bg-gray-200'}`}
+            >
+              <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${form.require_guest_verification ? 'translate-x-7' : 'translate-x-1'}`} />
+            </button>
+          </div>
+          <div>
+            <FieldLabel optional>House rules</FieldLabel>
+            <textarea name="house_rules" value={form.house_rules || ''} onChange={onChange} className="input w-full min-h-[80px]" placeholder="No smoking, no parties after 10pm…" />
+          </div>
+        </SectionCard>
+
+        {/* Check-in / Check-out */}
+        <SectionCard title="Check-in & Check-out" icon={Clock}>
+          <div>
+            <FieldLabel optional>Check-in instructions</FieldLabel>
+            <textarea name="check_in_instructions" value={form.check_in_instructions || ''} onChange={onChange} className="input w-full min-h-[80px]" placeholder="Key lockbox at front gate, code: 1234…" />
+          </div>
+          <div>
+            <FieldLabel optional>Check-out instructions</FieldLabel>
+            <textarea name="check_out_instructions" value={form.check_out_instructions || ''} onChange={onChange} className="input w-full min-h-[80px]" placeholder="Leave keys on table, check out by 11am…" />
+          </div>
+        </SectionCard>
+
+        {/* Amenities */}
+        <SectionCard title="Amenities" icon={Sparkles}>
+          <div className="grid grid-cols-2 gap-2">
+            {AMENITY_OPTIONS.map(a => {
+              const selected = Array.isArray(form.amenities) && form.amenities.includes(a);
+              return (
+                <button
+                  key={a}
+                  type="button"
+                  onClick={() => toggleAmenity(a)}
+                  className={`flex items-center gap-2 p-2.5 rounded-xl border-2 text-left transition ${
+                    selected ? 'border-[#0C3B2E] bg-green-50/40' : 'border-gray-100 hover:border-gray-200'
+                  }`}
+                >
+                  <div className={`w-5 h-5 rounded-md border-2 flex-shrink-0 flex items-center justify-center ${selected ? 'border-[#0C3B2E] bg-[#0C3B2E]' : 'border-gray-300'}`}>
+                    {selected && (
+                      <svg viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="2" className="w-3 h-3">
+                        <polyline points="2,6 5,9 10,3" />
+                      </svg>
+                    )}
+                  </div>
+                  <span className="text-xs font-medium text-gray-700">{a}</span>
+                </button>
+              );
+            })}
+          </div>
+        </SectionCard>
+
+        {/* Desktop save button */}
+        <div className="hidden md:flex justify-end pb-6">
+          <button
+            type="submit"
+            disabled={saving}
+            className="flex items-center gap-2 px-8 py-3 rounded-xl bg-[#0C3B2E] text-white font-semibold hover:bg-[#0a3226] transition disabled:opacity-60"
+          >
+            {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+            {saving ? 'Saving changes…' : 'Save changes'}
+          </button>
         </div>
       </form>
 
-      {/* Images manager */}
-      <div className="card mt-6">
-        <h3 className="text-lg font-semibold text-dark-900 mb-2">Images</h3>
-        {(listing?.images?.length ? (
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            {listing.images.map(img => (
-              <div key={img.id} className="relative group">
-                <img src={img.image} alt="" className="w-full h-24 object-cover rounded-lg border" />
-                {img.is_primary && <span className="absolute top-1 left-1 text-xs bg-primary text-white px-1 rounded">Primary</span>}
-                <div className="absolute inset-0 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition">
-                  {!img.is_primary && (
-                    <button type="button" className="btn btn-light btn-sm inline-flex items-center" onClick={() => setPrimary(img.id)}><Star size={14} className="mr-1"/> Primary</button>
-                  )}
-                  <button type="button" className="btn btn-secondary btn-sm inline-flex items-center" onClick={() => removeImage(img.id)}><Trash2 size={14} className="mr-1"/> Delete</button>
-                  <button type="button" className="btn btn-light btn-sm inline-flex items-center" onClick={() => moveImage(img.id, 'left')}><ArrowLeft size={14} className="mr-1"/> Left</button>
-                  <button type="button" className="btn btn-light btn-sm inline-flex items-center" onClick={() => moveImage(img.id, 'right')}><ArrowRight size={14} className="mr-1"/> Right</button>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-sm text-dark-600">No images yet.</p>
-        ))}
-        <div
-          className="border-2 border-dashed rounded-lg p-4 text-center text-dark-600 bg-gray-50 hover:bg-gray-100 cursor-pointer mt-3"
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={onDrop}
+      {/* Mobile sticky save button */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-3 z-30">
+        <button
+          type="button"
+          onClick={submit}
+          disabled={saving}
+          className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl bg-[#0C3B2E] text-white font-semibold text-sm hover:bg-[#0a3226] transition disabled:opacity-60"
         >
-          Drag images here
-          <div className="mt-2">
-            <label className="btn btn-secondary inline-flex items-center">
-              <Upload size={16} className="mr-2" /> Select Images
-              <input type="file" multiple accept="image/*" onChange={onSelect} hidden />
-            </label>
-          </div>
-        </div>
-        {newImages && newImages.length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mt-3">
-            {newImages.map((file, idx) => (
-              <div key={idx} className="relative bg-white rounded-lg border overflow-hidden">
-                <img src={URL.createObjectURL(file)} alt="preview" className="w-full h-24 object-cover" />
-                {progress[idx] > 0 && (
-                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-200">
-                    <div className="h-1 bg-primary" style={{ width: `${progress[idx]}%` }} />
-                  </div>
-                )}
-                <div className="absolute inset-0 flex items-center justify-between px-2 opacity-0 hover:opacity-100 transition">
-                  <button type="button" className="btn btn-secondary btn-sm" onClick={() => idx>0 && moveLocal(idx, idx-1)}>↑</button>
-                  <button type="button" className="btn btn-secondary btn-sm" onClick={() => idx<newImages.length-1 && moveLocal(idx, idx+1)}>↓</button>
-                  <button type="button" className="btn btn-secondary btn-sm" onClick={() => removeLocal(idx)}>Remove</button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-        <div className="mt-2">
-          <button type="button" className="btn btn-primary inline-flex items-center" onClick={uploadImages}>
-            <ImageIcon size={16} className="mr-2" /> Upload
-          </button>
-        </div>
+          {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+          {saving ? 'Saving changes…' : 'Save changes'}
+        </button>
       </div>
-    </DashboardShell>
+    </div>
   );
 };
 

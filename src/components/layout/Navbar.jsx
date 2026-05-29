@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   Home, Building2, LogIn, UserPlus, LayoutDashboard, LogOut, Menu, X,
   User as UserIcon, ChevronDown, Edit, Shield, FileText, Mail,
-  Calendar, Bed, PlusCircle, List, Users, Bell, ChevronRight,
+  Calendar, Bed, PlusCircle, Users, Bell, ChevronRight,
   CreditCard, Wrench, Upload
 } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
@@ -19,9 +19,19 @@ const Navbar = () => {
   const location = useLocation();
 
   const isLandlord = user?.user_type === 'landlord';
+  const isSuperAgent = user?.user_type === 'super_agent';
+  const isStaff = user?.is_staff || user?.user_type === 'admin';
+  const dashboardPath =
+    isLandlord ? '/dashboard/home'
+    : isSuperAgent ? '/super-agent/dashboard'
+    : user?.user_type === 'agent' ? '/agent/dashboard/home'
+    : isStaff ? '/staff/dashboard/home'
+    : '/dashboard';
   const isDashboardRoute =
     location.pathname.startsWith('/dashboard/') ||
-    location.pathname.startsWith('/agent/dashboard/');
+    location.pathname.startsWith('/agent/dashboard/') ||
+    location.pathname.startsWith('/super-agent/dashboard') ||
+    location.pathname.startsWith('/staff/dashboard');
 
   const handleLogout = () => {
     logout();
@@ -100,7 +110,7 @@ const Navbar = () => {
             {isAuthenticated ? (
               <>
                 <Link
-                  to={isLandlord ? '/dashboard/home' : '/dashboard'}
+                  to={dashboardPath}
                   className="flex items-center space-x-1 text-dark-600 hover:text-primary transition-colors font-medium"
                 >
                   <LayoutDashboard size={18} />
@@ -128,7 +138,7 @@ const Navbar = () => {
                       </Link>
                       <div className="border-t" />
                       <Link
-                        to={isLandlord ? '/dashboard/home' : '/dashboard'}
+                        to={dashboardPath}
                         onClick={() => setIsUserMenuOpen(false)}
                         className="block px-4 py-2 text-sm text-dark-700 hover:bg-gray-50"
                       >
@@ -196,13 +206,22 @@ const Navbar = () => {
                         </>
                       )}
                       {(user?.is_staff || user?.user_type === 'admin') && (
-                        <Link
-                          to="/admin/kyc"
-                          onClick={() => setIsUserMenuOpen(false)}
-                          className="block px-4 py-2 text-sm text-dark-700 hover:bg-gray-50"
-                        >
-                          KYC Requests
-                        </Link>
+                        <>
+                          <Link
+                            to="/admin/kyc"
+                            onClick={() => setIsUserMenuOpen(false)}
+                            className="block px-4 py-2 text-sm text-dark-700 hover:bg-gray-50"
+                          >
+                            KYC Requests
+                          </Link>
+                          <Link
+                            to="/staff/dashboard/home"
+                            onClick={() => setIsUserMenuOpen(false)}
+                            className="block px-4 py-2 text-sm text-dark-700 hover:bg-gray-50"
+                          >
+                            Staff Dashboard
+                          </Link>
+                        </>
                       )}
                       <div className="border-t" />
                       <button
@@ -420,6 +439,14 @@ const Navbar = () => {
                         >
                           <Shield size={20} className="flex-shrink-0" />
                           <span className="font-medium">KYC Requests</span>
+                        </Link>
+                        <Link
+                          to="/staff/dashboard/home"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className="flex items-center space-x-3 px-3 py-3 text-dark-700 hover:bg-primary-50 hover:text-primary rounded-lg transition-all active:scale-95"
+                        >
+                          <LayoutDashboard size={20} className="flex-shrink-0" />
+                          <span className="font-medium">Staff Dashboard</span>
                         </Link>
                       </div>
                     )}

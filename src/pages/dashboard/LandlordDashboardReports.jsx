@@ -23,8 +23,8 @@ const LandlordDashboardReports = () => {
   });
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-xl font-bold text-dark-900">Reports</h2>
+    <div className="space-y-4 md:space-y-6">
+      <h2 className="text-lg md:text-xl font-bold text-gray-900">Reports</h2>
 
       {/* Report type selector */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -32,18 +32,32 @@ const LandlordDashboardReports = () => {
           <button
             key={r.key}
             onClick={() => setActiveReport(r.key)}
-            className={`card p-4 text-center transition-all ${activeReport === r.key ? 'ring-2 ring-primary bg-primary-50/30' : 'hover:bg-gray-50'}`}
+            className={`bg-white rounded-2xl p-4 text-center shadow-sm border-2 transition-all ${
+              activeReport === r.key
+                ? 'border-[#0C3B2E] bg-green-50/30'
+                : 'border-transparent hover:border-gray-200 hover:bg-gray-50'
+            }`}
           >
-            <r.icon size={24} className={`mx-auto mb-2 ${activeReport === r.key ? 'text-primary' : 'text-dark-400'}`} />
-            <p className={`text-sm font-medium ${activeReport === r.key ? 'text-primary' : 'text-dark-700'}`}>{r.label}</p>
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-2 ${
+              activeReport === r.key ? 'bg-[#0C3B2E]' : 'bg-gray-100'
+            }`}>
+              <r.icon size={18} className={activeReport === r.key ? 'text-white' : 'text-gray-500'} />
+            </div>
+            <p className={`text-sm font-semibold ${activeReport === r.key ? 'text-[#0C3B2E]' : 'text-gray-700'}`}>
+              {r.label}
+            </p>
           </button>
         ))}
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-12 text-dark-500"><Loader2 className="animate-spin mr-2" /> Loading report...</div>
+        <div className="flex items-center justify-center py-12 text-gray-400">
+          <Loader2 className="animate-spin mr-2" /> Loading report...
+        </div>
       ) : !data ? (
-        <div className="card text-center py-8"><p className="text-dark-600">No data available.</p></div>
+        <div className="bg-white rounded-2xl shadow-sm p-10 text-center">
+          <p className="text-gray-500">No data available.</p>
+        </div>
       ) : (
         <>
           {activeReport === 'vacancy' && <VacancyReport data={data} />}

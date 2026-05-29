@@ -277,7 +277,7 @@ const BankAccountsManager = () => {
           {accounts.map((acc) => (
             <div
               key={acc.id}
-              className={`flex items-center justify-between p-3 rounded-lg border ${acc.is_primary ? 'border-primary bg-sky-50/30' : 'bg-white'}`}
+              className={`flex items-center justify-between p-3 rounded-lg border ${acc.is_primary ? 'border-primary bg-primary-50/60' : 'bg-white'}`}
             >
               <div className="flex items-center gap-3">
                 <Building2 size={20} className="text-dark-400 flex-shrink-0" />

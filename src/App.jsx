@@ -38,6 +38,10 @@ import StaysExplore from './pages/stays/StaysExplore';
 import HostMyListings from './pages/stays/HostMyListings';
 import HostEditListing from './pages/stays/HostEditListing';
 import AdminKYC from './pages/admin/AdminKYC';
+import StaffDashboardLayout from './pages/dashboard/StaffDashboardLayout';
+import StaffDashboardHome from './pages/dashboard/StaffDashboardHome';
+import StaffRentals from './pages/dashboard/StaffRentals';
+import StaffStays from './pages/dashboard/StaffStays';
 import Verify from './pages/Verify';
 import Visits from './pages/Visits';
 import ForgotPassword from './pages/ForgotPassword';
@@ -45,6 +49,9 @@ import ResetPassword from './pages/ResetPassword';
 import NotFound from './pages/NotFound';
 import TenantInviteWizard from './pages/TenantInviteWizard';
 import InviteAccept from './pages/InviteAccept';
+
+// Super Agent Dashboard
+import SuperAgentDashboard from './pages/dashboard/SuperAgentDashboard';
 
 // Agent Dashboard
 import AgentDashboardLayout from './pages/dashboard/AgentDashboardLayout';
@@ -119,6 +126,10 @@ function App() {
               <Route path="stays" element={<LandlordDashboardStays />} />
               <Route path="reports" element={<LandlordDashboardReports />} />
             </Route>
+            {/* Super Agent Dashboard */}
+            <Route path="/super-agent/dashboard" element={<SuperAgentDashboard />} />
+            {/* Super Agent reuses agent property form */}
+            <Route path="/super-agent/add-property" element={<AddPropertyForAgent />} />
             {/* Agent Dashboard */}
             <Route path="/agent/add-property" element={<AddPropertyForAgent />} />
             <Route path="/agent/edit-property/:id" element={<AgentEditProperty />} />
@@ -155,6 +166,12 @@ function App() {
             <Route path="/stays/bookings" element={<GuestBookings />} />
             <Route path="/stays/host/bookings" element={<HostBookings />} />
             <Route path="/admin/kyc" element={<AdminKYC />} />
+            <Route path="/staff/dashboard" element={<StaffDashboardLayout />}>
+              <Route index element={<Navigate to="home" replace />} />
+              <Route path="home" element={<StaffDashboardHome />} />
+              <Route path="rentals" element={<StaffRentals />} />
+              <Route path="stays" element={<StaffStays />} />
+            </Route>
             <Route path="/invite/:token" element={<InviteAccept />} />
             <Route path="/visits" element={<Visits />} />
             {/* Static Pages */}

@@ -75,6 +75,14 @@ export const authAPI = {
   changePassword: (data) => api.post('/auth/password/change/', data),
 };
 
+export const staffAPI = {
+  overview: () => api.get('/staff/overview/'),
+  listProperties: (params) => api.get('/staff/properties/', { params }),
+  moderateProperty: (id, action) => api.post(`/staff/properties/${id}/moderate/`, { action }),
+  listListings: (params) => api.get('/staff/listings/', { params }),
+  moderateListing: (id, action) => api.post(`/staff/listings/${id}/moderate/`, { action }),
+};
+
 export const propertyAPI = {
   list: (params) => api.get('/properties/', { params }),
   getAll: (params) => api.get('/properties/', { params }),
@@ -292,4 +300,31 @@ export const agentAPI = {
   getCommissions: (params) => api.get('/agents/commissions/', { params }),
   getPayouts: () => api.get('/agents/payouts/'),
   requestPayout: (data) => api.post('/agents/payouts/', data),
+};
+
+export const superAgentAPI = {
+  getDashboard: () => api.get('/super-agents/dashboard/'),
+  getUsers: (params) => api.get('/super-agents/users/', { params }),
+  getUserProperties: (userId) => api.get(`/super-agents/users/${userId}/properties/`),
+  actionApplication: (applicationId, status) =>
+    api.post(`/super-agents/applications/${applicationId}/action/`, { status }),
+
+  // Properties
+  getAllProperties: (params) => api.get('/super-agents/properties/', { params }),
+  assignAgentToProperty: (propertyId, agentId) =>
+    api.post(`/super-agents/properties/${propertyId}/assign-agent/`, { agent_id: agentId }),
+  removeAgentFromProperty: (propertyId) =>
+    api.post(`/super-agents/properties/${propertyId}/assign-agent/`, { agent_id: null }),
+
+  // Stays
+  getAllListings: (params) => api.get('/super-agents/listings/', { params }),
+  getAllBookings: (params) => api.get('/super-agents/bookings/', { params }),
+
+  // Agreements
+  getAllAgreements: (params) => api.get('/super-agents/agreements/', { params }),
+
+  // Agent management
+  getAgents: (params) => api.get('/super-agents/agents/', { params }),
+  superviseAgent: (agentId) => api.post('/super-agents/agents/', { agent_id: agentId, action: 'assign' }),
+  unsuperviseAgent: (agentId) => api.post('/super-agents/agents/', { agent_id: agentId, action: 'remove' }),
 };

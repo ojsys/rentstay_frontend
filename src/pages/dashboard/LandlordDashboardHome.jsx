@@ -240,7 +240,7 @@ const LandlordDashboardHome = () => {
           {/* Quick Actions */}
           <div>
             <h2 className="text-sm font-semibold text-gray-700 mb-2">Quick Actions</h2>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-1.5">
               {[
                 { icon: PlusCircle, label: 'Add Property', to: '/properties/new' },
                 { icon: UserPlus, label: 'Add Tenant', to: '/dashboard/invite-tenant' },
@@ -249,7 +249,7 @@ const LandlordDashboardHome = () => {
                 <Link
                   key={action.to}
                   to={action.to}
-                  className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-[#0C3B2E] text-white"
+                  className="flex flex-col items-center gap-2 p-4 rounded-lg bg-[#0C3B2E] text-white"
                 >
                   <action.icon size={22} className="text-amber-400" />
                   <span className="text-[11px] font-medium text-white/90 text-center leading-tight">

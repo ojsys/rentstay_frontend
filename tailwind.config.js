@@ -8,18 +8,17 @@ export default {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#0EA5E9', // Sky blue
-          50: '#F0F9FF',
-          100: '#E0F2FE',
-          200: '#BAE6FD',
-          300: '#7DD3FC',
-          400: '#38BDF8',
-          500: '#0EA5E9',
-          600: '#0284C7',
-          700: '#0369A1',
-          800: '#075985',
-          900: '#0C4A6E',
-          950: '#082F49',
+          DEFAULT: 'rgb(var(--color-primary) / <alpha-value>)',
+          50:  'rgb(var(--color-primary-50) / <alpha-value>)',
+          100: 'rgb(var(--color-primary-100) / <alpha-value>)',
+          200: 'rgb(var(--color-primary-200) / <alpha-value>)',
+          300: 'rgb(var(--color-primary-300) / <alpha-value>)',
+          400: 'rgb(var(--color-primary-400) / <alpha-value>)',
+          500: 'rgb(var(--color-primary-500) / <alpha-value>)',
+          600: 'rgb(var(--color-primary-600) / <alpha-value>)',
+          700: 'rgb(var(--color-primary-700) / <alpha-value>)',
+          800: 'rgb(var(--color-primary-800) / <alpha-value>)',
+          900: 'rgb(var(--color-primary-900) / <alpha-value>)',
         },
         accent: {
           DEFAULT: '#F59E0B', // Amber accent
@@ -57,7 +56,7 @@ export default {
         '2xl': '1.5rem',
       },
       boxShadow: {
-        'soft': '0 2px 15px -3px rgba(14, 165, 233, 0.1), 0 10px 20px -2px rgba(14, 165, 233, 0.05)',
+        'soft': '0 2px 15px -3px rgba(0,0,0,0.08), 0 10px 20px -2px rgba(0,0,0,0.04)',
         'card': '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1)',
       },
       animation: {

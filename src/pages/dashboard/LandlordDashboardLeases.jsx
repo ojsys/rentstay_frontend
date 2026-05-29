@@ -9,7 +9,7 @@ import toast from 'react-hot-toast';
 
 const statusColors = {
   active: 'bg-green-100 text-green-700',
-  expired: 'bg-gray-100 text-dark-600',
+  expired: 'bg-gray-100 text-gray-600',
   terminated: 'bg-red-100 text-red-700',
   pending: 'bg-amber-100 text-amber-700',
   confirmed: 'bg-green-100 text-green-700',
@@ -54,9 +54,8 @@ const LandlordDashboardLeases = () => {
   const [typeFilter, setTypeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('');
 
-  // Template state
   const [templateBody, setTemplateBody] = useState('');
-  const [placeholders, setPlaceholders] = useState(['{{landlord}}','{{tenant}}','{{address}}','{{start_date}}','{{end_date}}','{{rent_amount}}','{{caution_fee}}']);
+  const [placeholders] = useState(['{{landlord}}','{{tenant}}','{{address}}','{{start_date}}','{{end_date}}','{{rent_amount}}','{{caution_fee}}']);
   const [templateLoading, setTemplateLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [RichTextEditor, setRichTextEditor] = useState(null);
@@ -72,20 +71,17 @@ const LandlordDashboardLeases = () => {
     enabled: activeSection === 'invites',
   });
 
-  // Lazy-load RichTextEditor and template data when template tab is active
   useEffect(() => {
     if (activeSection !== 'template') return;
     const load = async () => {
       setTemplateLoading(true);
       try {
-        // Dynamic import of RichTextEditor
         if (!RichTextEditor) {
           const mod = await import('../../components/common/RichTextEditor');
           setRichTextEditor(() => mod.default);
         }
         const res = await rentalAPI.getTemplate();
         setTemplateBody(res.data.body || '');
-        if (res.data.placeholders) setPlaceholders(res.data.placeholders);
       } catch (e) {
         toast.error(e?.response?.data?.detail || 'Failed to load template');
       } finally {
@@ -129,7 +125,7 @@ const LandlordDashboardLeases = () => {
   const pendingInvitesCount = invites.filter(i => i.status === 'pending').length;
 
   const sections = [
-    { key: 'leases', label: 'Leases & Bookings' },
+    { key: 'leases', label: 'Leases' },
     { key: 'invites', label: 'Invites', badge: pendingInvitesCount > 0 ? pendingInvitesCount : null },
     { key: 'applications', label: 'Applications' },
     { key: 'moveouts', label: 'Move-Outs' },
@@ -137,24 +133,33 @@ const LandlordDashboardLeases = () => {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-dark-900">Leases & Bookings</h2>
+        <h2 className="text-lg md:text-xl font-bold text-gray-900">Leases & Bookings</h2>
         <button
           onClick={() => navigate('/dashboard/invite-tenant')}
-          className="btn btn-primary btn-sm inline-flex items-center gap-1.5"
+          className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#0C3B2E] text-white text-sm font-semibold hover:bg-[#0a3226] transition"
         >
           <UserPlus size={15} /> Invite Tenant
         </button>
       </div>
 
-      {/* Section tabs */}
-      <div className="flex gap-1 bg-gray-100 rounded-lg p-1 overflow-x-auto">
+      {/* Section tabs — scrollable pills */}
+      <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1">
         {sections.map(s => (
-          <button key={s.key} onClick={() => setActiveSection(s.key)} className={`relative px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-all ${activeSection === s.key ? 'bg-white shadow-sm text-dark-900' : 'text-dark-600 hover:text-dark-900'}`}>
+          <button
+            key={s.key}
+            onClick={() => setActiveSection(s.key)}
+            className={`relative flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+              activeSection === s.key
+                ? 'bg-[#0C3B2E] text-white shadow-sm'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
             {s.label}
             {s.badge != null && (
-              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-primary text-white text-[10px] font-bold flex items-center justify-center px-1">
+              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center px-1">
                 {s.badge}
               </span>
             )}
@@ -165,48 +170,58 @@ const LandlordDashboardLeases = () => {
       {activeSection === 'applications' && <EnhancedApplicationsInbox />}
       {activeSection === 'moveouts' && <MoveOutWorkflow />}
 
-      {/* Invites section */}
+      {/* Invites */}
       {activeSection === 'invites' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-semibold text-dark-900">Tenant Invitations</h3>
-              <p className="text-sm text-dark-500">Invitations you've sent to onboard existing tenants.</p>
+              <h3 className="font-semibold text-gray-900">Tenant Invitations</h3>
+              <p className="text-sm text-gray-500">Invitations you've sent to onboard existing tenants.</p>
             </div>
-            <button onClick={() => navigate('/dashboard/invite-tenant')} className="btn btn-primary btn-sm inline-flex items-center gap-1.5">
+            <button
+              onClick={() => navigate('/dashboard/invite-tenant')}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#0C3B2E] text-white text-sm font-semibold hover:bg-[#0a3226] transition"
+            >
               <UserPlus size={14} /> New Invite
             </button>
           </div>
 
           {invitesLoading ? (
-            <div className="flex items-center justify-center py-12 text-dark-500"><Loader2 className="animate-spin mr-2" /> Loading...</div>
+            <div className="flex items-center justify-center py-12 text-gray-400">
+              <Loader2 className="animate-spin mr-2" /> Loading...
+            </div>
           ) : invites.length === 0 ? (
-            <div className="card text-center py-12">
-              <Mail size={40} className="mx-auto text-dark-300 mb-3" />
-              <p className="font-medium text-dark-700 mb-1">No invitations sent yet</p>
-              <p className="text-sm text-dark-500 mb-4">Invite an existing tenant to manage their tenancy online.</p>
-              <button onClick={() => navigate('/dashboard/invite-tenant')} className="btn btn-primary btn-sm">
-                <UserPlus size={14} className="mr-1" /> Send First Invite
+            <div className="bg-white rounded-2xl shadow-sm p-10 text-center">
+              <div className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                <Mail size={28} className="text-gray-400" />
+              </div>
+              <p className="font-semibold text-gray-800 mb-1">No invitations sent yet</p>
+              <p className="text-sm text-gray-400 mb-4">Invite an existing tenant to manage their tenancy online.</p>
+              <button
+                onClick={() => navigate('/dashboard/invite-tenant')}
+                className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-[#0C3B2E] text-white text-sm font-semibold hover:bg-[#0a3226] transition"
+              >
+                <UserPlus size={14} /> Send First Invite
               </button>
             </div>
           ) : (
             <div className="space-y-3">
               {invites.map(invite => (
-                <div key={invite.id} className="card">
+                <div key={invite.id} className="bg-white rounded-2xl shadow-sm p-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <InviteStatusIcon status={invite.status} />
-                        <h4 className="font-semibold text-dark-900 truncate">{invite.property_title}</h4>
-                        <span className={`px-2 py-0.5 rounded text-xs font-medium capitalize ${inviteStatusColors[invite.status] || 'bg-gray-100 text-gray-600'}`}>
+                        <h4 className="font-semibold text-gray-900 truncate">{invite.property_title}</h4>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold capitalize ${inviteStatusColors[invite.status] || 'bg-gray-100 text-gray-600'}`}>
                           {invite.status}
                         </span>
                       </div>
-                      <p className="text-sm text-dark-600">
+                      <p className="text-sm text-gray-600">
                         {[invite.tenant_first_name, invite.tenant_last_name].filter(Boolean).join(' ') || invite.tenant_email}
                         {' · '}{invite.tenant_email}
                       </p>
-                      <p className="text-xs text-dark-400 mt-0.5">
+                      <p className="text-xs text-gray-400 mt-0.5">
                         ₦{Number(invite.rent_amount).toLocaleString()} / {invite.rent_term} · {invite.lease_start} to {invite.lease_end}
                       </p>
                       {invite.status === 'pending' && (
@@ -224,31 +239,43 @@ const LandlordDashboardLeases = () => {
         </div>
       )}
 
-      {/* Template sub-tab */}
+      {/* Template */}
       {activeSection === 'template' && (
-        <div className="space-y-6">
+        <div className="space-y-4">
           {templateLoading ? (
-            <div className="flex items-center justify-center py-12 text-dark-500"><Loader2 className="animate-spin mr-2" /> Loading template...</div>
+            <div className="flex items-center justify-center py-12 text-gray-400">
+              <Loader2 className="animate-spin mr-2" /> Loading template...
+            </div>
           ) : (
             <>
-              <div className="card">
-                <h3 className="text-lg font-semibold text-dark-900 mb-2">Edit Template</h3>
-                <p className="text-sm text-dark-600 mb-3">Use placeholders: {placeholders.join(', ')}</p>
-                {RichTextEditor ? (
-                  <RichTextEditor value={templateBody} onChange={(val) => setTemplateBody(val)} />
-                ) : (
-                  <textarea className="input min-h-[200px]" value={templateBody} onChange={(e) => setTemplateBody(e.target.value)} />
-                )}
-                <div className="flex justify-end mt-4">
-                  <button className="btn btn-primary" onClick={saveTemplate} disabled={saving}>
-                    {saving ? 'Saving...' : 'Save Template'}
-                  </button>
+              <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+                <div className="px-4 py-3 border-b border-gray-50">
+                  <h3 className="text-sm font-semibold text-gray-900">Edit Template</h3>
+                  <p className="text-xs text-gray-400 mt-0.5">Use placeholders: {placeholders.join(', ')}</p>
+                </div>
+                <div className="p-4">
+                  {RichTextEditor ? (
+                    <RichTextEditor value={templateBody} onChange={(val) => setTemplateBody(val)} />
+                  ) : (
+                    <textarea className="input w-full min-h-[200px]" value={templateBody} onChange={(e) => setTemplateBody(e.target.value)} />
+                  )}
+                  <div className="flex justify-end mt-4">
+                    <button
+                      onClick={saveTemplate}
+                      disabled={saving}
+                      className="flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-[#0C3B2E] text-white text-sm font-semibold hover:bg-[#0a3226] transition disabled:opacity-60"
+                    >
+                      {saving ? <><Loader2 size={14} className="animate-spin" /> Saving…</> : 'Save Template'}
+                    </button>
+                  </div>
                 </div>
               </div>
-              <div className="card">
-                <h3 className="text-lg font-semibold text-dark-900 mb-2">Preview</h3>
-                <p className="text-sm text-dark-600 mb-3">Example preview with sample values</p>
-                <div className="prose max-w-none">
+              <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+                <div className="px-4 py-3 border-b border-gray-50">
+                  <h3 className="text-sm font-semibold text-gray-900">Preview</h3>
+                  <p className="text-xs text-gray-400 mt-0.5">Example preview with sample values</p>
+                </div>
+                <div className="p-4 prose max-w-none">
                   <div dangerouslySetInnerHTML={{ __html: renderPreview(templateBody) }} />
                 </div>
               </div>
@@ -257,99 +284,127 @@ const LandlordDashboardLeases = () => {
         </div>
       )}
 
-      {activeSection === 'leases' && <>
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="card text-center">
-          <FileText size={20} className="mx-auto text-primary mb-1" />
-          <p className="text-2xl font-bold text-dark-900">{stats.active || 0}</p>
-          <p className="text-xs text-dark-600">Active Leases</p>
-        </div>
-        <div className="card text-center">
-          <CalendarClock size={20} className="mx-auto text-amber-500 mb-1" />
-          <p className="text-2xl font-bold text-dark-900">{stats.expiring_soon || 0}</p>
-          <p className="text-xs text-dark-600">Expiring Soon</p>
-        </div>
-        <div className="card text-center">
-          <Users size={20} className="mx-auto text-green-500 mb-1" />
-          <p className="text-2xl font-bold text-dark-900">{stats.total_agreements || 0}</p>
-          <p className="text-xs text-dark-600">Total Agreements</p>
-        </div>
-        <div className="card text-center">
-          <AlertTriangle size={20} className="mx-auto text-indigo-500 mb-1" />
-          <p className="text-2xl font-bold text-dark-900">{stats.total_bookings || 0}</p>
-          <p className="text-xs text-dark-600">Stay Bookings</p>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className="flex flex-wrap gap-2">
-        <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
-          {[['all', 'All'], ['long_term', 'Long-Term'], ['short_term', 'Short-Term']].map(([v, l]) => (
-            <button key={v} onClick={() => setTypeFilter(v)} className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${typeFilter === v ? 'bg-white shadow-sm text-dark-900' : 'text-dark-600'}`}>{l}</button>
-          ))}
-        </div>
-        <div className="flex gap-1 flex-wrap">
-          {['', 'active', 'expired', 'terminated', 'pending', 'confirmed'].map(s => (
-            <button key={s} onClick={() => setStatusFilter(s)} className={`px-3 py-1.5 rounded-full text-sm font-medium ${statusFilter === s ? 'bg-primary text-white' : 'bg-gray-100 text-dark-600 hover:bg-gray-200'}`}>
-              {s === '' ? 'All Status' : s.charAt(0).toUpperCase() + s.slice(1)}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {isLoading ? (
-        <div className="flex items-center justify-center py-12 text-dark-500"><Loader2 className="animate-spin mr-2" /> Loading...</div>
-      ) : items.length === 0 ? (
-        <div className="card text-center py-12">
-          <FileText size={48} className="mx-auto text-dark-300 mb-3" />
-          <p className="text-dark-600">No leases or bookings found.</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {items.map((item, idx) => (
-            <div key={`${item.type}-${item.id}-${idx}`} className="card">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-semibold text-dark-900 truncate">{item.property_title || item.listing_title}</h3>
-                    <span className={`px-2 py-0.5 rounded text-xs font-medium capitalize ${statusColors[item.status] || 'bg-gray-100 text-dark-600'}`}>{item.status}</span>
-                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${item.type === 'long_term' ? 'bg-indigo-50 text-indigo-700' : 'bg-purple-50 text-purple-700'}`}>
-                      {item.type === 'long_term' ? 'Long-Term' : 'Short-Term'}
-                    </span>
-                  </div>
-                  <p className="text-sm text-dark-600">
-                    {item.type === 'long_term' ? (
-                      <>Tenant: {item.tenant_name} &middot; ₦{Number(item.rent_amount).toLocaleString()}/yr</>
-                    ) : (
-                      <>Guest: {item.guest_name} &middot; ₦{Number(item.total_price).toLocaleString()}</>
-                    )}
-                  </p>
-                  <p className="text-xs text-dark-500 mt-0.5">
-                    {item.type === 'long_term' ? (
-                      <>{item.start_date} to {item.end_date}</>
-                    ) : (
-                      <>Check-in: {item.check_in} &middot; Check-out: {item.check_out}</>
-                    )}
-                  </p>
-                  {item.type === 'long_term' && (
-                    <div className="flex gap-3 mt-1 text-xs">
-                      <span className={item.rent_paid ? 'text-green-600' : 'text-amber-600'}>{item.rent_paid ? 'Rent Paid' : 'Rent Unpaid'}</span>
-                      <span className={item.caution_fee_paid ? 'text-green-600' : 'text-amber-600'}>{item.caution_fee_paid ? 'Caution Paid' : 'Caution Unpaid'}</span>
-                    </div>
-                  )}
+      {/* Leases section */}
+      {activeSection === 'leases' && (
+        <>
+          {/* Stats — compact 4-card row */}
+          <div className="grid grid-cols-4 gap-2 md:gap-4">
+            {[
+              { icon: FileText, label: 'Active', value: stats.active || 0, color: 'text-[#0C3B2E]', bg: 'bg-green-50' },
+              { icon: CalendarClock, label: 'Expiring', value: stats.expiring_soon || 0, color: 'text-amber-500', bg: 'bg-amber-50' },
+              { icon: Users, label: 'Total', value: stats.total_agreements || 0, color: 'text-blue-500', bg: 'bg-blue-50' },
+              { icon: AlertTriangle, label: 'Bookings', value: stats.total_bookings || 0, color: 'text-indigo-500', bg: 'bg-indigo-50' },
+            ].map(({ icon: Icon, label, value, color, bg }) => (
+              <div key={label} className="bg-white rounded-2xl p-3 shadow-sm flex flex-col items-center gap-1">
+                <div className={`w-7 h-7 md:w-9 md:h-9 ${bg} rounded-xl flex items-center justify-center`}>
+                  <Icon size={14} className={`md:w-4 md:h-4 ${color}`} />
                 </div>
-                <div className="flex gap-2 flex-shrink-0">
-                  {item.type === 'long_term' && (
-                    <Link to={`/agreements/${item.id}`} className="btn btn-primary btn-sm inline-flex items-center gap-1">View <ArrowRight size={14} /></Link>
-                  )}
-                </div>
+                <p className="text-lg md:text-xl font-bold text-gray-900 leading-tight">{value}</p>
+                <p className="text-[10px] text-gray-400 font-medium text-center leading-tight">{label}</p>
               </div>
+            ))}
+          </div>
+
+          {/* Filters */}
+          <div className="flex flex-col gap-2">
+            {/* Type switcher */}
+            <div className="flex gap-1 bg-gray-100 rounded-xl p-1">
+              {[['all', 'All'], ['long_term', 'Long-Term'], ['short_term', 'Short-Term']].map(([v, l]) => (
+                <button
+                  key={v}
+                  onClick={() => setTypeFilter(v)}
+                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
+                    typeFilter === v ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  {l}
+                </button>
+              ))}
             </div>
-          ))}
-        </div>
+            {/* Status pills */}
+            <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1">
+              {['', 'active', 'expired', 'terminated', 'pending', 'confirmed'].map(s => (
+                <button
+                  key={s}
+                  onClick={() => setStatusFilter(s)}
+                  className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                    statusFilter === s ? 'bg-[#0C3B2E] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  {s === '' ? 'All Status' : s.charAt(0).toUpperCase() + s.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12 text-gray-400">
+              <Loader2 className="animate-spin mr-2" /> Loading...
+            </div>
+          ) : items.length === 0 ? (
+            <div className="bg-white rounded-2xl shadow-sm p-10 text-center">
+              <div className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                <FileText size={28} className="text-gray-400" />
+              </div>
+              <p className="text-gray-600 font-medium">No leases or bookings found.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {items.map((item, idx) => (
+                <div key={`${item.type}-${item.id}-${idx}`} className="bg-white rounded-2xl shadow-sm p-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <h3 className="font-semibold text-gray-900 truncate">{item.property_title || item.listing_title}</h3>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold capitalize ${statusColors[item.status] || 'bg-gray-100 text-gray-600'}`}>
+                          {item.status}
+                        </span>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                          item.type === 'long_term' ? 'bg-indigo-50 text-indigo-700' : 'bg-purple-50 text-purple-700'
+                        }`}>
+                          {item.type === 'long_term' ? 'Long-Term' : 'Short-Term'}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        {item.type === 'long_term' ? (
+                          <>Tenant: {item.tenant_name} &middot; ₦{Number(item.rent_amount).toLocaleString()}/yr</>
+                        ) : (
+                          <>Guest: {item.guest_name} &middot; ₦{Number(item.total_price).toLocaleString()}</>
+                        )}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        {item.type === 'long_term' ? (
+                          <>{item.start_date} to {item.end_date}</>
+                        ) : (
+                          <>Check-in: {item.check_in} &middot; Check-out: {item.check_out}</>
+                        )}
+                      </p>
+                      {item.type === 'long_term' && (
+                        <div className="flex gap-3 mt-1">
+                          <span className={`text-xs font-medium ${item.rent_paid ? 'text-green-600' : 'text-amber-600'}`}>
+                            {item.rent_paid ? 'Rent Paid' : 'Rent Unpaid'}
+                          </span>
+                          <span className={`text-xs font-medium ${item.caution_fee_paid ? 'text-green-600' : 'text-amber-600'}`}>
+                            {item.caution_fee_paid ? 'Caution Paid' : 'Caution Unpaid'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    {item.type === 'long_term' && (
+                      <Link
+                        to={`/agreements/${item.id}`}
+                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#0C3B2E] text-white text-sm font-semibold hover:bg-[#0a3226] transition flex-shrink-0"
+                      >
+                        View <ArrowRight size={14} />
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
-      </>}
     </div>
   );
 };

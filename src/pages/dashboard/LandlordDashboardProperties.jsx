@@ -127,22 +127,27 @@ const LandlordDashboardProperties = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <h2 className="text-xl font-bold text-dark-900">My Properties</h2>
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h2 className="text-lg md:text-xl font-bold text-gray-900">My Properties</h2>
+          <p className="text-xs text-gray-500 mt-0.5">{properties.length} propert{properties.length === 1 ? 'y' : 'ies'}</p>
+        </div>
         <div className="flex gap-2">
-          <Link to="/properties/bulk-import" className="btn btn-secondary btn-sm inline-flex items-center gap-1"><Upload size={14} /> Bulk Import</Link>
-          <Link to="/properties/new" className="btn btn-primary btn-sm inline-flex items-center gap-1"><Plus size={14} /> Add Property</Link>
+          <Link to="/properties/bulk-import" className="btn btn-secondary btn-sm inline-flex items-center gap-1 hidden sm:inline-flex"><Upload size={14} /> Bulk Import</Link>
+          <Link to="/properties/new" className="flex items-center gap-1.5 bg-[#0C3B2E] text-white text-sm font-medium px-4 py-2.5 rounded-xl hover:bg-[#0a3226] transition">
+            <Plus size={16} /> Add
+          </Link>
         </div>
       </div>
 
       {/* Filter pills */}
-      <div className="flex gap-2 flex-wrap">
+      <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
         {['', 'available', 'rented', 'pending', 'maintenance'].map(s => (
           <button
             key={s}
             onClick={() => setStatusFilter(s)}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
-              statusFilter === s ? 'bg-primary text-white' : 'bg-gray-100 text-dark-600 hover:bg-gray-200'
+            className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+              statusFilter === s ? 'bg-[#0C3B2E] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
             {s === '' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
@@ -153,39 +158,58 @@ const LandlordDashboardProperties = () => {
       {isLoading ? (
         <div className="flex items-center justify-center py-12 text-dark-500"><Loader2 className="animate-spin mr-2" /> Loading...</div>
       ) : properties.length === 0 ? (
-        <div className="card text-center py-12">
-          <Home size={48} className="mx-auto text-dark-300 mb-3" />
-          <p className="text-dark-600">No properties found.</p>
-          <Link to="/properties/new" className="btn btn-primary mt-4 inline-flex items-center gap-1"><Plus size={16} /> Add Your First Property</Link>
+        <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
+          <div className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+            <Home size={28} className="text-gray-400" />
+          </div>
+          <p className="text-gray-600 font-medium mb-4">No properties found.</p>
+          <Link to="/properties/new" className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-[#0C3B2E] text-white text-sm font-semibold hover:bg-[#0a3226] transition">
+            <Plus size={16} /> Add Your First Property
+          </Link>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {properties.map((p) => (
-            <div key={p.id} className="card p-0 overflow-hidden">
-              {p.primary_image ? (
-                <img src={p.primary_image} alt={p.title} className="w-full h-40 object-cover" />
-              ) : (
-                <div className="w-full h-40 bg-gray-100 flex items-center justify-center text-dark-300"><Home size={32} /></div>
-              )}
+            <div key={p.id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
+              {/* Property image */}
+              <div className="relative h-44">
+                {p.primary_image ? (
+                  <img src={p.primary_image} alt={p.title} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-300"><Home size={32} /></div>
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                <span className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${statusColors[p.status] || 'bg-gray-100 text-gray-600'}`}>
+                  {p.status}
+                </span>
+                {p.is_premium && <Star size={14} className="absolute top-3 right-3 fill-amber-400 text-amber-400" />}
+                <p className="absolute bottom-3 left-3 right-3 text-white font-semibold text-sm line-clamp-1">{p.title}</p>
+              </div>
+
               <div className="p-4">
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="font-semibold text-dark-900 truncate">{p.title} {p.is_premium && <Star size={14} className="inline text-amber-500" />}</h3>
-                  <span className={`px-2 py-0.5 rounded text-xs font-medium capitalize flex-shrink-0 ${statusColors[p.status] || 'bg-gray-100 text-dark-600'}`}>{p.status}</span>
-                </div>
-                <p className="text-sm text-dark-600 mt-1">{p.area}{p.lga_name ? `, ${p.lga_name}` : ''}{p.state_name ? `, ${p.state_name}` : ''}</p>
-                <p className="text-lg font-bold text-primary mt-2">₦{Number(p.rent_amount).toLocaleString()}<span className="text-sm font-normal text-dark-500">/yr</span></p>
-                <div className="flex items-center gap-2 mt-1 text-xs text-dark-500">
-                  <span>{p.bedrooms} bed</span>
-                  <span>{p.bathrooms} bath</span>
-                  {p.is_verified && <span className="text-green-600 font-medium">Verified</span>}
+                <p className="text-xs text-gray-500 mb-1">{p.area}{p.lga_name ? `, ${p.lga_name}` : ''}{p.state_name ? `, ${p.state_name}` : ''}</p>
+                <div className="flex items-center justify-between">
+                  <p className="text-lg font-bold text-[#0C3B2E]">₦{Number(p.rent_amount).toLocaleString()}<span className="text-sm font-normal text-gray-400">/yr</span></p>
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <span>{p.bedrooms} bed · {p.bathrooms} bath</span>
+                    {p.is_verified && <span className="text-green-600 font-semibold">✓</span>}
+                  </div>
                 </div>
 
-                {/* Action buttons */}
-                <div className="flex flex-wrap gap-2 mt-3">
-                  <Link to={`/properties/${p.id}`} className="btn btn-secondary btn-sm inline-flex items-center gap-1"><Eye size={14} /> View</Link>
-                  <Link to={`/properties/${p.id}/edit`} className="btn btn-primary btn-sm inline-flex items-center gap-1"><Edit size={14} /> Edit</Link>
-                  <button onClick={() => startEdit(p)} className="btn btn-secondary btn-sm inline-flex items-center gap-1"><Edit size={14} /> Quick</button>
-                  <button onClick={() => delProp(p.id)} className="btn btn-secondary btn-sm inline-flex items-center gap-1 text-red-600"><Trash2 size={14} /></button>
+                {/* Action row — icon buttons on mobile */}
+                <div className="flex gap-2 mt-3">
+                  <Link to={`/properties/${p.id}`} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-gray-200 text-gray-600 text-xs font-medium hover:bg-gray-50 transition">
+                    <Eye size={13} /> View
+                  </Link>
+                  <Link to={`/properties/${p.id}/edit`} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-[#0C3B2E] text-white text-xs font-medium hover:bg-[#0a3226] transition">
+                    <Edit size={13} /> Edit
+                  </Link>
+                  <button onClick={() => startEdit(p)} className="flex items-center justify-center px-3 py-2 rounded-xl border border-gray-200 text-gray-600 text-xs font-medium hover:bg-gray-50 transition" title="Quick edit">
+                    <BarChart2 size={13} />
+                  </button>
+                  <button onClick={() => delProp(p.id)} className="flex items-center justify-center px-3 py-2 rounded-xl border border-red-100 text-red-500 text-xs font-medium hover:bg-red-50 transition" title="Delete">
+                    <Trash2 size={13} />
+                  </button>
                 </div>
 
                 {/* Quick Edit Form */}
@@ -211,8 +235,8 @@ const LandlordDashboardProperties = () => {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <button className="btn btn-primary btn-sm" onClick={() => saveEdit(p.id)}>Save</button>
-                      <button className="btn btn-secondary btn-sm" onClick={() => setEditing(null)}>Cancel</button>
+                      <button onClick={() => saveEdit(p.id)} className="flex-1 py-2 rounded-xl bg-[#0C3B2E] text-white text-sm font-semibold hover:bg-[#0a3226] transition">Save</button>
+                      <button onClick={() => setEditing(null)} className="flex-1 py-2 rounded-xl border border-gray-200 text-gray-600 text-sm font-medium hover:bg-gray-50 transition">Cancel</button>
                     </div>
                   </div>
                 )}
@@ -220,7 +244,7 @@ const LandlordDashboardProperties = () => {
                 {/* Manage toggle */}
                 <button
                   onClick={() => toggleExpand(p.id)}
-                  className="mt-3 w-full text-sm text-primary font-medium inline-flex items-center justify-center gap-1 py-1.5 rounded-lg hover:bg-primary-50 transition-colors"
+                  className="mt-3 w-full text-sm text-[#0C3B2E] font-medium inline-flex items-center justify-center gap-1 py-1.5 rounded-lg hover:bg-green-50 transition-colors"
                 >
                   {expandedId === p.id ? <><ChevronUp size={16} /> Hide Manage</> : <><ChevronDown size={16} /> Manage</>}
                 </button>
@@ -236,9 +260,9 @@ const LandlordDashboardProperties = () => {
                           {detailCache[p.id].images.map(img => (
                             <div key={img.id} className="relative group">
                               <img src={img.image} alt="" className="w-full h-20 object-cover rounded-lg border" />
-                              {img.is_primary && <span className="absolute top-1 left-1 text-[10px] bg-primary text-white px-1 rounded">Primary</span>}
+                              {img.is_primary && <span className="absolute top-1 left-1 text-[10px] bg-[#0C3B2E] text-white px-1 rounded">Primary</span>}
                               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-1 rounded-lg">
-                                {!img.is_primary && <button className="text-white text-[10px] bg-primary/80 px-1.5 py-0.5 rounded" onClick={() => setPrimary(p.id, img.id)}>Primary</button>}
+                                {!img.is_primary && <button className="text-white text-[10px] bg-[#0C3B2E]/80 px-1.5 py-0.5 rounded" onClick={() => setPrimary(p.id, img.id)}>Primary</button>}
                                 <button className="text-white text-[10px] bg-red-500/80 px-1.5 py-0.5 rounded" onClick={() => deleteImage(p.id, img.id)}>Del</button>
                               </div>
                             </div>
@@ -248,12 +272,14 @@ const LandlordDashboardProperties = () => {
                         <p className="text-xs text-dark-500">No images yet.</p>
                       )}
                       <div className="flex items-center gap-2 mt-2">
-                        <label className="btn btn-secondary btn-sm inline-flex items-center cursor-pointer">
-                          <ImageIcon size={14} className="mr-1" /> Select
+                        <label className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 text-xs font-medium cursor-pointer hover:bg-gray-50 transition">
+                          <ImageIcon size={13} /> Select
                           <input type="file" multiple accept="image/*" onChange={(e) => setImages(prev => ({ ...prev, [p.id]: Array.from(e.target.files || []) }))} hidden />
                         </label>
                         {images[p.id]?.length > 0 && (
-                          <button className="btn btn-primary btn-sm" onClick={() => upload(p.id)}>Upload ({images[p.id].length})</button>
+                          <button onClick={() => upload(p.id)} className="px-3 py-1.5 rounded-lg bg-[#0C3B2E] text-white text-xs font-semibold hover:bg-[#0a3226] transition">
+                            Upload ({images[p.id].length})
+                          </button>
                         )}
                       </div>
                     </div>
@@ -269,7 +295,7 @@ const LandlordDashboardProperties = () => {
                               {(analytics[p.id].views || []).map((v, i) => {
                                 const max = Math.max(...(analytics[p.id].views || [1]), 1);
                                 const h = Math.max(4, Math.round((Number(v || 0) / max) * 60));
-                                return <div key={i} className="w-1 bg-primary rounded-t flex-1" style={{ height: `${h}px` }} />;
+                                return <div key={i} className="w-1 bg-[#0C3B2E] rounded-t flex-1" style={{ height: `${h}px` }} />;
                               })}
                             </div>
                           </div>
@@ -291,12 +317,12 @@ const LandlordDashboardProperties = () => {
                     <div>
                       <button
                         onClick={() => setBroadcastOpen(broadcastOpen === p.id ? null : p.id)}
-                        className="btn btn-secondary btn-sm inline-flex items-center"
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 text-xs font-medium hover:bg-gray-50 transition"
                       >
-                        <Send size={14} className="mr-1" /> Broadcast
+                        <Send size={13} /> Broadcast
                       </button>
                       {broadcastOpen === p.id && (
-                        <div className="mt-2 bg-gray-50 rounded-lg p-3 space-y-2">
+                        <div className="mt-2 bg-gray-50 rounded-xl p-3 space-y-2">
                           <div>
                             <label className="label">Title (optional)</label>
                             <input className="input" value={broadcastForm.title} onChange={(e) => setBroadcastForm(prev => ({ ...prev, title: e.target.value }))} placeholder={`Update: ${p.title}`} />
@@ -306,8 +332,10 @@ const LandlordDashboardProperties = () => {
                             <textarea className="input min-h-[80px]" value={broadcastForm.message} onChange={(e) => setBroadcastForm(prev => ({ ...prev, message: e.target.value }))} placeholder="Announcement to tenants" />
                           </div>
                           <div className="flex gap-2">
-                            <button className="btn btn-primary btn-sm" onClick={() => sendBroadcast(p.id)}><Send size={14} className="mr-1" /> Send</button>
-                            <button className="btn btn-secondary btn-sm" onClick={() => setBroadcastOpen(null)}>Cancel</button>
+                            <button onClick={() => sendBroadcast(p.id)} className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#0C3B2E] text-white text-xs font-semibold hover:bg-[#0a3226] transition">
+                              <Send size={12} /> Send
+                            </button>
+                            <button onClick={() => setBroadcastOpen(null)} className="px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 text-xs font-medium hover:bg-gray-50 transition">Cancel</button>
                           </div>
                         </div>
                       )}

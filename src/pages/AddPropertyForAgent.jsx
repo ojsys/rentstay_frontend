@@ -30,7 +30,7 @@ const AddPropertyForAgent = () => {
   });
 
   if (!isAuthenticated) return <Navigate to="/login" replace />;
-  if (user?.user_type !== 'agent') return <Navigate to="/dashboard" replace />;
+  if (!['agent', 'super_agent'].includes(user?.user_type)) return <Navigate to="/dashboard" replace />;
 
   useEffect(() => {
     locationAPI.getStates().then(res => setStates(res.data)).catch(() => setStates([]));
