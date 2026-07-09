@@ -25,7 +25,7 @@ const CONFIG = {
     ownerName: (row) => `${row.owner?.first_name || ''} ${row.owner?.last_name || ''}`.trim() || '—',
     ownerVerified: (row) => row.owner?.is_verified,
     detailPath: (row) => `/stays/listings/${row.id}`,
-    subtitle: (row) => row.location || [row.area, row.state_name].filter(Boolean).join(', '),
+    subtitle: (row) => row.location?.display || [row.area, row.state_name].filter(Boolean).join(', '),
   },
 };
 

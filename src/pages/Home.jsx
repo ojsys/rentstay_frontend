@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, MapPin, Home as HomeIcon, DollarSign, Shield, TrendingUp, CheckCircle, ArrowRight, ChevronDown, BedDouble } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { Search, MapPin, Home as HomeIcon, DollarSign, Shield, TrendingUp, CheckCircle, ArrowRight, ChevronDown, BedDouble, Sparkles } from 'lucide-react';
+import { staysAPI } from '../services/api';
+import StayCard from '../components/stays/StayCard';
 
 const PROPERTY_TYPES = [
   { value: '', label: 'Any Type' },
@@ -34,6 +37,16 @@ const Home = () => {
   const [propertyType, setPropertyType] = useState('');
   const [bedrooms, setBedrooms] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
+
+  // Featured short-stay listings for the homepage (up to 10)
+  const { data: featuredStays = [], isLoading: staysLoading } = useQuery({
+    queryKey: ['home-featured-stays'],
+    queryFn: async () => {
+      const res = await staysAPI.listListings({ page_size: 10 });
+      const results = res.data.results || res.data || [];
+      return results.slice(0, 10);
+    },
+  });
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -91,10 +104,24 @@ const Home = () => {
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">Perfect Home</span>
             </h1>
 
-            <p className="text-xl md:text-2xl text-dark-600 mb-10 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-xl md:text-2xl text-dark-600 mb-6 max-w-3xl mx-auto leading-relaxed">
               Discover verified rental properties with transparent pricing and{' '}
               <span className="text-primary font-semibold">earn 5% cashback</span> on your caution fee
             </p>
+
+            {/* Rent vs Short-stay switch */}
+            <div className="inline-flex items-center gap-2 mb-8">
+              <span className="inline-flex items-center gap-1.5 bg-dark-900 text-white text-sm font-semibold px-4 py-2 rounded-full shadow-sm">
+                <HomeIcon size={15} /> Rent long-term
+              </span>
+              <span className="text-dark-400 text-sm">or</span>
+              <Link
+                to="/stays"
+                className="inline-flex items-center gap-1.5 bg-white text-dark-800 border border-gray-200 hover:border-accent hover:text-accent text-sm font-semibold px-4 py-2 rounded-full shadow-sm transition-all hover:scale-105"
+              >
+                <Sparkles size={15} className="text-accent" /> Book a short stay
+              </Link>
+            </div>
 
             {/* Airbnb-style Search Bar */}
             <form onSubmit={handleSearch} className="bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden max-w-4xl mx-auto">
@@ -200,6 +227,49 @@ const Home = () => {
           </div>
         </div>
       </section>
+
+      {/* Featured Short Stays */}
+      {(staysLoading || featuredStays.length > 0) && (
+        <section className="py-20 bg-gray-50">
+          <div className="container-custom">
+            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-10">
+              <div>
+                <div className="inline-flex items-center gap-1.5 bg-accent-50 text-accent-700 text-xs font-semibold px-3 py-1 rounded-full mb-3">
+                  <Sparkles size={13} /> Short-term stays
+                </div>
+                <h2 className="text-4xl font-display font-bold text-dark-900 mb-2">Book a Short Stay</h2>
+                <p className="text-lg text-dark-600 max-w-2xl">
+                  Verified short-term homes for travel, relocation & getaways — book by the night.
+                </p>
+              </div>
+              <Link
+                to="/stays"
+                className="inline-flex items-center gap-1.5 font-semibold text-primary hover:text-primary-600 transition-colors flex-shrink-0"
+              >
+                View all stays <ArrowRight size={18} />
+              </Link>
+            </div>
+
+            {staysLoading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="animate-pulse">
+                    <div className="aspect-[4/3] rounded-2xl bg-gray-100 mb-3" />
+                    <div className="h-4 bg-gray-100 rounded w-3/4 mb-2" />
+                    <div className="h-3 bg-gray-100 rounded w-1/2" />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {featuredStays.map((listing) => (
+                  <StayCard key={listing.id} listing={listing} />
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* Features Section */}
       <section className="py-20 bg-white">

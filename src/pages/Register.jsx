@@ -66,12 +66,12 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center bg-gray-50 py-12">
+    <div className="min-h-[80vh] flex items-center justify-center bg-gray-50 py-6 sm:py-12">
       <div className="container-custom">
         <div className="max-w-2xl mx-auto">
           <div className="card">
-            <div className="text-center mb-8">
-              <h1 className="text-3xl font-display font-bold text-dark-900 mb-2">
+            <div className="text-center mb-6 sm:mb-8">
+              <h1 className="text-2xl sm:text-3xl font-display font-bold text-dark-900 mb-2">
                 Create Your Account
               </h1>
               <p className="text-dark-600">Join RentStay and find your perfect home</p>
@@ -82,7 +82,7 @@ const Register = () => {
               <label className="label text-center block mb-3">
                 Select Account Type <span className="text-red-500">*</span>
               </label>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {[
                 { type: 'tenant', icon: Home, title: "I'm a Tenant", sub: 'Looking for a property', note: 'Browse and apply for listings' },
                 { type: 'landlord', icon: Building2, title: "I'm a Landlord", sub: 'List and manage properties', note: 'Verification required for full access' },
@@ -92,7 +92,7 @@ const Register = () => {
                   key={type}
                   type="button"
                   onClick={() => setUserType(type)}
-                  className={`p-4 rounded-xl border-2 transition-all text-left ${
+                  className={`flex sm:flex-col items-center sm:items-stretch gap-3 sm:gap-0 p-4 rounded-xl border-2 transition-all text-left ${
                     userType === type
                       ? 'border-primary bg-primary-50 shadow-md'
                       : userType === null
@@ -100,10 +100,12 @@ const Register = () => {
                       : 'border-gray-200 hover:border-primary-200 bg-gray-50'
                   }`}
                 >
-                  <Icon className={`mx-auto mb-2 ${userType === type ? 'text-primary' : 'text-dark-400'}`} size={28} />
-                  <h3 className="font-semibold text-dark-900 text-sm">{title}</h3>
-                  <p className="text-xs text-dark-600 mt-1">{sub}</p>
-                  <p className="text-xs text-dark-400 mt-1">{note}</p>
+                  <Icon className={`shrink-0 sm:mx-auto sm:mb-2 ${userType === type ? 'text-primary' : 'text-dark-400'}`} size={28} />
+                  <div className="min-w-0">
+                    <h3 className="font-semibold text-dark-900 text-sm">{title}</h3>
+                    <p className="text-xs text-dark-600 mt-0.5 sm:mt-1">{sub}</p>
+                    <p className="text-xs text-dark-400 mt-0.5 sm:mt-1">{note}</p>
+                  </div>
                 </button>
               ))}
               </div>

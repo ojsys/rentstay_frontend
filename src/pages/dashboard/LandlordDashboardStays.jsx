@@ -365,9 +365,10 @@ const LandlordDashboardStays = () => {
                     </div>
                     <div className="p-4 flex-1 flex flex-col">
                       <p className="font-semibold text-dark-900 line-clamp-1">{l.title}</p>
-                      <p className="text-xs text-dark-600 mb-3">
+                      <p className="text-xs text-dark-600 mb-3 inline-flex items-center flex-wrap gap-x-1">
                         {l.listing_type?.replace('_', ' ')} · ₦{Number(l.nightly_rate).toLocaleString()}/night
                         {l.review_count > 0 && <> · {l.review_count} review{l.review_count !== 1 ? 's' : ''}</>}
+                        <span className="inline-flex items-center gap-0.5">· <Eye size={11} /> {l.views_count || 0} view{(l.views_count || 0) !== 1 ? 's' : ''}</span>
                       </p>
                       <div className="mt-auto">
                         <div className="flex flex-wrap gap-2 mb-3">

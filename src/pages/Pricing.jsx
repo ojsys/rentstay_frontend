@@ -1,15 +1,41 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { pagesAPI } from '../services/api';
+import { Link, useNavigate } from 'react-router-dom';
+import { pagesAPI, plansAPI } from '../services/api';
+import useAuthStore from '../store/authStore';
 import {
-  Loader2, Check, X, TrendingUp, Shield, CreditCard,
-  Users, Building2, Star, Zap, Crown, HelpCircle
+  Loader2, Check, TrendingUp, Shield, CreditCard,
+  Users, Building2, Star, Zap, Crown, Sparkles, HelpCircle
 } from 'lucide-react';
 
+const PLAN_ICONS = {
+  starter: Building2,
+  professional: Star,
+  professional_plus: Sparkles,
+  enterprise: Crown,
+};
+const PLAN_ICON_BG = {
+  starter: 'bg-gray-600',
+  professional: 'bg-primary',
+  professional_plus: 'bg-accent',
+  enterprise: 'bg-dark-800',
+};
+// The tier we actively promote (RentStay manages caution + earns from the pool).
+const POPULAR_PLAN = 'professional_plus';
+
+const formatPrice = (plan) =>
+  plan.price === 0 ? 'Free' : `₦${Number(plan.price).toLocaleString()}`;
+
 const Pricing = () => {
+  const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuthStore();
   const [page, setPage] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [billingCycle, setBillingCycle] = useState('annual');
+  const [plans, setPlans] = useState([]);
+  const [currentPlan, setCurrentPlan] = useState(null);
+  const [subscribingTo, setSubscribingTo] = useState(null);
+  const [error, setError] = useState('');
+
+  const isLandlord = isAuthenticated && user?.user_type === 'landlord';
 
   useEffect(() => {
     const fetchPage = async () => {
@@ -23,8 +49,53 @@ const Pricing = () => {
         setLoading(false);
       }
     };
+    const fetchPlans = async () => {
+      try {
+        const res = await plansAPI.getCatalog();
+        setPlans(res.data.plans || []);
+        setCurrentPlan(res.data.current?.effective_plan || null);
+      } catch (err) {
+        console.error('Error fetching plans:', err);
+      }
+    };
     fetchPage();
+    fetchPlans();
   }, []);
+
+  const handleSubscribe = async (plan) => {
+    // Not signed in as a landlord → send them to register first.
+    if (!isLandlord) {
+      navigate('/register');
+      return;
+    }
+    if (plan.contact_sales) {
+      navigate('/contact');
+      return;
+    }
+    if (!plan.is_paid || plan.key === currentPlan) return;
+
+    setError('');
+    setSubscribingTo(plan.key);
+    try {
+      const res = await plansAPI.subscribe(plan.key);
+      if (res.data?.authorization_url) {
+        window.location.href = res.data.authorization_url;
+      } else {
+        setError('Could not start checkout. Please try again.');
+        setSubscribingTo(null);
+      }
+    } catch (err) {
+      setError(err?.response?.data?.detail || 'Could not start checkout. Please try again.');
+      setSubscribingTo(null);
+    }
+  };
+
+  const ctaLabel = (plan) => {
+    if (plan.key === currentPlan) return 'Current plan';
+    if (plan.contact_sales) return 'Contact Sales';
+    if (!plan.is_paid) return isLandlord ? 'Included' : 'Get Started';
+    return isLandlord ? 'Upgrade' : 'Get Started';
+  };
 
   // Static data for pricing
   const tenantFeatures = [
@@ -36,68 +107,6 @@ const Pricing = () => {
     { text: '5% cashback on caution fee', included: true },
     { text: 'Maintenance request system', included: true },
     { text: 'Priority support', included: true },
-  ];
-
-  const landlordPlans = [
-    {
-      name: 'Starter',
-      icon: Building2,
-      price: 'Free',
-      description: 'Perfect for individual landlords getting started',
-      features: [
-        { text: 'List up to 3 properties', included: true },
-        { text: 'Basic property analytics', included: true },
-        { text: 'Tenant messaging', included: true },
-        { text: 'Application management', included: true },
-        { text: 'Payment collection', included: true },
-        { text: 'Featured listings', included: false },
-        { text: 'Priority placement', included: false },
-        { text: 'Dedicated support', included: false },
-      ],
-      cta: 'Get Started',
-      popular: false,
-      color: 'bg-gray-600'
-    },
-    {
-      name: 'Professional',
-      icon: Star,
-      price: billingCycle === 'annual' ? '₦15,000' : '₦1,500',
-      period: billingCycle === 'annual' ? '/year' : '/month',
-      description: 'For growing property portfolios',
-      features: [
-        { text: 'List up to 15 properties', included: true },
-        { text: 'Advanced analytics dashboard', included: true },
-        { text: 'Tenant messaging', included: true },
-        { text: 'Application management', included: true },
-        { text: 'Payment collection', included: true },
-        { text: '3 featured listings/month', included: true },
-        { text: 'Priority placement', included: true },
-        { text: 'Email support', included: true },
-      ],
-      cta: 'Start Free Trial',
-      popular: true,
-      color: 'bg-primary'
-    },
-    {
-      name: 'Enterprise',
-      icon: Crown,
-      price: billingCycle === 'annual' ? '₦50,000' : '₦5,000',
-      period: billingCycle === 'annual' ? '/year' : '/month',
-      description: 'For property management companies',
-      features: [
-        { text: 'Unlimited properties', included: true },
-        { text: 'Full analytics suite', included: true },
-        { text: 'Tenant messaging', included: true },
-        { text: 'Bulk application management', included: true },
-        { text: 'Payment collection + reports', included: true },
-        { text: 'Unlimited featured listings', included: true },
-        { text: 'Top priority placement', included: true },
-        { text: 'Dedicated account manager', included: true },
-      ],
-      cta: 'Contact Sales',
-      popular: false,
-      color: 'bg-accent'
-    },
   ];
 
   const cautionFeeInfo = [
@@ -221,91 +230,90 @@ const Pricing = () => {
             <h2 className="text-3xl md:text-4xl font-display font-bold text-gray-900 mb-4">
               Choose Your Plan
             </h2>
-            <p className="text-xl text-gray-600 mb-8">
-              Start free, upgrade as you grow
+            <p className="text-xl text-gray-600 mb-2">
+              Start free, upgrade as you grow. All paid plans are billed annually.
             </p>
-
-            {/* Billing Toggle */}
-            <div className="inline-flex bg-white rounded-full p-1 shadow-soft">
-              <button
-                onClick={() => setBillingCycle('monthly')}
-                className={`px-6 py-2 rounded-full font-medium transition-all ${
-                  billingCycle === 'monthly'
-                    ? 'bg-primary text-white'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Monthly
-              </button>
-              <button
-                onClick={() => setBillingCycle('annual')}
-                className={`px-6 py-2 rounded-full font-medium transition-all ${
-                  billingCycle === 'annual'
-                    ? 'bg-primary text-white'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Annual
-                <span className="ml-2 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
-                  Save 17%
-                </span>
-              </button>
-            </div>
+            {isLandlord && currentPlan && (
+              <p className="text-sm text-gray-500">
+                You're on the{' '}
+                <span className="font-semibold text-primary">
+                  {plans.find((p) => p.key === currentPlan)?.name || currentPlan}
+                </span>{' '}
+                plan.
+              </p>
+            )}
+            {error && (
+              <p className="mt-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg inline-block px-4 py-2">
+                {error}
+              </p>
+            )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {landlordPlans.map((plan, index) => (
-              <div
-                key={index}
-                className={`relative bg-white rounded-3xl shadow-soft overflow-hidden ${
-                  plan.popular ? 'ring-2 ring-primary' : ''
-                }`}
-              >
-                {plan.popular && (
-                  <div className="absolute top-0 left-0 right-0 bg-primary text-white text-center py-2 text-sm font-medium">
-                    Most Popular
-                  </div>
-                )}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto items-stretch">
+            {plans.map((plan) => {
+              const Icon = PLAN_ICONS[plan.key] || Building2;
+              const isPopular = plan.key === POPULAR_PLAN;
+              const isCurrent = plan.key === currentPlan;
+              const isBusy = subscribingTo === plan.key;
+              return (
+                <div
+                  key={plan.key}
+                  className={`relative bg-white rounded-3xl shadow-soft overflow-hidden flex flex-col ${
+                    isPopular ? 'ring-2 ring-accent' : ''
+                  } ${isCurrent ? 'ring-2 ring-primary' : ''}`}
+                >
+                  {isPopular && (
+                    <div className="absolute top-0 left-0 right-0 bg-accent text-white text-center py-2 text-sm font-medium">
+                      Most Popular
+                    </div>
+                  )}
 
-                <div className={`p-8 ${plan.popular ? 'pt-14' : ''}`}>
-                  <div className={`w-14 h-14 ${plan.color} rounded-2xl flex items-center justify-center mb-6`}>
-                    <plan.icon className="text-white" size={28} />
-                  </div>
+                  <div className={`p-8 flex flex-col flex-1 ${isPopular ? 'pt-14' : ''}`}>
+                    <div className={`w-14 h-14 ${PLAN_ICON_BG[plan.key] || 'bg-gray-600'} rounded-2xl flex items-center justify-center mb-6`}>
+                      <Icon className="text-white" size={28} />
+                    </div>
 
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">{plan.name}</h3>
-                  <p className="text-gray-600 text-sm mb-6">{plan.description}</p>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2">{plan.name}</h3>
+                    <p className="text-gray-600 text-sm mb-6 min-h-[40px]">{plan.tagline}</p>
 
-                  <div className="mb-6">
-                    <span className="text-4xl font-bold text-gray-900">{plan.price}</span>
-                    {plan.period && <span className="text-gray-600">{plan.period}</span>}
-                  </div>
+                    <div className="mb-6">
+                      <span className="text-4xl font-bold text-gray-900">{formatPrice(plan)}</span>
+                      {plan.price > 0 && <span className="text-gray-600">/{plan.billing_period}</span>}
+                    </div>
 
-                  <Link
-                    to="/register"
-                    className={`btn w-full mb-6 ${
-                      plan.popular ? 'btn-primary' : 'btn-secondary'
-                    }`}
-                  >
-                    {plan.cta}
-                  </Link>
-
-                  <ul className="space-y-3">
-                    {plan.features.map((feature, fIndex) => (
-                      <li key={fIndex} className="flex items-start space-x-3">
-                        {feature.included ? (
-                          <Check className="text-green-500 flex-shrink-0 mt-0.5" size={18} />
-                        ) : (
-                          <X className="text-gray-300 flex-shrink-0 mt-0.5" size={18} />
-                        )}
-                        <span className={feature.included ? 'text-gray-700' : 'text-gray-400'}>
-                          {feature.text}
+                    <button
+                      type="button"
+                      onClick={() => handleSubscribe(plan)}
+                      disabled={isCurrent || isBusy}
+                      className={`btn w-full mb-6 ${
+                        isCurrent
+                          ? 'bg-gray-100 text-gray-500 cursor-default'
+                          : isPopular
+                          ? 'btn-primary'
+                          : 'btn-secondary'
+                      }`}
+                    >
+                      {isBusy ? (
+                        <span className="inline-flex items-center gap-2">
+                          <Loader2 className="animate-spin" size={16} /> Redirecting…
                         </span>
-                      </li>
-                    ))}
-                  </ul>
+                      ) : (
+                        ctaLabel(plan)
+                      )}
+                    </button>
+
+                    <ul className="space-y-3 mt-auto">
+                      {plan.highlights.map((text, fIndex) => (
+                        <li key={fIndex} className="flex items-start space-x-3">
+                          <Check className="text-green-500 flex-shrink-0 mt-0.5" size={18} />
+                          <span className="text-gray-700">{text}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>

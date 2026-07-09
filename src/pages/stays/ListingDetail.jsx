@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { staysAPI } from '../../services/api';
 import {
@@ -70,6 +70,35 @@ const ListingDetail = () => {
 
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
+  const touchStartX = useRef(null);
+  const imageCount = listing?.images?.length || 0;
+
+  const nextImage = useCallback(() => {
+    setGalleryIndex(i => (imageCount ? (i + 1) % imageCount : 0));
+  }, [imageCount]);
+  const prevImage = useCallback(() => {
+    setGalleryIndex(i => (imageCount ? (i - 1 + imageCount) % imageCount : 0));
+  }, [imageCount]);
+
+  const onTouchStart = (e) => { touchStartX.current = e.changedTouches[0].clientX; };
+  const onTouchEnd = (e) => {
+    if (touchStartX.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    if (Math.abs(dx) > 40) (dx < 0 ? nextImage() : prevImage());
+    touchStartX.current = null;
+  };
+
+  // Keyboard navigation while lightbox is open
+  useEffect(() => {
+    if (!galleryOpen) return;
+    const onKey = (e) => {
+      if (e.key === 'ArrowRight') nextImage();
+      else if (e.key === 'ArrowLeft') prevImage();
+      else if (e.key === 'Escape') setGalleryOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [galleryOpen, nextImage, prevImage]);
 
   const [uploading, setUploading] = useState(false);
 
@@ -535,10 +564,14 @@ const ListingDetail = () => {
             <span className="text-sm font-medium">{galleryIndex + 1} / {images.length}</span>
             <button onClick={() => setGalleryOpen(false)} className="p-2 rounded-full hover:bg-white/10 transition"><X size={22} /></button>
           </div>
-          <div className="flex-1 flex items-center justify-center px-4 gap-4">
-            <button onClick={() => setGalleryIndex(i => (i - 1 + images.length) % images.length)} className="text-white p-3 rounded-full hover:bg-white/10 flex-shrink-0 transition"><ArrowLeft size={24} /></button>
-            <img src={images[galleryIndex]?.image} alt="" className="max-h-[80vh] max-w-full object-contain rounded-lg" />
-            <button onClick={() => setGalleryIndex(i => (i + 1) % images.length)} className="text-white p-3 rounded-full hover:bg-white/10 flex-shrink-0 transition"><ArrowRight size={24} /></button>
+          <div
+            className="flex-1 flex items-center justify-center px-4 gap-4 select-none"
+            onTouchStart={onTouchStart}
+            onTouchEnd={onTouchEnd}
+          >
+            <button onClick={prevImage} className="text-white p-3 rounded-full hover:bg-white/10 flex-shrink-0 transition"><ArrowLeft size={24} /></button>
+            <img src={images[galleryIndex]?.image} alt="" draggable={false} className="max-h-[80vh] max-w-full object-contain rounded-lg" />
+            <button onClick={nextImage} className="text-white p-3 rounded-full hover:bg-white/10 flex-shrink-0 transition"><ArrowRight size={24} /></button>
           </div>
           <div className="flex justify-center gap-2 p-4 overflow-x-auto">
             {images.map((img, i) => (

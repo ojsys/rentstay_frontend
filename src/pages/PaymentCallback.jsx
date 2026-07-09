@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { paymentAPI } from '../services/api';
+import useAuthStore from '../store/authStore';
 import { Loader2, CheckCircle2, XCircle } from 'lucide-react';
 
 const PaymentCallback = () => {
   const navigate = useNavigate();
   const [params] = useSearchParams();
+  const fetchUser = useAuthStore((s) => s.fetchUser);
   const [status, setStatus] = useState('verifying'); // verifying | success | failed
   const [message, setMessage] = useState('Verifying your payment...');
 
@@ -20,6 +22,8 @@ const PaymentCallback = () => {
     const verify = async () => {
       try {
         await paymentAPI.verifyPayment(ref);
+        // Refresh user so plan/feature changes (e.g. after a subscription) apply.
+        try { await fetchUser(); } catch { /* non-fatal */ }
         setStatus('success');
         setMessage('Payment verified successfully!');
         setTimeout(() => navigate('/dashboard'), 1200);
@@ -30,7 +34,7 @@ const PaymentCallback = () => {
     };
 
     verify();
-  }, [params, navigate]);
+  }, [params, navigate, fetchUser]);
 
   return (
     <div className="min-h-[70vh] flex items-center justify-center">

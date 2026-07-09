@@ -116,6 +116,13 @@ export const paymentAPI = {
   getCautionFeeStatus: (agreementId) => api.get(`/payments/caution-fee/${agreementId}/`),
 };
 
+// Landlord subscription plans
+export const plansAPI = {
+  getCatalog: () => api.get('/plans/'),
+  getMine: () => api.get('/plans/me/'),
+  subscribe: (plan) => api.post('/plans/subscribe/', { plan }),
+};
+
 export const rentalAPI = {
   createAgreement: (data) => api.post('/agreements/', data),
   getAgreements: () => api.get('/agreements/'),
