@@ -1,9 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Search, MapPin, Home as HomeIcon, DollarSign, Shield, TrendingUp, CheckCircle, ArrowRight, ChevronDown, BedDouble, Sparkles } from 'lucide-react';
+import { Search, MapPin, Home as HomeIcon, DollarSign, Shield, TrendingUp, CheckCircle, ArrowRight, ChevronDown, BedDouble, Sparkles, Calendar, Users } from 'lucide-react';
 import { staysAPI } from '../services/api';
 import StayCard from '../components/stays/StayCard';
+
+const HERO_ROTATE_MS = 10000; // each hero slide is shown for ~10s before auto-advancing
+const todayStr = () => new Date().toISOString().split('T')[0];
+const tomorrowStr = () => {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().split('T')[0];
+};
 
 const PROPERTY_TYPES = [
   { value: '', label: 'Any Type' },
@@ -31,12 +39,43 @@ const PRICE_RANGES = [
   { value: '1000000', label: 'Under ₦1M' },
 ];
 
+// Hero slides: Stays (0) is the default so short-stays get first impression.
+const STAY_SLIDE = 0;
+const RENT_SLIDE = 1;
+
 const Home = () => {
   const navigate = useNavigate();
   const [where, setWhere] = useState('');
   const [propertyType, setPropertyType] = useState('');
   const [bedrooms, setBedrooms] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
+
+  // Hero slider
+  const [heroSlide, setHeroSlide] = useState(STAY_SLIDE);
+  const [stayWhere, setStayWhere] = useState('');
+  const [checkIn, setCheckIn] = useState('');
+  const [checkOut, setCheckOut] = useState('');
+  const [guests, setGuests] = useState(1);
+
+  // Auto-advance between the two heroes every ~10s. Re-keying on heroSlide means
+  // a manual switch also resets the 10s timer.
+  useEffect(() => {
+    const t = setTimeout(
+      () => setHeroSlide((s) => (s === STAY_SLIDE ? RENT_SLIDE : STAY_SLIDE)),
+      HERO_ROTATE_MS,
+    );
+    return () => clearTimeout(t);
+  }, [heroSlide]);
+
+  const handleStaySearch = (e) => {
+    e.preventDefault();
+    const params = new URLSearchParams();
+    if (stayWhere) params.append('city', stayWhere);
+    if (checkIn) params.append('check_in', checkIn);
+    if (checkOut) params.append('check_out', checkOut);
+    if (guests > 1) params.append('guests', guests);
+    navigate(`/stays${params.toString() ? `?${params.toString()}` : ''}`);
+  };
 
   // Featured short-stay listings for the homepage (up to 10)
   const { data: featuredStays = [], isLoading: staysLoading } = useQuery({
@@ -81,49 +120,180 @@ const Home = () => {
 
   return (
     <div>
-      {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-primary-50 via-white to-accent-50 min-h-[85vh] flex items-center">
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-20 left-10 w-72 h-72 bg-primary-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
-          <div className="absolute top-40 right-10 w-72 h-72 bg-accent-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
-          <div className="absolute -bottom-8 left-1/2 w-72 h-72 bg-primary-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
+      {/* Hero Slider — Stays (default) and Long-term Rentals */}
+      <section className="relative overflow-hidden">
+        {/* Slide switcher — makes the Stays vs Rent distinction explicit */}
+        <div className="absolute top-5 left-1/2 -translate-x-1/2 z-30 w-[calc(100%-1.5rem)] max-w-md">
+          <div className="flex items-center gap-1 bg-white/80 backdrop-blur-md rounded-full p-1 shadow-soft border border-white/60">
+            <button
+              type="button"
+              onClick={() => setHeroSlide(STAY_SLIDE)}
+              className={`flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold transition-all ${
+                heroSlide === STAY_SLIDE ? 'bg-accent text-white shadow-sm' : 'text-dark-600 hover:text-dark-900'
+              }`}
+            >
+              <Sparkles size={15} /> Short Stays
+            </button>
+            <button
+              type="button"
+              onClick={() => setHeroSlide(RENT_SLIDE)}
+              className={`flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold transition-all ${
+                heroSlide === RENT_SLIDE ? 'bg-primary text-white shadow-sm' : 'text-dark-600 hover:text-dark-900'
+              }`}
+            >
+              <HomeIcon size={15} /> Long-term Rentals
+            </button>
+          </div>
         </div>
 
-        <div className="container-custom relative z-10 py-20">
-          <div className="max-w-5xl mx-auto text-center">
-            {/* Badge */}
-            <div className="flex items-center justify-center mb-8">
-              <div className="inline-flex items-center space-x-2 bg-white/80 backdrop-blur-sm rounded-full px-4 py-2 shadow-sm">
-                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                <span className="text-sm font-medium text-dark-700">Over 500+ properties available</span>
+        <div key={heroSlide} className="animate-hero-fade">
+          {heroSlide === STAY_SLIDE ? (
+            /* ─── STAYS HERO ─── */
+            <div className="relative bg-gradient-to-br from-accent-50 via-white to-primary-50 min-h-[85vh] flex items-center">
+              <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute top-24 right-12 w-72 h-72 bg-accent-100 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-blob"></div>
+                <div className="absolute bottom-8 left-12 w-72 h-72 bg-primary-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
+              </div>
+
+              <div className="container-custom relative z-10 py-24">
+                <div className="max-w-5xl mx-auto text-center">
+                  {/* Badge */}
+                  <div className="flex items-center justify-center mb-8">
+                    <div className="inline-flex items-center gap-2 bg-accent/10 text-accent-700 rounded-full px-4 py-2 shadow-sm">
+                      <Sparkles size={16} className="text-accent" />
+                      <span className="text-sm font-semibold">Short-term stays · Book by the night</span>
+                    </div>
+                  </div>
+
+                  <h1 className="text-5xl md:text-7xl lg:text-8xl font-display font-bold text-dark-900 mb-6 leading-tight">
+                    Book a{' '}
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">Short Stay</span>
+                  </h1>
+
+                  <p className="text-xl md:text-2xl text-dark-600 mb-10 max-w-3xl mx-auto leading-relaxed">
+                    Verified homes for travel, relocation & getaways —{' '}
+                    <span className="text-accent font-semibold">stay by the night</span>, feel at home
+                  </p>
+
+                  {/* Stays search bar */}
+                  <form onSubmit={handleStaySearch} className="bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden max-w-4xl mx-auto">
+                    <div className="flex flex-col md:flex-row">
+                      {/* Where */}
+                      <div className="flex-1 flex items-center gap-3 px-5 py-4 border-b md:border-b-0 md:border-r border-gray-100">
+                        <MapPin size={18} className="text-accent flex-shrink-0" />
+                        <div className="flex-1 text-left">
+                          <p className="text-[10px] font-semibold text-dark-500 uppercase tracking-wider mb-0.5">Where</p>
+                          <input
+                            type="text"
+                            placeholder="City, area, neighbourhood..."
+                            value={stayWhere}
+                            onChange={(e) => setStayWhere(e.target.value)}
+                            className="w-full outline-none text-dark-800 text-sm placeholder-dark-400 bg-transparent"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Check in */}
+                      <div className="flex items-center gap-3 px-5 py-4 border-b md:border-b-0 md:border-r border-gray-100 text-left">
+                        <Calendar size={16} className="text-dark-400 flex-shrink-0" />
+                        <div>
+                          <p className="text-[10px] font-semibold text-dark-500 uppercase tracking-wider mb-0.5">Check in</p>
+                          <input
+                            type="date"
+                            value={checkIn}
+                            min={todayStr()}
+                            onChange={(e) => setCheckIn(e.target.value)}
+                            className="outline-none text-dark-800 text-sm bg-transparent cursor-pointer"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Check out */}
+                      <div className="flex items-center gap-3 px-5 py-4 border-b md:border-b-0 md:border-r border-gray-100 text-left">
+                        <Calendar size={16} className="text-dark-400 flex-shrink-0" />
+                        <div>
+                          <p className="text-[10px] font-semibold text-dark-500 uppercase tracking-wider mb-0.5">Check out</p>
+                          <input
+                            type="date"
+                            value={checkOut}
+                            min={checkIn || tomorrowStr()}
+                            onChange={(e) => setCheckOut(e.target.value)}
+                            className="outline-none text-dark-800 text-sm bg-transparent cursor-pointer"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Guests */}
+                      <div className="flex items-center gap-3 px-5 py-4 border-b md:border-b-0 md:border-r border-gray-100 text-left">
+                        <Users size={16} className="text-dark-400 flex-shrink-0" />
+                        <div>
+                          <p className="text-[10px] font-semibold text-dark-500 uppercase tracking-wider mb-0.5">Guests</p>
+                          <div className="flex items-center gap-2">
+                            <button type="button" onClick={() => setGuests((g) => Math.max(1, g - 1))} className="w-6 h-6 rounded-full border border-gray-300 flex items-center justify-center text-dark-600 hover:border-dark-400 text-sm font-bold">−</button>
+                            <span className="text-sm font-medium text-dark-800 w-4 text-center">{guests}</span>
+                            <button type="button" onClick={() => setGuests((g) => Math.min(20, g + 1))} className="w-6 h-6 rounded-full border border-gray-300 flex items-center justify-center text-dark-600 hover:border-dark-400 text-sm font-bold">+</button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Search Button */}
+                      <div className="flex items-center justify-center p-3">
+                        <button
+                          type="submit"
+                          className="w-full md:w-auto bg-accent hover:bg-accent-600 text-white rounded-xl px-6 py-3.5 flex items-center justify-center gap-2 font-semibold text-sm shadow-lg hover:shadow-xl transition-all hover:scale-105"
+                        >
+                          <Search size={18} />
+                          <span>Search</span>
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+
+                  {/* Trust points */}
+                  <div className="mt-10 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm text-dark-600">
+                    <span className="inline-flex items-center gap-2"><CheckCircle size={16} className="text-accent" /> Verified hosts</span>
+                    <span className="inline-flex items-center gap-2"><CheckCircle size={16} className="text-accent" /> Instant book available</span>
+                    <span className="inline-flex items-center gap-2"><CheckCircle size={16} className="text-accent" /> Secure payments</span>
+                  </div>
+
+                  <div className="mt-8">
+                    <Link to="/stays" className="inline-flex items-center gap-2 font-semibold text-accent hover:text-accent-600 transition-colors">
+                      Explore all stays <ArrowRight size={18} />
+                    </Link>
+                  </div>
+                </div>
               </div>
             </div>
+          ) : (
+            /* ─── LONG-TERM RENTAL HERO (original design) ─── */
+            <div className="relative bg-gradient-to-br from-primary-50 via-white to-accent-50 min-h-[85vh] flex items-center">
+              <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute top-20 left-10 w-72 h-72 bg-primary-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
+                <div className="absolute top-40 right-10 w-72 h-72 bg-accent-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
+                <div className="absolute -bottom-8 left-1/2 w-72 h-72 bg-primary-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
+              </div>
 
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-display font-bold text-dark-900 mb-6 leading-tight">
-              Find Your{' '}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">Perfect Home</span>
-            </h1>
+              <div className="container-custom relative z-10 py-20">
+                <div className="max-w-5xl mx-auto text-center">
+                  {/* Badge */}
+                  <div className="flex items-center justify-center mb-8">
+                    <div className="inline-flex items-center space-x-2 bg-white/80 backdrop-blur-sm rounded-full px-4 py-2 shadow-sm">
+                      <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                      <span className="text-sm font-medium text-dark-700">Over 500+ properties available</span>
+                    </div>
+                  </div>
 
-            <p className="text-xl md:text-2xl text-dark-600 mb-6 max-w-3xl mx-auto leading-relaxed">
-              Discover verified rental properties with transparent pricing and{' '}
-              <span className="text-primary font-semibold">earn 5% cashback</span> on your caution fee
-            </p>
+                  <h1 className="text-5xl md:text-7xl lg:text-8xl font-display font-bold text-dark-900 mb-6 leading-tight">
+                    Find Your{' '}
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">Perfect Home</span>
+                  </h1>
 
-            {/* Rent vs Short-stay switch */}
-            <div className="inline-flex items-center gap-2 mb-8">
-              <span className="inline-flex items-center gap-1.5 bg-dark-900 text-white text-sm font-semibold px-4 py-2 rounded-full shadow-sm">
-                <HomeIcon size={15} /> Rent long-term
-              </span>
-              <span className="text-dark-400 text-sm">or</span>
-              <Link
-                to="/stays"
-                className="inline-flex items-center gap-1.5 bg-white text-dark-800 border border-gray-200 hover:border-accent hover:text-accent text-sm font-semibold px-4 py-2 rounded-full shadow-sm transition-all hover:scale-105"
-              >
-                <Sparkles size={15} className="text-accent" /> Book a short stay
-              </Link>
-            </div>
+                  <p className="text-xl md:text-2xl text-dark-600 mb-10 max-w-3xl mx-auto leading-relaxed">
+                    Discover verified rental properties with transparent pricing and{' '}
+                    <span className="text-primary font-semibold">earn 5% cashback</span> on your caution fee
+                  </p>
 
-            {/* Airbnb-style Search Bar */}
+                  {/* Airbnb-style Search Bar */}
             <form onSubmit={handleSearch} className="bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden max-w-4xl mx-auto">
               {/* Main row */}
               <div className="flex flex-col md:flex-row">
@@ -224,7 +394,27 @@ const Home = () => {
                 </div>
               ))}
             </div>
-          </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Slide indicators */}
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2">
+          {[STAY_SLIDE, RENT_SLIDE].map((i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => setHeroSlide(i)}
+              aria-label={i === STAY_SLIDE ? 'Show short stays' : 'Show long-term rentals'}
+              className={`h-2 rounded-full transition-all ${
+                heroSlide === i
+                  ? `w-8 ${i === STAY_SLIDE ? 'bg-accent' : 'bg-primary'}`
+                  : 'w-2 bg-gray-300 hover:bg-gray-400'
+              }`}
+            />
+          ))}
         </div>
       </section>
 

@@ -68,6 +68,10 @@ const Payments = () => {
 
   const selectedAmount = paymentFrequency === 'annual' ? annualRent : monthlyRent;
   const frequencyLabel = paymentFrequency === 'annual' ? 'Yearly' : 'Monthly';
+  // Platform fee added on top of rent (kept in sync with SiteSettings.rent_commission_rate).
+  const RENT_FEE_RATE = 0.015;
+  const rentFee = Math.round(selectedAmount * RENT_FEE_RATE);
+  const rentTotal = selectedAmount + rentFee;
 
   const handlePayRent = async () => {
     if (!agreement?.id) return;
@@ -232,10 +236,18 @@ const Payments = () => {
                   </p>
                 </div>
               </div>
-              <div className="mt-3 pt-3 border-t border-gray-200">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-dark-700">Amount to Pay ({frequencyLabel})</span>
-                  <span className="text-xl font-bold text-primary">₦{selectedAmount.toLocaleString()}</span>
+              <div className="mt-3 pt-3 border-t border-gray-200 space-y-2">
+                <div className="flex items-center justify-between text-sm text-dark-600">
+                  <span>Rent ({frequencyLabel})</span>
+                  <span>₦{selectedAmount.toLocaleString()}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm text-dark-600">
+                  <span>Platform fee (1.5%)</span>
+                  <span>₦{rentFee.toLocaleString()}</span>
+                </div>
+                <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+                  <span className="text-sm font-medium text-dark-700">Total to Pay</span>
+                  <span className="text-xl font-bold text-primary">₦{rentTotal.toLocaleString()}</span>
                 </div>
               </div>
             </div>
@@ -251,7 +263,7 @@ const Payments = () => {
               ) : (
                 <CreditCard size={18} />
               )}
-              {paying ? 'Processing...' : `Pay ₦${selectedAmount.toLocaleString()} (${frequencyLabel})`}
+              {paying ? 'Processing...' : `Pay ₦${rentTotal.toLocaleString()} (${frequencyLabel})`}
             </button>
           </div>
 

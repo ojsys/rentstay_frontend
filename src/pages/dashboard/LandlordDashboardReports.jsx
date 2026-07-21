@@ -1,8 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
 import { dashboardAPI } from '../../services/api';
-import useAuthStore from '../../store/authStore';
-import { Loader2, Home, Wrench, TrendingUp, CreditCard, Lock, ArrowRight } from 'lucide-react';
+import { Loader2, Home, Wrench, TrendingUp, CreditCard } from 'lucide-react';
 import { useState } from 'react';
 import VacancyReport from '../../components/dashboard/VacancyReport';
 import RepairsReport from '../../components/dashboard/RepairsReport';
@@ -17,36 +15,12 @@ const reportTypes = [
 ];
 
 const LandlordDashboardReports = () => {
-  const user = useAuthStore((s) => s.user);
-  const hasReporting = !!user?.plan_features?.reporting;
   const [activeReport, setActiveReport] = useState('vacancy');
 
   const { data, isLoading } = useQuery({
     queryKey: ['landlord-reports', activeReport],
     queryFn: () => dashboardAPI.getLandlordReports(activeReport).then(res => res.data),
-    enabled: hasReporting,
   });
-
-  if (!hasReporting) {
-    return (
-      <div className="space-y-4 md:space-y-6">
-        <h2 className="text-lg md:text-xl font-bold text-gray-900">Reports</h2>
-        <div className="bg-white rounded-2xl shadow-sm p-8 md:p-12 text-center max-w-xl mx-auto">
-          <div className="w-14 h-14 rounded-2xl bg-primary-100 text-primary flex items-center justify-center mx-auto mb-4">
-            <Lock size={26} />
-          </div>
-          <h3 className="text-xl font-bold text-gray-900 mb-2">Reporting is a paid feature</h3>
-          <p className="text-gray-600 mb-6">
-            Unlock vacancy, repairs, cashback and rent-performance reports on the
-            Professional plan and above.
-          </p>
-          <Link to="/pricing" className="btn btn-primary inline-flex items-center gap-1.5">
-            View plans <ArrowRight size={16} />
-          </Link>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-4 md:space-y-6">

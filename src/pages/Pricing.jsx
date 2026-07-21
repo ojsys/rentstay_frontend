@@ -1,41 +1,18 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { pagesAPI, plansAPI } from '../services/api';
-import useAuthStore from '../store/authStore';
+import { Link } from 'react-router-dom';
+import { pagesAPI } from '../services/api';
 import {
   Loader2, Check, TrendingUp, Shield, CreditCard,
-  Users, Building2, Star, Zap, Crown, Sparkles, HelpCircle
+  Users, Building2, Sparkles, HelpCircle, Percent, ArrowRight, Home as HomeIcon
 } from 'lucide-react';
 
-const PLAN_ICONS = {
-  starter: Building2,
-  professional: Star,
-  professional_plus: Sparkles,
-  enterprise: Crown,
-};
-const PLAN_ICON_BG = {
-  starter: 'bg-gray-600',
-  professional: 'bg-primary',
-  professional_plus: 'bg-accent',
-  enterprise: 'bg-dark-800',
-};
-// The tier we actively promote (RentStay manages caution + earns from the pool).
-const POPULAR_PLAN = 'professional_plus';
-
-const formatPrice = (plan) =>
-  plan.price === 0 ? 'Free' : `₦${Number(plan.price).toLocaleString()}`;
+// Current platform commission rates (see SiteSettings on the backend).
+const RENT_COMMISSION = '1.5%';
+const STAYS_SERVICE_FEE = '15%';
 
 const Pricing = () => {
-  const navigate = useNavigate();
-  const { user, isAuthenticated } = useAuthStore();
   const [page, setPage] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [plans, setPlans] = useState([]);
-  const [currentPlan, setCurrentPlan] = useState(null);
-  const [subscribingTo, setSubscribingTo] = useState(null);
-  const [error, setError] = useState('');
-
-  const isLandlord = isAuthenticated && user?.user_type === 'landlord';
 
   useEffect(() => {
     const fetchPage = async () => {
@@ -49,82 +26,59 @@ const Pricing = () => {
         setLoading(false);
       }
     };
-    const fetchPlans = async () => {
-      try {
-        const res = await plansAPI.getCatalog();
-        setPlans(res.data.plans || []);
-        setCurrentPlan(res.data.current?.effective_plan || null);
-      } catch (err) {
-        console.error('Error fetching plans:', err);
-      }
-    };
     fetchPage();
-    fetchPlans();
   }, []);
 
-  const handleSubscribe = async (plan) => {
-    // Not signed in as a landlord → send them to register first.
-    if (!isLandlord) {
-      navigate('/register');
-      return;
-    }
-    if (plan.contact_sales) {
-      navigate('/contact');
-      return;
-    }
-    if (!plan.is_paid || plan.key === currentPlan) return;
-
-    setError('');
-    setSubscribingTo(plan.key);
-    try {
-      const res = await plansAPI.subscribe(plan.key);
-      if (res.data?.authorization_url) {
-        window.location.href = res.data.authorization_url;
-      } else {
-        setError('Could not start checkout. Please try again.');
-        setSubscribingTo(null);
-      }
-    } catch (err) {
-      setError(err?.response?.data?.detail || 'Could not start checkout. Please try again.');
-      setSubscribingTo(null);
-    }
-  };
-
-  const ctaLabel = (plan) => {
-    if (plan.key === currentPlan) return 'Current plan';
-    if (plan.contact_sales) return 'Contact Sales';
-    if (!plan.is_paid) return isLandlord ? 'Included' : 'Get Started';
-    return isLandlord ? 'Upgrade' : 'Get Started';
-  };
-
-  // Static data for pricing
   const tenantFeatures = [
-    { text: 'Browse all verified listings', included: true },
-    { text: 'Contact landlords directly', included: true },
-    { text: 'Submit rental applications', included: true },
-    { text: 'Secure payment processing', included: true },
-    { text: 'Digital rental agreements', included: true },
-    { text: '5% cashback on caution fee', included: true },
-    { text: 'Maintenance request system', included: true },
-    { text: 'Priority support', included: true },
+    { text: 'Browse all verified listings' },
+    { text: 'Contact landlords & hosts directly' },
+    { text: 'Submit rental applications' },
+    { text: 'Secure payment processing' },
+    { text: 'Digital rental agreements' },
+    { text: '5% cashback on your caution fee' },
+    { text: 'Maintenance request system' },
+    { text: 'Book short stays by the night' },
+  ];
+
+  const commissionPlans = [
+    {
+      key: 'rent',
+      icon: Building2,
+      iconBg: 'bg-primary',
+      ring: 'ring-primary/20',
+      title: 'Long-term Rentals',
+      rate: RENT_COMMISSION,
+      rateNote: 'per rent payment',
+      summary: 'A flat platform fee added on top of each rent payment.',
+      points: [
+        'Free to list — no subscription, no limits',
+        'Tenant pays rent + 1.5% platform fee',
+        'Landlords receive 100% of their rent',
+        'Applies to every rent payment made on RentStay',
+      ],
+    },
+    {
+      key: 'stays',
+      icon: Sparkles,
+      iconBg: 'bg-accent',
+      ring: 'ring-accent/20',
+      title: 'Short Stays',
+      rate: STAYS_SERVICE_FEE,
+      rateNote: 'host commission per booking',
+      summary: 'A commission deducted from the host’s payout — guests pay no added fee.',
+      points: [
+        'Free to list your space — no subscription',
+        'Host pays a 15% commission per booking',
+        'Guests pay no added service fee',
+        'Deducted from each confirmed booking payout',
+      ],
+    },
   ];
 
   const cautionFeeInfo = [
-    {
-      icon: Shield,
-      title: 'Secure & Protected',
-      description: 'Your caution fee is held securely and fully insured'
-    },
-    {
-      icon: TrendingUp,
-      title: '5% Annual Cashback',
-      description: 'Your deposit grows while you rent - earn passive income'
-    },
-    {
-      icon: CreditCard,
-      title: '100% Refundable',
-      description: 'Get your full deposit back plus cashback when you move out'
-    }
+    { icon: Shield, title: 'Secure & Protected', description: 'Your caution fee is held securely and fully tracked' },
+    { icon: TrendingUp, title: '5% Annual Cashback', description: 'Your deposit grows while you rent - earn passive income' },
+    { icon: CreditCard, title: '100% Refundable', description: 'Get your full deposit back plus cashback when you move out' },
   ];
 
   if (loading) {
@@ -142,33 +96,104 @@ const Pricing = () => {
         <div className="container-custom">
           <div className="max-w-4xl mx-auto text-center">
             <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 mb-6">
-              <Zap size={18} className="text-accent" />
-              <span className="text-sm font-medium">Simple, Transparent Pricing</span>
+              <Percent size={18} className="text-accent" />
+              <span className="text-sm font-medium">Simple, commission-based pricing</span>
             </div>
             <h1 className="text-3xl md:text-5xl lg:text-6xl font-display font-bold mb-6">
               {page?.title || 'Pricing'}
             </h1>
             <p className="text-lg md:text-2xl text-white/90 max-w-3xl mx-auto">
-              {page?.subtitle || 'No hidden fees. No surprises. Just straightforward pricing for everyone.'}
+              {page?.subtitle || 'Free to join. No subscriptions. We only earn a small fee when you transact.'}
             </p>
           </div>
         </div>
       </section>
 
-      {/* Tenant Pricing */}
+      {/* Free to join band */}
+      <section className="py-14 md:py-20 bg-white">
+        <div className="container-custom">
+          <div className="max-w-4xl mx-auto text-center">
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-green-100 text-green-600 mb-5">
+              <Check size={28} />
+            </div>
+            <h2 className="text-3xl md:text-4xl font-display font-bold text-gray-900 mb-4">
+              Free for everyone to join
+            </h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              Tenants, landlords, agents and hosts can all sign up and use RentStay for free —
+              no subscription, no monthly charges, no property limits. We only earn a small
+              commission when a payment goes through.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Commission model */}
+      <section className="py-14 md:py-20 bg-gray-50">
+        <div className="container-custom">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center space-x-2 text-primary mb-4">
+              <Percent size={22} />
+              <span className="font-semibold uppercase tracking-wider text-sm">How pricing works</span>
+            </div>
+            <h2 className="text-3xl md:text-4xl font-display font-bold text-gray-900 mb-4">
+              One small fee, only when you transact
+            </h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              Our commission is transparent and shown before every payment.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+            {commissionPlans.map((plan) => (
+              <div key={plan.key} className={`bg-white rounded-3xl shadow-soft p-8 ring-1 ${plan.ring}`}>
+                <div className={`w-14 h-14 ${plan.iconBg} rounded-2xl flex items-center justify-center mb-6`}>
+                  <plan.icon className="text-white" size={28} />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-1">{plan.title}</h3>
+                <div className="flex items-baseline gap-2 mb-4">
+                  <span className="text-5xl font-bold text-gray-900">{plan.rate}</span>
+                  <span className="text-gray-500">{plan.rateNote}</span>
+                </div>
+                <p className="text-gray-600 mb-6">{plan.summary}</p>
+                <ul className="space-y-3">
+                  {plan.points.map((text, i) => (
+                    <li key={i} className="flex items-start space-x-3">
+                      <Check className="text-green-500 flex-shrink-0 mt-0.5" size={18} />
+                      <span className="text-gray-700">{text}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+
+          <div className="max-w-5xl mx-auto mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+            <Link to="/register" className="btn btn-primary inline-flex items-center justify-center gap-1.5">
+              <HomeIcon size={18} /> List a property
+            </Link>
+            <Link to="/stays/listings/new" className="btn btn-secondary inline-flex items-center justify-center gap-1.5">
+              <Sparkles size={18} /> Host a short stay
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Tenant / guest free section */}
       <section className="py-16 md:py-24 bg-white">
         <div className="container-custom">
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-12">
               <div className="inline-flex items-center space-x-2 text-primary mb-4">
                 <Users size={24} />
-                <span className="font-semibold uppercase tracking-wider text-sm">For Tenants</span>
+                <span className="font-semibold uppercase tracking-wider text-sm">For Tenants & Guests</span>
               </div>
               <h2 className="text-3xl md:text-4xl font-display font-bold text-gray-900 mb-4">
-                Completely Free to Find Your Home
+                Free to find your home
               </h2>
               <p className="text-xl text-gray-600">
-                No subscription fees. You only pay rent and a refundable caution fee.
+                No subscription fees. You only pay rent, a refundable caution fee, and a small
+                platform fee shown upfront at checkout.
               </p>
             </div>
 
@@ -176,7 +201,7 @@ const Pricing = () => {
               <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
                 <div>
                   <span className="text-5xl md:text-6xl font-bold text-gray-900">FREE</span>
-                  <p className="text-gray-600 mt-2">Forever free for tenants</p>
+                  <p className="text-gray-600 mt-2">Forever free to browse & apply</p>
                 </div>
                 <Link to="/register" className="btn btn-primary btn-lg mt-6 md:mt-0">
                   Create Free Account
@@ -219,110 +244,11 @@ const Pricing = () => {
         </div>
       </section>
 
-      {/* Landlord Pricing */}
-      <section className="py-16 md:py-24 bg-gray-50">
-        <div className="container-custom">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center space-x-2 text-primary mb-4">
-              <Building2 size={24} />
-              <span className="font-semibold uppercase tracking-wider text-sm">For Landlords</span>
-            </div>
-            <h2 className="text-3xl md:text-4xl font-display font-bold text-gray-900 mb-4">
-              Choose Your Plan
-            </h2>
-            <p className="text-xl text-gray-600 mb-2">
-              Start free, upgrade as you grow. All paid plans are billed annually.
-            </p>
-            {isLandlord && currentPlan && (
-              <p className="text-sm text-gray-500">
-                You're on the{' '}
-                <span className="font-semibold text-primary">
-                  {plans.find((p) => p.key === currentPlan)?.name || currentPlan}
-                </span>{' '}
-                plan.
-              </p>
-            )}
-            {error && (
-              <p className="mt-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg inline-block px-4 py-2">
-                {error}
-              </p>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto items-stretch">
-            {plans.map((plan) => {
-              const Icon = PLAN_ICONS[plan.key] || Building2;
-              const isPopular = plan.key === POPULAR_PLAN;
-              const isCurrent = plan.key === currentPlan;
-              const isBusy = subscribingTo === plan.key;
-              return (
-                <div
-                  key={plan.key}
-                  className={`relative bg-white rounded-3xl shadow-soft overflow-hidden flex flex-col ${
-                    isPopular ? 'ring-2 ring-accent' : ''
-                  } ${isCurrent ? 'ring-2 ring-primary' : ''}`}
-                >
-                  {isPopular && (
-                    <div className="absolute top-0 left-0 right-0 bg-accent text-white text-center py-2 text-sm font-medium">
-                      Most Popular
-                    </div>
-                  )}
-
-                  <div className={`p-8 flex flex-col flex-1 ${isPopular ? 'pt-14' : ''}`}>
-                    <div className={`w-14 h-14 ${PLAN_ICON_BG[plan.key] || 'bg-gray-600'} rounded-2xl flex items-center justify-center mb-6`}>
-                      <Icon className="text-white" size={28} />
-                    </div>
-
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">{plan.name}</h3>
-                    <p className="text-gray-600 text-sm mb-6 min-h-[40px]">{plan.tagline}</p>
-
-                    <div className="mb-6">
-                      <span className="text-4xl font-bold text-gray-900">{formatPrice(plan)}</span>
-                      {plan.price > 0 && <span className="text-gray-600">/{plan.billing_period}</span>}
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => handleSubscribe(plan)}
-                      disabled={isCurrent || isBusy}
-                      className={`btn w-full mb-6 ${
-                        isCurrent
-                          ? 'bg-gray-100 text-gray-500 cursor-default'
-                          : isPopular
-                          ? 'btn-primary'
-                          : 'btn-secondary'
-                      }`}
-                    >
-                      {isBusy ? (
-                        <span className="inline-flex items-center gap-2">
-                          <Loader2 className="animate-spin" size={16} /> Redirecting…
-                        </span>
-                      ) : (
-                        ctaLabel(plan)
-                      )}
-                    </button>
-
-                    <ul className="space-y-3 mt-auto">
-                      {plan.highlights.map((text, fIndex) => (
-                        <li key={fIndex} className="flex items-start space-x-3">
-                          <Check className="text-green-500 flex-shrink-0 mt-0.5" size={18} />
-                          <span className="text-gray-700">{text}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
       {/* CMS Content Section - Displays content from backend */}
       {page?.content && (
-        <section className="py-12 md:py-16 bg-white">
+        <section className="py-12 md:py-16 bg-gray-50">
           <div className="container-custom">
-            <div className="max-w-4xl mx-auto bg-gray-50 rounded-2xl p-6 md:p-10">
+            <div className="max-w-4xl mx-auto bg-white rounded-2xl p-6 md:p-10">
               <div
                 className="prose prose-lg max-w-none"
                 dangerouslySetInnerHTML={{ __html: page.content }}
@@ -333,7 +259,7 @@ const Pricing = () => {
       )}
 
       {/* FAQ Section */}
-      <section className="py-16 md:py-24 bg-gray-50">
+      <section className="py-16 md:py-24 bg-white">
         <div className="container-custom">
           <div className="max-w-3xl mx-auto text-center">
             <HelpCircle className="w-12 h-12 text-primary mx-auto mb-4" />
@@ -341,14 +267,14 @@ const Pricing = () => {
               Questions About Pricing?
             </h2>
             <p className="text-xl text-gray-600 mb-8">
-              We're here to help you understand our pricing structure
+              We're here to help you understand our commission model
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/contact" className="btn btn-primary">
                 Contact Us
               </Link>
-              <Link to="/how-it-works" className="btn btn-secondary">
-                Learn How It Works
+              <Link to="/how-it-works" className="btn btn-secondary inline-flex items-center gap-1.5">
+                Learn How It Works <ArrowRight size={16} />
               </Link>
             </div>
           </div>
@@ -362,7 +288,7 @@ const Pricing = () => {
             Ready to Get Started?
           </h2>
           <p className="text-xl text-white/90 mb-8">
-            Join RentStay today - it's free for tenants!
+            Join RentStay today — free to sign up, for everyone.
           </p>
           <Link to="/register" className="btn btn-lg bg-white text-primary hover:bg-gray-100">
             Create Your Account

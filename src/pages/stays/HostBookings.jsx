@@ -219,6 +219,11 @@ const HostBookings = () => {
                       </div>
                       <div className="text-right flex-shrink-0">
                         <p className="text-sm font-bold text-gray-900">₦{Number(b.amount_total).toLocaleString()}</p>
+                        {Number(b.service_fee) > 0 && (
+                          <p className="text-[11px] text-green-600 font-medium">
+                            You earn ₦{(Number(b.amount_total) - Number(b.service_fee)).toLocaleString()}
+                          </p>
+                        )}
                         <p className="text-xs text-gray-400">{nights ? `${nights} night${nights !== 1 ? 's' : ''}` : ''}</p>
                       </div>
                     </div>

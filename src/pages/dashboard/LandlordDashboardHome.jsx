@@ -5,7 +5,6 @@ import { dashboardAPI, maintenanceAPI, applicationAPI, propertyAPI } from '../..
 import { Loader2, Home, Users, Briefcase, Wrench, TrendingUp, AlertTriangle, CheckCircle, Play, XCircle, Send, ArrowRight, UserPlus, MessageSquare, PlusCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import LegalDocumentsCard from '../../components/dashboard/LegalDocumentsCard';
-import PlanBanner from '../../components/dashboard/PlanBanner';
 
 const gradients = [
   'from-primary-50 to-primary-100',
@@ -209,9 +208,6 @@ const LandlordDashboardHome = () => {
   return (
     <>
       <div className="space-y-5 md:space-y-8">
-
-        {/* Subscription plan + property usage */}
-        <PlanBanner />
 
         {/* ── Mobile-only: Overview + Quick Actions + Recent Activity ── */}
         <div className="md:hidden space-y-4">
