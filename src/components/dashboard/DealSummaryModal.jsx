@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { rentalAPI } from '../../services/api';
 import { Loader2 } from 'lucide-react';
+import { getErrorMessage } from '../../utils/errors';
 
 const DealSummaryModal = ({ agreementId, onClose, onConfirmed }) => {
   const queryClient = useQueryClient();
@@ -109,7 +110,7 @@ const DealSummaryModal = ({ agreementId, onClose, onConfirmed }) => {
             )}
             {confirmMutation.isError && (
               <p className="text-red-500 text-sm text-center">
-                {confirmMutation.error?.response?.data?.detail || 'Failed to confirm deal'}
+                {getErrorMessage(confirmMutation.error, 'Could not confirm the deal')}
               </p>
             )}
             {confirmMutation.isSuccess && (

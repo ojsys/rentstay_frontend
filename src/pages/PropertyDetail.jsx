@@ -5,6 +5,7 @@ import { MapPin, Bed, Bath, Home, Shield, Car, Plug, Droplets, Sofa, CheckCircle
 import { applicationAPI } from '../services/api';
 import toast from 'react-hot-toast';
 import useAuthStore from '../store/authStore';
+import { getErrorMessage } from '../utils/errors';
 
 const DetailRow = ({ label, value }) => (
   <div className="flex justify-between py-2 border-b last:border-b-0">
@@ -123,7 +124,7 @@ const PropertyDetail = () => {
       setVisitNote('');
       setVisitDateTime('');
     } catch (e) {
-      toast.error(e?.response?.data?.detail || 'Failed to request visit');
+      toast.error(getErrorMessage(e, 'Failed to request visit'));
     } finally {
       setVisitLoading(false);
     }
@@ -146,7 +147,7 @@ const PropertyDetail = () => {
       setApplyOpen(false);
       setApplyMessage('');
     } catch (e) {
-      toast.error(e?.response?.data?.detail || 'Failed to apply');
+      toast.error(getErrorMessage(e, 'Failed to apply'));
     } finally {
       setApplyLoading(false);
     }

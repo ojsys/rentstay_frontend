@@ -7,6 +7,7 @@ import {
   Clock, Users, Home, ChevronRight, MoreVertical,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { getErrorMessage } from '../../utils/errors';
 
 const STATUS_STYLES = {
   pending:         { label: 'Pending',    cls: 'bg-yellow-100 text-yellow-800' },
@@ -151,7 +152,7 @@ const LandlordDashboardStays = () => {
       setWithdrawAmount('');
       loadEarnings();
     } catch (err) {
-      toast.error(err?.response?.data?.detail || 'Failed to submit request');
+      toast.error(getErrorMessage(err, 'Failed to submit request'));
     } finally { setWithdrawing(false); }
   };
 
@@ -164,7 +165,7 @@ const LandlordDashboardStays = () => {
       toast.success('Booking declined');
       setDeclineModal(null);
       loadBookings();
-    } catch (e) { toast.error(e?.response?.data?.detail || 'Failed'); }
+    } catch (e) { toast.error(getErrorMessage(e, 'Failed')); }
     finally { setDeclining(false); }
   };
 
@@ -538,6 +539,29 @@ const LandlordDashboardStays = () => {
                     <span>Earned: ₦{Number(earningsData.total_earned).toLocaleString()}</span>
                     <span>Withdrawn: ₦{Number(earningsData.total_withdrawn).toLocaleString()}</span>
                   </div>
+
+                  {/* Commission-free allowance for new hosts */}
+                  {earningsData.free_bookings_total > 0 && (
+                    <div className="bg-white/10 rounded-xl px-4 py-3 mb-4">
+                      {earningsData.free_bookings_remaining > 0 ? (
+                        <>
+                          <p className="text-sm font-semibold text-amber-300">
+                            {earningsData.free_bookings_remaining} commission-free booking
+                            {earningsData.free_bookings_remaining !== 1 ? 's' : ''} left
+                          </p>
+                          <p className="text-xs text-white/60 mt-0.5">
+                            You keep 100% of your first {earningsData.free_bookings_total} bookings.
+                            After that we take {Number(earningsData.commission_rate)}% per booking.
+                          </p>
+                        </>
+                      ) : (
+                        <p className="text-xs text-white/60">
+                          Commission: {Number(earningsData.commission_rate)}% per booking · your{' '}
+                          {earningsData.free_bookings_total} free bookings have been used.
+                        </p>
+                      )}
+                    </div>
+                  )}
                   {Number(earningsData.available_balance) > 0 && (
                     <button
                       className="flex items-center gap-2 bg-amber-500 text-white text-sm font-semibold px-5 py-2.5 rounded-xl hover:bg-amber-600 transition"

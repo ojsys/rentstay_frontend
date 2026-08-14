@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import useAuthStore from '../../store/authStore';
 import LegalDocumentsCard from '../../components/dashboard/LegalDocumentsCard';
 import PaystackPop from '@paystack/inline-js';
+import { getErrorMessage } from '../../utils/errors';
 
 const StatCard = ({ icon: Icon, label, value, sub }) => (
   <div className="card flex items-center space-x-3">
@@ -110,7 +111,7 @@ const TenantDashboard = () => {
         },
       });
     } catch (err) {
-      const msg = err?.response?.data?.detail || 'Payment initialization failed';
+      const msg = getErrorMessage(err, 'Payment initialization failed');
       toast.error(msg);
     }
   };
@@ -155,7 +156,7 @@ const TenantDashboard = () => {
       // Refresh dashboard to update maintenance counts
       queryClient.invalidateQueries({ queryKey: ['tenant-dashboard'] });
     } catch (err) {
-      const msg = err?.response?.data?.detail || 'Failed to submit request';
+      const msg = getErrorMessage(err, 'Failed to submit request');
       toast.error(msg);
     } finally {
       setSubmitting(false);

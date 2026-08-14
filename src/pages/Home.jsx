@@ -105,10 +105,10 @@ const Home = () => {
   ];
 
   const howItWorks = [
-    { step: 1, title: 'Search Properties', description: 'Browse verified listings in your location with advanced filters' },
-    { step: 2, title: 'Contact Landlord', description: 'Message landlords directly through our platform' },
-    { step: 3, title: 'Secure Payment', description: 'Pay rent + refundable caution fee securely via Paystack' },
-    { step: 4, title: 'Move In', description: 'Sign digital agreement and get your keys!' },
+    { step: 1, title: 'Find a Property', description: 'Browse properties for long-term rent or ShortStay.' },
+    { step: 2, title: 'Choose What Works for You', description: 'Rent a home or book a stay that fits your needs.' },
+    { step: 3, title: 'Pay Securely', description: 'Complete your rent or booking payment through RentStay.' },
+    { step: 4, title: 'Move In or Check In', description: 'Complete your rental process or enjoy your ShortStay.' },
   ];
 
   const stats = [
@@ -467,7 +467,7 @@ const Home = () => {
           <div className="text-center mb-12">
             <h2 className="text-4xl font-display font-bold text-dark-900 mb-4">Why Choose RentStay?</h2>
             <p className="text-xl text-dark-600 max-w-2xl mx-auto">
-              We're revolutionizing the property rental market with transparency and technology
+              One platform for renting, ShortStays and property management.
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -489,7 +489,7 @@ const Home = () => {
         <div className="container-custom">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-display font-bold text-dark-900 mb-4">How It Works</h2>
-            <p className="text-xl text-dark-600 max-w-2xl mx-auto">Finding your perfect home is easier than ever</p>
+            <p className="text-xl text-dark-600 max-w-2xl mx-auto">Whether you are renting for a year or staying for a weekend</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {howItWorks.map((item, index) => (
@@ -508,6 +508,23 @@ const Home = () => {
             ))}
           </div>
         </div>
+
+          {/* Owner-facing prompt: the page otherwise speaks only to tenants,
+              while supply is the harder side of the marketplace to grow. */}
+          <div className="mt-10 text-center">
+            <p className="text-lg text-dark-700">
+              Own a property?{' '}
+              <Link to="/properties/new" className="text-primary font-semibold hover:underline">
+                List it for Rent
+              </Link>{' '}
+              or{' '}
+              <Link to="/stays/listings/new" className="text-primary font-semibold hover:underline">
+                ShortStay
+              </Link>{' '}
+              and manage it with RentStay.
+            </p>
+          </div>
+
       </section>
 
       {/* Caution Fee Benefit */}

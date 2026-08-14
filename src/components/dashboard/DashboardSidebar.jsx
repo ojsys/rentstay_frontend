@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Mail, Bell, Clipboard, Wrench, CreditCard, User, Home, Building2, Plus } from 'lucide-react';
+import { LayoutDashboard, Mail, Bell, Clipboard, Wrench, CreditCard, User, Home, Building2, Plus, ShieldAlert, Scale, Bed, Building } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
 
 const NavItem = ({ to, icon: Icon, label, active, badge }) => (
@@ -24,16 +24,38 @@ const DashboardSidebar = ({ counts = {} }) => {
   const { unread_messages = 0, unread_notifications = 0, applications_pending = 0 } = counts;
   const { user } = useAuthStore();
 
-  const items = [
+  let items = [
     { to: '/dashboard', icon: LayoutDashboard, label: 'Overview' },
     { to: '/applications', icon: Clipboard, label: 'Applications', badge: applications_pending },
     { to: '/messages', icon: Mail, label: 'Messages', badge: unread_messages },
     { to: '/notifications', icon: Bell, label: 'Notifications', badge: unread_notifications },
     { to: '/payments', icon: CreditCard, label: 'Payments' },
     { to: '/maintenance', icon: Wrench, label: 'Maintenance' },
+    { to: '/stays/bookings', icon: Bed, label: 'My Stays' },
+    { to: '/legal-services', icon: Scale, label: 'Legal' },
     { to: '/profile/view', icon: User, label: 'Profile' },
+    { to: '/corporate', icon: Building, label: 'Company' },
     { to: '/properties', icon: Home, label: 'Browse Properties' },
   ];
+
+  // Guests have no tenancy, so the rental tools are noise for them.
+  const isGuest = user?.user_type === 'guest';
+  if (isGuest) {
+    items = items.filter(i => !['/applications', '/maintenance', '/payments'].includes(i.to));
+    const browse = items.findIndex(i => i.to === '/properties');
+    if (browse !== -1) items[browse] = { to: '/stays', icon: Bed, label: 'Browse Stays' };
+  }
+
+  // Legal partners get the case queue in place of the client-facing page.
+  if (user?.is_legal_partner || user?.is_staff || user?.user_type === 'admin') {
+    items.splice(items.findIndex(i => i.to === '/legal-services') + 1, 0,
+      { to: '/legal-services/queue', icon: Scale, label: 'Legal Queue' });
+  }
+
+  // Landlords issue notices from their dashboard; tenants read them here.
+  if (user?.user_type !== 'landlord' && !isGuest) {
+    items.splice(4, 0, { to: '/notices', icon: ShieldAlert, label: 'Notices' });
+  }
 
   if (user?.user_type === 'landlord') {
     items.splice(1, 0, { to: '/properties/new', icon: Plus, label: 'Add Property' });

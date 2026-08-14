@@ -2,6 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Building2, Mail, Phone, MapPin, Facebook, Twitter, Instagram, Linkedin } from 'lucide-react';
 import useSiteSettings from '../../hooks/useSiteSettings';
 import useAuthStore from '../../store/authStore';
+import BrandTitle from './BrandTitle';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -27,19 +28,19 @@ const Footer = () => {
               {settings?.site_logo_url ? (
                 <img
                   src={settings.site_logo_url}
-                  alt={settings?.site_name || 'RentStay'}
-                  className="h-10 w-auto"
+                  alt=""
+                  className="h-10 w-10 object-contain"
                 />
               ) : (
-                <>
-                  <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-                    <Building2 className="text-white" size={24} />
-                  </div>
-                  <span className="text-2xl font-display font-bold text-white">
-                    Rent<span className="text-accent">Stay</span>
-                  </span>
-                </>
+                <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
+                  <Building2 className="text-white" size={24} />
+                </div>
               )}
+              {/* Title sits beside the mark whether or not a logo image is set */}
+              <BrandTitle
+                siteName={settings?.site_name}
+                className="text-2xl font-display font-bold text-white"
+              />
             </div>
             <p className="text-sm text-gray-400 mb-4">
               {settings?.site_description || '360° Housing Solutions. Transforming rental housing in Nigeria through technology, transparency, and trust.'}

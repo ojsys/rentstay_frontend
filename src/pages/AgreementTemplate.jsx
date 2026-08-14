@@ -5,6 +5,7 @@ import { rentalAPI } from '../services/api';
 import { Navigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import RichTextEditor from '../components/common/RichTextEditor';
+import { getErrorMessage } from '../utils/errors';
 
 const sampleData = {
   landlord: 'John Landlord',
@@ -43,7 +44,7 @@ const AgreementTemplate = () => {
         setBody(res.data.body || '');
         if (res.data.placeholders) setPlaceholders(res.data.placeholders);
       } catch (e) {
-        const msg = e?.response?.data?.detail || 'Failed to load template';
+        const msg = getErrorMessage(e, 'Failed to load template');
         toast.error(msg);
       } finally {
         setLoading(false);

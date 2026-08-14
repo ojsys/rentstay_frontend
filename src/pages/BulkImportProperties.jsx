@@ -3,6 +3,7 @@ import DashboardShell from '../components/dashboard/DashboardShell';
 import { propertyAPI } from '../services/api';
 import { Upload, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { getErrorMessage } from '../utils/errors';
 
 const sample = `title,description,property_type,address,area,state_id,lga_id,rent_amount,bedrooms,bathrooms,toilets,square_feet,available_from,has_parking,has_kitchen,has_water,has_electricity,is_furnished,has_security,has_compound,status
 2 Bed Apartment,Modern 2 bedroom apartment,apartment,123 Main St,Central,32,501,350000,2,2,2,900,2025-11-01,1,1,1,1,0,1,1,available`;
@@ -21,7 +22,7 @@ const BulkImportProperties = () => {
       setResult(res.data);
       toast.success(`Created ${res.data.created} properties`);
     } catch (err) {
-      toast.error(err?.response?.data?.detail || 'Upload failed');
+      toast.error(getErrorMessage(err, 'Upload failed'));
     } finally {
       setUploading(false);
     }

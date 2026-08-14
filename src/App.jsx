@@ -16,6 +16,12 @@ import Dashboard from './pages/Dashboard';
 import PaymentCallback from './pages/PaymentCallback';
 import Messages from './pages/Messages';
 import Notifications from './pages/Notifications';
+import Notices from './pages/Notices';
+import UserProfile from './pages/UserProfile';
+import CorporateProfile from './pages/CorporateProfile';
+import Legal from './pages/Legal';
+import LegalCaseDetail from './pages/LegalCaseDetail';
+import LegalQueue from './pages/LegalQueue';
 import Applications from './pages/Applications';
 import Profile from './pages/Profile';
 import ProfileView from './pages/ProfileView';
@@ -32,6 +38,7 @@ import BulkImportProperties from './pages/BulkImportProperties';
 import HostNewListing from './pages/stays/HostNewListing';
 import ListingDetail from './pages/stays/ListingDetail';
 import GuestBookings from './pages/stays/GuestBookings';
+import BookingDetail from './pages/stays/BookingDetail';
 import HostBookings from './pages/stays/HostBookings';
 import HostListingAvailability from './pages/stays/HostListingAvailability';
 import StaysExplore from './pages/stays/StaysExplore';
@@ -42,6 +49,7 @@ import StaffDashboardLayout from './pages/dashboard/StaffDashboardLayout';
 import StaffDashboardHome from './pages/dashboard/StaffDashboardHome';
 import StaffRentals from './pages/dashboard/StaffRentals';
 import StaffStays from './pages/dashboard/StaffStays';
+import StaffRefunds from './pages/dashboard/StaffRefunds';
 import Verify from './pages/Verify';
 import Visits from './pages/Visits';
 import ForgotPassword from './pages/ForgotPassword';
@@ -73,6 +81,7 @@ import LandlordDashboardMessages from './pages/dashboard/LandlordDashboardMessag
 import LandlordDashboardReports from './pages/dashboard/LandlordDashboardReports';
 import LandlordDashboardVisits from './pages/dashboard/LandlordDashboardVisits';
 import LandlordDashboardStays from './pages/dashboard/LandlordDashboardStays';
+import LandlordDashboardLegal from './pages/dashboard/LandlordDashboardLegal';
 
 // Static Pages
 import About from './pages/About';
@@ -124,6 +133,7 @@ function App() {
               <Route path="messages" element={<LandlordDashboardMessages />} />
               <Route path="visits" element={<LandlordDashboardVisits />} />
               <Route path="stays" element={<LandlordDashboardStays />} />
+              <Route path="legal" element={<LandlordDashboardLegal />} />
               <Route path="reports" element={<LandlordDashboardReports />} />
             </Route>
             {/* Super Agent Dashboard */}
@@ -142,9 +152,12 @@ function App() {
             <Route path="/payment/callback" element={<PaymentCallback />} />
             <Route path="/messages" element={<Messages />} />
             <Route path="/notifications" element={<Notifications />} />
+            <Route path="/notices" element={<Notices />} />
             <Route path="/applications" element={<Applications />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/profile/view" element={<ProfileView />} />
+            <Route path="/corporate" element={<CorporateProfile />} />
+            <Route path="/users/:id/profile" element={<UserProfile />} />
             <Route path="/maintenance" element={<Maintenance />} />
             <Route path="/payments" element={<Payments />} />
             <Route path="/agreements/:id" element={<AgreementDetail />} />
@@ -164,6 +177,7 @@ function App() {
             <Route path="/stays/listings/:id" element={<ListingDetail />} />
             <Route path="/stays/listings/:id/availability" element={<HostListingAvailability />} />
             <Route path="/stays/bookings" element={<GuestBookings />} />
+            <Route path="/stays/bookings/:id" element={<BookingDetail />} />
             <Route path="/stays/host/bookings" element={<HostBookings />} />
             <Route path="/admin/kyc" element={<AdminKYC />} />
             <Route path="/staff/dashboard" element={<StaffDashboardLayout />}>
@@ -171,6 +185,7 @@ function App() {
               <Route path="home" element={<StaffDashboardHome />} />
               <Route path="rentals" element={<StaffRentals />} />
               <Route path="stays" element={<StaffStays />} />
+              <Route path="refunds" element={<StaffRefunds />} />
             </Route>
             <Route path="/invite/:token" element={<InviteAccept />} />
             <Route path="/visits" element={<Visits />} />
@@ -182,6 +197,11 @@ function App() {
             <Route path="/terms" element={<Terms />} />
             <Route path="/contact" element={<Contact />} />
             {/* Legal Documents */}
+            {/* Legal services (dispute cases) — distinct from the static
+                legal *documents* pages below, which own /legal. */}
+            <Route path="/legal-services" element={<Legal />} />
+            <Route path="/legal-services/queue" element={<LegalQueue />} />
+            <Route path="/legal-services/cases/:id" element={<LegalCaseDetail />} />
             <Route path="/legal" element={<LegalDocuments />} />
             <Route path="/legal/:slug" element={<LegalDocument />} />
             {/* 404 Catch-all */}

@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
 import useSiteSettings from '../../hooks/useSiteSettings';
+import BrandTitle from './BrandTitle';
 
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -63,7 +64,7 @@ const Navbar = () => {
 
   const navLinks = [
     { to: '/', label: 'Home', icon: Home },
-    { to: '/properties', label: 'Properties', icon: Building2 },
+    { to: '/properties', label: 'Rent', icon: Building2 },
     { to: '/stays', label: 'Stays', icon: Building2 },
   ];
 
@@ -76,19 +77,16 @@ const Navbar = () => {
             {settings?.site_logo_url ? (
               <img
                 src={settings.site_logo_url}
-                alt={settings.site_name || 'RentStay'}
-                className="h-10 object-contain"
+                alt=""
+                className="h-10 w-10 object-contain"
               />
             ) : (
-              <>
-                <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-                  <Building2 className="text-white" size={24} />
-                </div>
-                <span className="text-2xl font-display font-bold text-primary">
-                  {settings?.site_name || 'Rent'}<span className="text-accent">Stay</span>
-                </span>
-              </>
+              <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
+                <Building2 className="text-white" size={24} />
+              </div>
             )}
+            {/* Title sits beside the mark whether or not a logo image is set */}
+            <BrandTitle siteName={settings?.site_name} />
           </Link>
 
           {/* Desktop Navigation */}

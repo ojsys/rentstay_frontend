@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { visitAPI } from '../../services/api';
 import { CalendarClock, Check, X, RefreshCw, Loader2, Clock, CheckCircle, XCircle, MapPin, User } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { getErrorMessage } from '../../utils/errors';
 
 const STATUS_STYLES = {
   requested: { label: 'Pending',   cls: 'bg-amber-100 text-amber-700',  dot: 'bg-amber-500' },
@@ -43,7 +44,7 @@ const LandlordDashboardVisits = () => {
       toast.success(`Visit ${type}d`);
       await load();
     } catch (e) {
-      toast.error(e?.response?.data?.detail || 'Failed to update');
+      toast.error(getErrorMessage(e, 'Failed to update'));
     } finally {
       setActionLoading(l => ({ ...l, [id]: null }));
     }
@@ -58,7 +59,7 @@ const LandlordDashboardVisits = () => {
       setNewDt('');
       await load();
     } catch (e) {
-      toast.error(e?.response?.data?.detail || 'Failed to reschedule');
+      toast.error(getErrorMessage(e, 'Failed to reschedule'));
     }
   };
 

@@ -9,6 +9,7 @@ import {
   Building2, User, FileText, CheckCircle, ChevronRight, ChevronLeft,
   Send, Loader2, Home,
 } from 'lucide-react';
+import { getErrorMessage } from '../utils/errors';
 
 const STEPS = [
   { id: 1, label: 'Property', icon: Building2 },
@@ -102,7 +103,7 @@ export default function TenantInviteWizard() {
       toast.success('Invitation sent! The tenant will receive an email shortly.');
       navigate('/dashboard/leases');
     } catch (err) {
-      toast.error(err?.response?.data?.detail || 'Failed to send invitation.');
+      toast.error(getErrorMessage(err, 'Failed to send invitation.'));
     } finally {
       setSubmitting(false);
     }

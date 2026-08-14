@@ -1,6 +1,7 @@
 import { Navigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import TenantDashboard from './dashboard/TenantDashboard';
+import GuestDashboard from './dashboard/GuestDashboard';
 import ErrorBoundary from '../components/common/ErrorBoundary';
 import DashboardShell from '../components/dashboard/DashboardShell';
 
@@ -26,10 +27,14 @@ const Dashboard = () => {
     return <Navigate to="/super-agent/dashboard" replace />;
   }
 
+  // Guests have no tenancy — the tenant dashboard would be mostly empty
+  // panels, and its API refuses them anyway.
+  const Home = user?.user_type === 'guest' ? GuestDashboard : TenantDashboard;
+
   return (
     <DashboardShell>
       <ErrorBoundary>
-        <TenantDashboard />
+        <Home />
       </ErrorBoundary>
     </DashboardShell>
   );

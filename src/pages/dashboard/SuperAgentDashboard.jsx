@@ -10,6 +10,7 @@ import {
 import { superAgentAPI, propertyAPI } from '../../services/api';
 import useAuthStore from '../../store/authStore';
 import toast from 'react-hot-toast';
+import { getErrorMessage } from '../../utils/errors';
 
 /* ── helpers ─────────────────────────────────────────────────── */
 
@@ -128,7 +129,7 @@ export default function SuperAgentDashboard() {
       agentId ? superAgentAPI.assignAgentToProperty(propertyId, agentId)
                : superAgentAPI.removeAgentFromProperty(propertyId),
     onSuccess: (r) => { toast.success(r.data.detail); setAssignAgentModal(null); qc.invalidateQueries(['sa-properties']); },
-    onError: (e) => toast.error(e?.response?.data?.detail || 'Failed'),
+    onError: (e) => toast.error(getErrorMessage(e, 'Failed')),
   });
 
   const m = dash?.metrics;

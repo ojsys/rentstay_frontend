@@ -81,6 +81,9 @@ export const staffAPI = {
   moderateProperty: (id, action) => api.post(`/staff/properties/${id}/moderate/`, { action }),
   listListings: (params) => api.get('/staff/listings/', { params }),
   moderateListing: (id, action) => api.post(`/staff/listings/${id}/moderate/`, { action }),
+  // Guest refunds: review, approve/decline, and pay out
+  listRefunds: (params) => api.get('/staff/refunds/', { params }),
+  decideRefund: (payload) => api.post('/staff/refunds/', payload),
 };
 
 export const propertyAPI = {
@@ -157,6 +160,13 @@ export const maintenanceAPI = {
 export const messagingAPI = {
   getConversations: () => api.get('/messaging/conversations/'),
   startConversation: (propertyId) => api.post('/messaging/conversations/start/', { property_id: propertyId }),
+  // Landlord ↔ tenant chat. Requires an existing tenancy between the two users.
+  // Stays guest <-> host. Scoped to the listing, so it works for standalone
+  // listings that have no linked property.
+  startConversationForBooking: (bookingId) =>
+    api.post('/messaging/conversations/start/', { booking_id: bookingId }),
+  startConversationWithUser: (userId, propertyId) =>
+    api.post('/messaging/conversations/start/', { user_id: userId, property_id: propertyId }),
   getMessages: (conversationId) => api.get(`/messaging/conversations/${conversationId}/messages/`),
   sendMessage: (conversationId, message) =>
     api.post(`/messaging/conversations/${conversationId}/messages/`, { content: message }),
@@ -189,6 +199,7 @@ export const moveOutAPI = {
 export const dashboardAPI = {
   getTenant: () => api.get('/tenants/dashboard/'),
   getLandlord: () => api.get('/landlords/dashboard/'),
+  getGuestDashboard: () => api.get('/guests/dashboard/'),
   getDashboardMetadata: () => api.get('/landlords/dashboard-metadata/'),
   getLandlordLeases: (params) => api.get('/landlords/leases/', { params }),
   getLandlordPaymentsDashboard: () => api.get('/landlords/payments-dashboard/'),
@@ -219,6 +230,13 @@ export const staysAPI = {
   listBlocked: (id) => api.get(`/stays/listings/${id}/blocked/`),
   addBlocked: (id, start_date, end_date, note) => api.post(`/stays/listings/${id}/blocked/`, { start_date, end_date, note }),
   removeBlocked: (id, blockId) => api.delete(`/stays/listings/${id}/blocked/`, { data: { id: blockId } }),
+  // iCal calendar sync with Airbnb / Booking.com / Google Calendar
+  getCalendars: (id) => api.get(`/stays/listings/${id}/calendars/`),
+  addCalendar: (id, name, url) => api.post(`/stays/listings/${id}/calendars/`, { name, url }),
+  removeCalendar: (id, connectionId) =>
+    api.delete(`/stays/listings/${id}/calendars/`, { data: { id: connectionId } }),
+  syncCalendars: (id, connectionId) =>
+    api.post(`/stays/listings/${id}/calendars/sync/`, connectionId ? { id: connectionId } : {}),
   createBooking: (payload) => api.post('/stays/bookings/', payload),
   getBookingsGuest: () => api.get('/stays/bookings/'),
   getBookingsHost: () => api.get('/stays/bookings/', { params: { role: 'host' } }),
@@ -235,8 +253,20 @@ export const staysAPI = {
   approveBooking: (id) => api.post(`/stays/bookings/${id}/set_status/`, { status: 'approved' }),
   declineBooking: (id, reason) => api.post(`/stays/bookings/${id}/decline/`, { reason }),
   cancelBooking: (id, reason) => api.post(`/stays/bookings/${id}/cancel/`, { reason }),
+  // What the guest would get back if they cancelled now
+  // Re-query Paystack when a payment went through but the booking still
+  // shows pending (missed callback or webhook).
+  refreshPayment: (id) => api.post(`/stays/bookings/${id}/refresh-payment/`),
+  refundQuote: (id) => api.get(`/stays/bookings/${id}/refund-quote/`),
+  // Host decides a refund request: decision is 'approve' | 'decline'
+  decideRefund: (id, decision, amount, note) =>
+    api.post(`/stays/bookings/${id}/refund/decide/`, { decision, amount, note }),
   completeBooking: (id) => api.post(`/stays/bookings/${id}/set_status/`, { status: 'completed' }),
   getBooking: (id) => api.get(`/stays/bookings/${id}/`),
+  // Receipt download. `type` (not `format`) — DRF reserves ?format= for
+  // content negotiation and would 404 before the view runs.
+  downloadReceipt: (id, type = 'pdf') =>
+    api.get(`/stays/bookings/${id}/receipt/`, { params: { type }, responseType: 'blob' }),
   initBookingPayment: (id) => api.post(`/stays/bookings/${id}/init_payment/`),
   getReviews: (listingId) => api.get('/stays/reviews/', { params: { listing: listingId } }),
   submitReview: (data) => api.post('/stays/reviews/', data),
@@ -281,6 +311,70 @@ export const legalAPI = {
 // Site Settings API
 export const siteSettingsAPI = {
   get: () => api.get('/site-settings/'),
+};
+
+// Legal services — dispute cases raised by landlords and tenants.
+// Named legalServicesAPI because legalAPI above serves the static legal *documents*.
+export const legalServicesAPI = {
+  // Entitlement + form metadata (issue types, the user's tenancies)
+  getCover: () => api.get('/legal-services/cover/'),
+  optIn: () => api.post('/legal-services/cover/'),
+  optOut: () => api.delete('/legal-services/cover/'),
+  listCases: (params) => api.get('/legal-services/cases/', { params }),
+  getCase: (id) => api.get(`/legal-services/cases/${id}/`),
+  // FormData when documents are attached, plain JSON otherwise
+  createCase: (data) => api.post('/legal-services/cases/', data, data instanceof FormData
+    ? { headers: { 'Content-Type': 'multipart/form-data' } } : undefined),
+  addDocuments: (id, formData) => api.post(`/legal-services/cases/${id}/documents/`, formData,
+    { headers: { 'Content-Type': 'multipart/form-data' } }),
+  addNote: (id, body, isInternal = false) =>
+    api.post(`/legal-services/cases/${id}/notes/`, { body, is_internal: isInternal }),
+  // Legal team only
+  setStatus: (id, payload) => api.post(`/legal-services/cases/${id}/status/`, payload),
+  assign: (id, userId) => api.post(`/legal-services/cases/${id}/assign/`, { user_id: userId }),
+  summary: () => api.get('/legal-services/cases/summary/'),
+  partners: () => api.get('/legal-services/cases/partners/'),
+};
+
+// Corporate entities — companies renting, booking or listing
+export const corporateAPI = {
+  getProfile: () => api.get('/corporate/profile/'),
+  // FormData when documents are attached (CAC certificate, TIN, resolution)
+  saveProfile: (data) => api.post('/corporate/profile/', data, data instanceof FormData
+    ? { headers: { 'Content-Type': 'multipart/form-data' } } : undefined),
+  listRepresentatives: () => api.get('/corporate/representatives/'),
+  addRepresentative: (data) => api.post('/corporate/representatives/', data,
+    data instanceof FormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : undefined),
+  removeRepresentative: (id) => api.delete('/corporate/representatives/', { data: { id } }),
+  submitForVerification: () => api.post('/corporate/verify/'),
+};
+
+// Shared user profile — self, or a landlord viewing a tenant they have a tenancy with
+export const userAPI = {
+  getProfile: (userId) => api.get(`/users/${userId}/profile/`),
+};
+
+// Legal notices (quit / eviction / rent demand) served by a landlord on a tenant
+export const noticeAPI = {
+  // Both roles: landlords see their own (incl. drafts), tenants see served ones
+  list: () => api.get('/notices/'),
+  get: (id) => api.get(`/notices/${id}/`),
+  // Landlord: prefilled template + suggested statutory dates for a new notice
+  compose: (params) => api.get('/notices/compose/', { params }),
+  // Landlord: create/update a draft. Accepts FormData when a document is attached.
+  create: (data) => api.post('/notices/', data, data instanceof FormData
+    ? { headers: { 'Content-Type': 'multipart/form-data' } } : undefined),
+  update: (id, data) => api.patch(`/notices/${id}/`, data, data instanceof FormData
+    ? { headers: { 'Content-Type': 'multipart/form-data' } } : undefined),
+  remove: (id) => api.delete(`/notices/${id}/`),
+  // Lifecycle
+  serve: (id) => api.post(`/notices/${id}/serve/`),
+  acknowledge: (id) => api.post(`/notices/${id}/acknowledge/`),
+  withdraw: (id, reason) => api.post(`/notices/${id}/withdraw/`, { reason }),
+  // Landlord: reusable per-type wording
+  getTemplate: (noticeType) => api.get('/notices/template/', { params: { notice_type: noticeType } }),
+  saveTemplate: (noticeType, body) => api.put('/notices/template/', { notice_type: noticeType, body }),
+  resetTemplate: (noticeType) => api.delete('/notices/template/', { params: { notice_type: noticeType } }),
 };
 
 // Tenant Invite API

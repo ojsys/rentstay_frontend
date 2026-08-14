@@ -5,6 +5,7 @@ import useAuthStore from '../store/authStore';
 import { CalendarClock, Check, X, RefreshCw, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Navigate } from 'react-router-dom';
+import { getErrorMessage } from '../utils/errors';
 
 const Visits = () => {
   const { user } = useAuthStore();
@@ -36,7 +37,7 @@ const Visits = () => {
       if (type === 'decline') await visitAPI.setStatus(id, 'declined');
       await load();
     } catch (e) {
-      toast.error(e?.response?.data?.detail || 'Failed to update');
+      toast.error(getErrorMessage(e, 'Failed to update'));
     }
   };
 
@@ -48,7 +49,7 @@ const Visits = () => {
       setNewDt('');
       await load();
     } catch (e) {
-      toast.error(e?.response?.data?.detail || 'Failed to reschedule');
+      toast.error(getErrorMessage(e, 'Failed to reschedule'));
     }
   };
 

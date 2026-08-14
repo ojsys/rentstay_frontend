@@ -5,6 +5,7 @@ import { Building2, Upload, Loader2, Image as ImageIcon } from 'lucide-react';
 import RichTextEditor from '../components/common/RichTextEditor';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
+import { getErrorMessage } from '../utils/errors';
 
 const AddProperty = () => {
   const [states, setStates] = useState([]);
@@ -84,7 +85,7 @@ const AddProperty = () => {
         const firstVal = data[firstKey];
         if (Array.isArray(firstVal) && firstVal.length) msg = `${firstKey}: ${firstVal[0]}`;
         else if (typeof firstVal === 'string') msg = `${firstKey}: ${firstVal}`;
-      } else if (err?.response?.data?.detail) {
+      } else if (getErrorMessage(err)) {
         msg = err.response.data.detail;
       }
       toast.error(msg);

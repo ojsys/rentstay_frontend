@@ -6,7 +6,7 @@ import MobileBottomNav from '../../components/dashboard/MobileBottomNav';
 
 const TABS = [
   { to: '/agent/dashboard/home', icon: Home, label: 'Home', badgeKey: null },
-  { to: '/agent/dashboard/properties', icon: Building2, label: 'Properties', badgeKey: null },
+  { to: '/agent/dashboard/properties', icon: Building2, label: 'Rent', badgeKey: null },
   { to: '/agent/dashboard/commissions', icon: DollarSign, label: 'Commissions', badgeKey: null },
   { to: '/agent/dashboard/payouts', icon: Wallet, label: 'Payouts', badgeKey: null },
 ];

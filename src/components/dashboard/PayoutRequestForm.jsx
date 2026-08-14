@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { dashboardAPI } from '../../services/api';
 import { Clock, CheckCircle, XCircle, Loader2, AlertCircle } from 'lucide-react';
+import { getErrorMessage } from '../../utils/errors';
 
 const STATUS_CONFIG = {
   pending:    { label: 'Pending Review',  color: 'text-amber-600',  bg: 'bg-amber-50',  border: 'border-amber-200',  icon: Clock },
@@ -136,7 +137,7 @@ const PayoutRequestForm = ({ availableBalance = 0 }) => {
         </button>
 
         {payoutMutation.isError && (
-          <p className="text-red-500 text-sm">{payoutMutation.error?.response?.data?.detail || 'Failed to submit request'}</p>
+          <p className="text-red-500 text-sm">{getErrorMessage(payoutMutation.error, 'Could not submit your payout request')}</p>
         )}
         {payoutMutation.isSuccess && (
           <p className="text-emerald-600 text-sm font-medium">✓ Request submitted! You'll receive an email once it's processed (within 24 hours).</p>

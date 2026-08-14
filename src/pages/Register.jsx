@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Mail, Lock, User, Phone, UserPlus, Home, Building2, Eye, EyeOff, Briefcase } from 'lucide-react';
+import { Mail, Lock, User, Phone, UserPlus, Home, Building2, Eye, EyeOff, Briefcase, Bed } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import useAuthStore from '../store/authStore';
@@ -84,6 +84,7 @@ const Register = () => {
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {[
+                { type: 'guest', icon: Bed, title: "I'm a Guest", sub: 'Booking a short stay', note: 'Book stays by the night — no tenancy needed' },
                 { type: 'tenant', icon: Home, title: "I'm a Tenant", sub: 'Looking for a property', note: 'Browse and apply for listings' },
                 { type: 'landlord', icon: Building2, title: "I'm a Landlord", sub: 'List and manage properties', note: 'Verification required for full access' },
                 { type: 'agent', icon: Briefcase, title: "I'm an Agent", sub: 'Bring properties, earn commissions', note: '5% commission on each successful rental' },

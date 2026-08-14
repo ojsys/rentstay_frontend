@@ -10,6 +10,9 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import useAuthStore from '../../store/authStore';
+import AvailabilityCalendar from '../../components/stays/AvailabilityCalendar';
+import { nightsBetween, buildUnavailableSet, fromISODate } from '../../utils/dates';
+import { getErrorMessage } from '../../utils/errors';
 
 const AMENITY_ICONS = {
   'WiFi': Wifi, 'Air conditioning': Wind, 'Kitchen': ChefHat, 'Hot water': Droplets,
@@ -29,7 +32,8 @@ const TYPE_LABELS = { entire: 'Entire place', private_room: 'Private room', shar
 
 const PROP_TYPE_ICONS = { apartment: Building2, house: Home, duplex: SquareStack, flat: SquareStack, room: DoorOpen, self_contain: DoorOpen, bungalow: Home };
 
-const today = () => new Date().toISOString().split('T')[0];
+const prettyDate = (iso) =>
+  iso ? fromISODate(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '';
 
 const StarRow = ({ score, size = 14 }) => (
   <span className="flex items-center gap-0.5">
@@ -67,6 +71,10 @@ const ListingDetail = () => {
 
   const [guestModal, setGuestModal] = useState(false);
   const [guestInfo, setGuestInfo] = useState({ name: '', phone: '', note: '' });
+
+  // Nights already taken — host-blocked dates plus confirmed bookings.
+  const [unavailable, setUnavailable] = useState(() => new Set());
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
 
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
@@ -112,7 +120,18 @@ const ListingDetail = () => {
     setLoading(false);
   }, [id]);
 
-  useEffect(() => { load(); }, [load]);
+  const loadAvailability = useCallback(async () => {
+    try {
+      const res = await staysAPI.availability(id, {});
+      setUnavailable(buildUnavailableSet(res.data));
+    } catch {
+      // Non-fatal: the calendar still renders, and the quote endpoint remains
+      // the authority on whether a range is actually bookable.
+      setUnavailable(new Set());
+    }
+  }, [id]);
+
+  useEffect(() => { load(); loadAvailability(); }, [load, loadAvailability]);
 
   useEffect(() => {
     if (checkIn && checkOut && listing) getQuote();
@@ -127,7 +146,7 @@ const ListingDetail = () => {
       setQuote(res.data);
     } catch (e) {
       setQuote(null);
-      toast.error(e?.response?.data?.detail || 'Dates not available');
+      toast.error(getErrorMessage(e, 'Dates not available'));
     } finally { setQuoteLoading(false); }
   };
 
@@ -155,7 +174,7 @@ const ListingDetail = () => {
       }
       toast.success(listing?.instant_book ? 'Booking created! Check your bookings to pay.' : 'Request sent! The host will review and approve shortly.');
     } catch (e) {
-      toast.error(e?.response?.data?.detail || 'Failed to create booking');
+      toast.error(getErrorMessage(e, 'Failed to create booking'));
     } finally { setBookingLoading(false); }
   };
 
@@ -439,6 +458,30 @@ const ListingDetail = () => {
               {listing.max_nights < 365 && <> · <span className="font-medium">{listing.max_nights}</span> nights max</>}
             </div>
 
+            {/* Availability calendar — exposed in the page body, Airbnb-style */}
+            <div className="border-t border-gray-200 pt-6 mt-6" id="availability">
+              <h2 className="text-xl font-display font-bold text-dark-900">
+                {checkIn && checkOut
+                  ? `${nightsBetween(checkIn, checkOut)} night${nightsBetween(checkIn, checkOut) !== 1 ? 's' : ''} in ${listing.area || listing.lga_name || 'this stay'}`
+                  : 'Select your dates'}
+              </h2>
+              <p className="text-sm text-dark-500 mt-1 mb-5">
+                {checkIn && checkOut
+                  ? `${prettyDate(checkIn)} – ${prettyDate(checkOut)}`
+                  : 'Add your travel dates for exact pricing'}
+              </p>
+              <AvailabilityCalendar
+                unavailable={unavailable}
+                checkIn={checkIn}
+                checkOut={checkOut}
+                onChange={({ checkIn: ci, checkOut: co }) => { setCheckIn(ci); setCheckOut(co); }}
+                minNights={listing.min_nights || 1}
+                maxNights={listing.max_nights || 365}
+                nightlyRate={Number(listing.nightly_rate) || 0}
+                months={2}
+              />
+            </div>
+
             {/* Guest reviews section */}
             <ReviewsSection listingId={listing.id} avgRating={listing.avg_rating} reviewCount={listing.review_count} />
           </div>
@@ -453,15 +496,45 @@ const ListingDetail = () => {
                 </div>
                 <div className="border border-gray-200 rounded-xl overflow-hidden mb-3">
                   <div className="grid grid-cols-2">
-                    <div className="p-3 border-r border-gray-200">
-                      <label className="text-[10px] font-bold text-dark-600 uppercase tracking-wider block mb-1">Check-in</label>
-                      <input type="date" value={checkIn} min={today()} onChange={(e) => setCheckIn(e.target.value)} className="text-sm text-dark-800 outline-none w-full bg-transparent" />
-                    </div>
-                    <div className="p-3">
-                      <label className="text-[10px] font-bold text-dark-600 uppercase tracking-wider block mb-1">Check-out</label>
-                      <input type="date" value={checkOut} min={checkIn || today()} onChange={(e) => setCheckOut(e.target.value)} className="text-sm text-dark-800 outline-none w-full bg-transparent" />
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setDatePickerOpen(o => !o)}
+                      className={`p-3 border-r border-gray-200 text-left transition hover:bg-gray-50 ${datePickerOpen && !checkIn ? 'bg-gray-50' : ''}`}
+                    >
+                      <span className="text-[10px] font-bold text-dark-600 uppercase tracking-wider block mb-1">Check-in</span>
+                      <span className={`text-sm ${checkIn ? 'text-dark-800' : 'text-dark-400'}`}>
+                        {checkIn ? prettyDate(checkIn) : 'Add date'}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDatePickerOpen(o => !o)}
+                      className={`p-3 text-left transition hover:bg-gray-50 ${datePickerOpen && checkIn && !checkOut ? 'bg-gray-50' : ''}`}
+                    >
+                      <span className="text-[10px] font-bold text-dark-600 uppercase tracking-wider block mb-1">Check-out</span>
+                      <span className={`text-sm ${checkOut ? 'text-dark-800' : 'text-dark-400'}`}>
+                        {checkOut ? prettyDate(checkOut) : 'Add date'}
+                      </span>
+                    </button>
                   </div>
+
+                  {datePickerOpen && (
+                    <div className="p-3 border-t border-gray-200">
+                      <AvailabilityCalendar
+                        unavailable={unavailable}
+                        checkIn={checkIn}
+                        checkOut={checkOut}
+                        onChange={({ checkIn: ci, checkOut: co }) => {
+                          setCheckIn(ci);
+                          setCheckOut(co);
+                          if (ci && co) setDatePickerOpen(false);
+                        }}
+                        minNights={listing.min_nights || 1}
+                        maxNights={listing.max_nights || 365}
+                        months={1}
+                      />
+                    </div>
+                  )}
                   <div className="p-3 border-t border-gray-200">
                     <label className="text-[10px] font-bold text-dark-600 uppercase tracking-wider block mb-1.5">Guests</label>
                     <div className="flex items-center gap-3">
@@ -495,8 +568,12 @@ const ListingDetail = () => {
                 )}
 
                 {listing.require_guest_verification && !user?.is_verified && !isOwner && (
-                  <p className="mt-3 text-xs text-amber-600 flex items-center gap-1.5 bg-amber-50 p-2 rounded-lg">
-                    <BadgeCheck size={13} className="flex-shrink-0" /> This host requires verified guests. <Link to="/profile" className="underline font-medium">Get verified</Link>
+                  <p className="mt-3 text-xs text-amber-700 flex items-start gap-1.5 bg-amber-50 p-2.5 rounded-lg">
+                    <BadgeCheck size={13} className="flex-shrink-0 mt-0.5" />
+                    <span>
+                      This host asks guests to verify their identity. You can book now and{' '}
+                      <Link to="/verify" className="underline font-medium">verify afterwards</Link> — it takes a minute.
+                    </span>
                   </p>
                 )}
 

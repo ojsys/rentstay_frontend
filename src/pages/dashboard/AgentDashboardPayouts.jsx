@@ -4,6 +4,7 @@ import { Wallet, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { agentAPI, dashboardAPI } from '../../services/api';
 import BankAccountsManager from '../../components/dashboard/BankAccountsManager';
+import { getErrorMessage } from '../../utils/errors';
 
 const StatusBadge = ({ status }) => {
   const map = {
@@ -52,8 +53,7 @@ const AgentDashboardPayouts = () => {
     },
     onError: (err) => {
       const msg = err?.response?.data?.amount?.[0]
-        || err?.response?.data?.detail
-        || 'Payout request failed';
+        || getErrorMessage(err, 'Payout request failed');
       toast.error(msg);
     },
   });

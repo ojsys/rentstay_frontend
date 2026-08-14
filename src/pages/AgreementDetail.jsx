@@ -6,6 +6,7 @@ import { FileText, Loader2, CalendarClock, CreditCard, Upload, Download, Eye, Fi
 import useAuthStore from '../store/authStore';
 import toast from 'react-hot-toast';
 import PaystackPop from '@paystack/inline-js';
+import { getErrorMessage } from '../utils/errors';
 
 const AgreementDetail = () => {
   const { id } = useParams();
@@ -135,7 +136,7 @@ const AgreementDetail = () => {
       setNewStartDate('');
       toast.success('Tenancy start date updated. End date shifted accordingly.');
     } catch (e) {
-      toast.error(e?.response?.data?.detail || 'Failed to adjust start date');
+      toast.error(getErrorMessage(e, 'Failed to adjust start date'));
     } finally {
       setAdjustingDate(false);
     }
@@ -149,7 +150,7 @@ const AgreementDetail = () => {
       setAgreement(res.data);
       toast.success('Agreement status updated');
     } catch (e) {
-      toast.error(e?.response?.data?.detail || 'Failed to update status');
+      toast.error(getErrorMessage(e, 'Failed to update status'));
     } finally {
       setSavingStatus(false);
     }
@@ -196,7 +197,7 @@ const AgreementDetail = () => {
       setAgreement(res.data);
       toast.success(source === 'custom' ? 'Using custom document' : 'Using default template');
     } catch (e) {
-      toast.error(e?.response?.data?.detail || 'Failed to update');
+      toast.error(getErrorMessage(e, 'Failed to update'));
     }
   };
 

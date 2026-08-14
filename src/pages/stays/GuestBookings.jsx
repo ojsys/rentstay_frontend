@@ -3,9 +3,10 @@ import { Link } from 'react-router-dom';
 import { staysAPI } from '../../services/api';
 import {
   Loader2, CalendarDays, Users, MapPin, X, CreditCard,
-  AlertCircle, Star, MessageSquarePlus, ShieldCheck, Bed,
+  AlertCircle, Star, MessageSquarePlus, ShieldCheck, ShieldAlert, Bed,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { getErrorMessage } from '../../utils/errors';
 
 const STATUS_STYLES = {
   pending:         { label: 'Pending',   cls: 'bg-amber-100 text-amber-700',  dot: 'bg-amber-400' },
@@ -87,7 +88,7 @@ const GuestBookings = () => {
       const res = await staysAPI.initBookingPayment(id);
       const url = res.data?.authorization_url;
       if (url) window.location.href = url;
-    } catch (e) { toast.error(e?.response?.data?.detail || 'Failed to initialise payment'); }
+    } catch (e) { toast.error(getErrorMessage(e, 'Failed to initialise payment')); }
     finally { setPayLoading(l => ({ ...l, [id]: false })); }
   };
 
@@ -99,7 +100,7 @@ const GuestBookings = () => {
       toast.success('Booking cancelled');
       setCancelModal(null);
       load();
-    } catch (e) { toast.error(e?.response?.data?.detail || 'Failed to cancel'); }
+    } catch (e) { toast.error(getErrorMessage(e, 'Failed to cancel')); }
     finally { setCancelling(false); }
   };
 
@@ -117,11 +118,14 @@ const GuestBookings = () => {
       setReviewedBookings(prev => new Set([...prev, reviewModal.id]));
       setReviewModal(null);
       load();
-    } catch (e) { toast.error(e?.response?.data?.detail || 'Failed to submit review'); }
+    } catch (e) { toast.error(getErrorMessage(e, 'Failed to submit review')); }
     finally { setSubmittingReview(false); }
   };
 
   const filtered = statusFilter ? items.filter(b => b.status === statusFilter) : items;
+  // Bookings whose host asked for verified guests, where the guest has not
+  // yet verified. The server computes this so the rule lives in one place.
+  const awaitingVerification = items.filter(b => b.needs_guest_verification);
 
   return (
     <div className="min-h-screen bg-gray-50 pb-8">
@@ -131,6 +135,34 @@ const GuestBookings = () => {
           <h1 className="text-base font-bold text-white md:text-gray-900">My Stays</h1>
           <p className="text-xs text-white/70 md:text-gray-400 mt-0.5">Your short-stay booking history</p>
         </div>
+
+      {/* Standing nudge — the booking is safe, the paperwork is not done */}
+      {awaitingVerification.length > 0 && (
+        <div className="max-w-4xl mx-auto px-4 pt-4">
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3">
+            <ShieldAlert size={18} className="text-amber-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-amber-900">
+                Verify your identity for {awaitingVerification.length === 1
+                  ? 'your upcoming stay'
+                  : `${awaitingVerification.length} upcoming stays`}
+              </p>
+              <p className="text-xs text-amber-800 mt-0.5">
+                {awaitingVerification.length === 1
+                  ? `${awaitingVerification[0].listing?.title || 'This host'} asks guests to verify before check-in.`
+                  : 'These hosts ask guests to verify before check-in.'}
+                {' '}Your booking is not at risk — it takes about a minute.
+              </p>
+              <Link
+                to="/verify"
+                className="inline-flex items-center gap-1.5 mt-2.5 px-4 py-2 rounded-xl bg-[#0C3B2E] text-white text-xs font-semibold hover:bg-[#0a3226] transition"
+              >
+                <ShieldCheck size={13} /> Verify now
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
         {/* Filter tabs */}
         <div className="flex gap-1 px-4 pb-2 overflow-x-auto scrollbar-hide max-w-4xl mx-auto">
           {FILTER_TABS.map(t => (
@@ -221,6 +253,13 @@ const GuestBookings = () => {
                         <AlertCircle size={12} /> {b.cancellation_reason}
                       </p>
                     )}
+
+                    <Link
+                      to={`/stays/bookings/${b.id}`}
+                      className="block text-xs font-semibold text-[#0C3B2E] hover:underline mb-3"
+                    >
+                      View booking details →
+                    </Link>
 
                     {/* Action buttons */}
                     <div className="flex gap-2">

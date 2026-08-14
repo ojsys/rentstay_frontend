@@ -1,15 +1,16 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { Home, Building2, FileText, CreditCard, Wrench, Mail, Calendar, Bed, BarChart3 } from 'lucide-react';
+import { Home, Building2, FileText, CreditCard, Wrench, Mail, Calendar, Bed, BarChart3, Scale } from 'lucide-react';
 
 const tabs = [
   { to: '/dashboard/home', icon: Home, label: 'Home' },
-  { to: '/dashboard/properties', icon: Building2, label: 'Properties' },
+  { to: '/dashboard/properties', icon: Building2, label: 'Rent' },
   { to: '/dashboard/leases', icon: FileText, label: 'Leases' },
   { to: '/dashboard/payments', icon: CreditCard, label: 'Payments' },
   { to: '/dashboard/maintenance', icon: Wrench, label: 'Maintenance' },
   { to: '/dashboard/messages', icon: Mail, label: 'Messages' },
   { to: '/dashboard/visits', icon: Calendar, label: 'Visits' },
   { to: '/dashboard/stays', icon: Bed, label: 'Stays' },
+  { to: '/dashboard/legal', icon: Scale, label: 'Legal' },
   { to: '/dashboard/reports', icon: BarChart3, label: 'Reports' },
 ];
 

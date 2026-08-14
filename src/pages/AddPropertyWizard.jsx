@@ -6,6 +6,7 @@ import PhotoUploadStep from '../components/listing/PhotoUploadStep';
 import ListingQualityScore, { calculateLocalQualityScore } from '../components/listing/ListingQualityScore';
 import { ChevronLeft, ChevronRight, Check, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { getErrorMessage } from '../utils/errors';
 
 const STEPS = [
   { key: 'basic', label: 'Basic Info' },
@@ -99,7 +100,7 @@ const AddPropertyWizard = () => {
       navigate(`/dashboard/properties`);
     },
     onError: (err) => {
-      toast.error(err?.response?.data?.detail || 'Failed to create property');
+      toast.error(getErrorMessage(err, 'Failed to create property'));
     },
   });
 
@@ -400,7 +401,7 @@ const AddPropertyWizard = () => {
                 </div>
                 {createMutation.isError && (
                   <p className="text-red-500 text-sm text-center">
-                    {createMutation.error?.response?.data?.detail || 'Failed to create listing'}
+                    {createMutation.getErrorMessage(error, 'Failed to create listing')}
                   </p>
                 )}
               </div>

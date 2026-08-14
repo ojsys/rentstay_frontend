@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { paymentAPI } from '../services/api';
 import useAuthStore from '../store/authStore';
 import { Loader2, CheckCircle2, XCircle } from 'lucide-react';
+import { getErrorMessage } from '../utils/errors';
 
 const PaymentCallback = () => {
   const navigate = useNavigate();
@@ -29,7 +30,7 @@ const PaymentCallback = () => {
         setTimeout(() => navigate('/dashboard'), 1200);
       } catch (err) {
         setStatus('failed');
-        setMessage(err?.response?.data?.detail || 'Payment verification failed.');
+        setMessage(getErrorMessage(err, 'Payment verification failed.'));
       }
     };
 

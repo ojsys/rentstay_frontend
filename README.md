@@ -73,41 +73,23 @@ See `ENV_CONFIG.md` for detailed documentation.
 
 ## 🚀 Deployment
 
-### Deploy to Vercel (Recommended - 5 Minutes)
+### Deploy to cPanel
 
-**The easiest deployment method!**
+The frontend is served from cPanel, not Vercel.
 
-**1. Push to GitHub:**
+**1. Build:**
 ```bash
-git init
-git add .
-git commit -m "Initial commit"
-git remote add origin https://github.com/yourusername/rentstay-frontend.git
-git push -u origin main
+npm run build          # outputs to dist/
 ```
 
-**2. Deploy on Vercel:**
-- Go to https://vercel.com
-- Sign up with GitHub
-- Import your repository
-- Add environment variables
-- Click Deploy
-
-**3. Future updates:**
+**2. Upload** the contents of `dist/` to the web root on cPanel, or use the
+helper script:
 ```bash
-git push origin main
-# Vercel auto-deploys! ✨
+./deploy.sh
 ```
 
-**Benefits:** Free, automatic deployments, global CDN, SSL included, zero configuration.
-
-See `VERCEL_QUICKSTART.md` or `VERCEL_DEPLOYMENT.md` for complete instructions.
-
-### Alternative: Deploy to cPanel
-
-If you prefer cPanel hosting, see:
-- `DEPLOYMENT_STEPS.md` - Complete cPanel guide
-- `CPANEL_DEPLOYMENT_NO_NPM.md` - Detailed cPanel deployment
+See [`../CPANEL_DEPLOYMENT.md`](../CPANEL_DEPLOYMENT.md) for the full deployment guide, including the
+backend and Passenger restart steps.
 
 ## 📜 Available Scripts
 
@@ -133,12 +115,8 @@ npm run lint       # Lint code with ESLint
 
 ## 📚 Documentation
 
-### Deployment Guides
-- **VERCEL_QUICKSTART.md** - Deploy to Vercel in 5 minutes (Recommended)
-- **VERCEL_DEPLOYMENT.md** - Complete Vercel deployment guide
-- **DEPLOYMENT_STEPS.md** - Complete cPanel deployment guide
-- **CPANEL_DEPLOYMENT_NO_NPM.md** - cPanel without npm
-- **DEPLOY_QUICK_GUIDE.md** - Quick cPanel reference
+### Deployment
+- **[../CPANEL_DEPLOYMENT.md](../CPANEL_DEPLOYMENT.md)** - Full cPanel deployment guide (frontend + backend)
 
 ### Configuration
 - **ENV_CONFIG.md** - Environment variable configuration

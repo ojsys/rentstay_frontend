@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import RichTextEditor from '../../components/common/RichTextEditor';
 import toast from 'react-hot-toast';
+import { getErrorMessage } from '../../utils/errors';
 
 const AMENITY_OPTIONS = [
   'WiFi', 'Air conditioning', 'Kitchen', 'Hot water', 'TV',
@@ -161,7 +162,7 @@ const HostEditListing = () => {
       await staysAPI.updateListing(id, payload);
       toast.success('Listing updated!');
     } catch (err) {
-      toast.error(err?.response?.data?.detail || 'Failed to update');
+      toast.error(getErrorMessage(err, 'Failed to update'));
     } finally { setSaving(false); }
   };
 

@@ -3,6 +3,7 @@ import { staffAPI } from '../../services/api';
 import { Loader2, CheckCircle, EyeOff, BadgeCheck, Search, ExternalLink } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { getErrorMessage } from '../../utils/errors';
 
 const CONFIG = {
   rentals: {
@@ -65,7 +66,7 @@ const ListingModerationTable = ({ type }) => {
       toast.success(action === 'publish' ? 'Verified & published' : 'Unpublished');
       await load();
     } catch (e) {
-      toast.error(e?.response?.data?.detail || 'Action failed');
+      toast.error(getErrorMessage(e, 'Action failed'));
     } finally {
       setBusyId(null);
     }

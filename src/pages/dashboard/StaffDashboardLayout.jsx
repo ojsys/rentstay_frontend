@@ -1,13 +1,14 @@
 import { Navigate, Outlet, NavLink, Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import { Home, Building2, Bed, ShieldCheck, Bell, Menu, X, LogOut, User as UserIcon } from 'lucide-react';
+import { Home, Building2, Bed, ShieldCheck, Bell, Menu, X, LogOut, User as UserIcon, Banknote } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
 import MobileBottomNav from '../../components/dashboard/MobileBottomNav';
 
 const TABS = [
   { to: '/staff/dashboard/home', icon: Home, label: 'Home', badgeKey: null },
-  { to: '/staff/dashboard/rentals', icon: Building2, label: 'Rentals', badgeKey: null },
+  { to: '/staff/dashboard/rentals', icon: Building2, label: 'Rent', badgeKey: null },
   { to: '/staff/dashboard/stays', icon: Bed, label: 'Short-stays', badgeKey: null },
+  { to: '/staff/dashboard/refunds', icon: Banknote, label: 'Refunds', badgeKey: null },
 ];
 
 const StaffDashboardLayout = () => {

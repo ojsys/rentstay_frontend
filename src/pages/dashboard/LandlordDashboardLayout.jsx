@@ -8,13 +8,13 @@ import ErrorBoundary from '../../components/common/ErrorBoundary';
 import { dashboardAPI } from '../../services/api';
 import {
   Plus, Home, Building2, Users, CreditCard, Wrench,
-  Mail, Calendar, Bed, BarChart3, Bell, Menu, X,
+  Mail, Calendar, Bed, BarChart3, Bell, Menu, X, Scale,
   LogOut, User as UserIcon, Settings,
 } from 'lucide-react';
 
 const PRIMARY_TABS = [
   { to: '/dashboard/home', icon: Home, label: 'Dashboard', badgeKey: null },
-  { to: '/dashboard/properties', icon: Building2, label: 'Properties', badgeKey: null },
+  { to: '/dashboard/properties', icon: Building2, label: 'Rent', badgeKey: null },
   { to: '/dashboard/stays', icon: Bed, label: 'Stays', badgeKey: null },
 ];
 
@@ -24,6 +24,7 @@ const MORE_TABS = [
   { to: '/dashboard/maintenance', icon: Wrench, label: 'Maintenance', badgeKey: 'maintenance' },
   { to: '/dashboard/messages', icon: Mail, label: 'Messages', badgeKey: 'messages' },
   { to: '/dashboard/visits', icon: Calendar, label: 'Visits', badgeKey: null },
+  { to: '/dashboard/legal', icon: Scale, label: 'Legal', badgeKey: null },
   { to: '/dashboard/reports', icon: BarChart3, label: 'Reports', badgeKey: null },
 ];
 

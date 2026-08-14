@@ -7,6 +7,7 @@ import UpgradeToLandlord from '../components/profile/UpgradeToLandlord';
 import { getMediaUrl, getInitials } from '../utils/imageUtils';
 import { User, MapPin, Shield, Upload, Camera, FileText, Loader2, X, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { getErrorMessage } from '../utils/errors';
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -115,7 +116,7 @@ const Profile = () => {
         navigate('/profile/view');
       }, 1000);
     } catch (err) {
-      toast.error(err?.response?.data?.detail || 'Failed to update profile');
+      toast.error(getErrorMessage(err, 'Failed to update profile'));
     } finally {
       setSaving(false);
     }

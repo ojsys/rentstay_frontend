@@ -3,6 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { staysAPI } from '../../services/api';
 import { Loader2, CalendarClock, Trash2, ChevronLeft, ChevronRight, ArrowLeft, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { toISODate } from '../../utils/dates';
+import CalendarSyncPanel from '../../components/stays/CalendarSyncPanel';
+import { getErrorMessage } from '../../utils/errors';
 
 const HostListingAvailability = () => {
   const { id } = useParams();
@@ -45,26 +48,31 @@ const HostListingAvailability = () => {
       setShowAddForm(false);
       load();
       toast.success('Dates blocked');
-    } catch (e) { toast.error(e?.response?.data?.detail || 'Failed'); }
+    } catch (e) { toast.error(getErrorMessage(e, 'Failed')); }
   };
 
-  const isInRanges = (dateStr, ranges) => {
-    const ds = new Date(dateStr).toISOString().slice(0, 10);
-    return ranges.some(r => ds >= r.start_date && ds <= r.end_date);
-  };
+  // All comparisons run on local 'YYYY-MM-DD' strings. toISOString() would
+  // shift local midnight back a day in UTC+1 (Lagos), blocking the wrong date.
+  const isInRanges = (dateStr, ranges) =>
+    ranges.some(r => dateStr >= r.start_date && dateStr <= r.end_date);
+
+  // Imported blocks are owned by their feed — the next sync would recreate
+  // anything unblocked here, so they are shown read-only.
+  const importedRange = (dateStr) =>
+    blocked.find(r => r.source === 'ical' && dateStr >= r.start_date && dateStr <= r.end_date);
 
   const inDragRange = (cell) => {
     if (!dragging || !dragStart) return false;
     const s = dragStart < (dragEnd || dragStart) ? dragStart : (dragEnd || dragStart);
     const e = (dragEnd || dragStart) > dragStart ? (dragEnd || dragStart) : dragStart;
-    const ds = cell.toISOString().slice(0, 10);
-    return ds >= s.toISOString().slice(0, 10) && ds <= e.toISOString().slice(0, 10);
+    const ds = toISODate(cell);
+    return ds >= toISODate(s) && ds <= toISODate(e);
   };
 
   const anyBusyInRange = (s, e) => {
     const cur = new Date(s);
     while (cur <= e) {
-      if (isInRanges(cur.toISOString().slice(0, 10), busy)) return true;
+      if (isInRanges(toISODate(cur), busy)) return true;
       cur.setDate(cur.getDate() + 1);
     }
     return false;
@@ -185,14 +193,16 @@ const HostListingAvailability = () => {
             <div className="grid grid-cols-7 gap-1">
               {calendar.map((cell, idx) => {
                 if (!cell) return <div key={idx} className="aspect-square" />;
-                const ds = cell.toISOString().slice(0, 10);
+                const ds = toISODate(cell);
                 const isBlocked = isInRanges(ds, blocked);
+                const imported = importedRange(ds);
                 const isBusy = isInRanges(ds, busy);
                 const isSelected = inDragRange(cell);
                 const isPast = cell < new Date(new Date().setHours(0, 0, 0, 0));
                 let cls = 'bg-white text-gray-700 hover:bg-gray-50';
                 if (isPast) cls = 'bg-gray-50 text-gray-300 cursor-not-allowed';
                 else if (isBusy) cls = 'bg-red-100 text-red-700 cursor-not-allowed';
+                else if (imported) cls = 'bg-indigo-100 text-indigo-700 cursor-not-allowed';
                 else if (isBlocked) cls = 'bg-amber-100 text-amber-700';
                 else if (isSelected) cls = 'bg-[#0C3B2E]/20 text-[#0C3B2E] ring-1 ring-[#0C3B2E]';
                 return (
@@ -200,7 +210,7 @@ const HostListingAvailability = () => {
                     key={idx}
                     className={`aspect-square rounded-lg text-xs font-medium flex items-center justify-center transition select-none ${cls}`}
                     onMouseDown={() => {
-                      if (isBusy || isPast) return;
+                      if (isBusy || isPast || imported) return;
                       setDragging(true);
                       setDragStart(new Date(cell));
                       setDragEnd(new Date(cell));
@@ -211,8 +221,8 @@ const HostListingAvailability = () => {
                       const s = dragStart < (dragEnd || dragStart) ? dragStart : (dragEnd || dragStart);
                       const e = (dragEnd || dragStart) > dragStart ? (dragEnd || dragStart) : dragStart;
                       setDragging(false);
-                      const ss = s.toISOString().slice(0, 10);
-                      const es = e.toISOString().slice(0, 10);
+                      const ss = toISODate(s);
+                      const es = toISODate(e);
                       if (evt.altKey) {
                         try {
                           const toRemove = blocked.filter(b => b.start_date >= ss && b.end_date <= es).map(b => b.id);
@@ -226,7 +236,7 @@ const HostListingAvailability = () => {
                       catch { toast.error('Failed'); }
                     }}
                     onClick={async () => {
-                      if (isBusy || isPast || dragging) return;
+                      if (isBusy || isPast || dragging || imported) return;
                       try {
                         if (isBlocked) {
                           const match = blocked.find(b => ds >= b.start_date && ds <= b.end_date);
@@ -252,11 +262,17 @@ const HostListingAvailability = () => {
                 <div className="w-3 h-3 rounded bg-red-100" /> Confirmed booking
               </div>
               <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                <div className="w-3 h-3 rounded bg-indigo-100" /> Synced calendar
+              </div>
+              <div className="flex items-center gap-1.5 text-xs text-gray-500">
                 <div className="w-3 h-3 rounded bg-gray-100" /> Unavailable
               </div>
             </div>
           </div>
         </div>
+
+        {/* Calendar sync (Airbnb / Booking.com / Google) */}
+        <CalendarSyncPanel listingId={id} onChanged={load} />
 
         {/* Current blocks */}
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
@@ -269,19 +285,28 @@ const HostListingAvailability = () => {
             <div className="divide-y divide-gray-50">
               {blocked.map(b => (
                 <div key={b.id} className="flex items-center gap-3 px-4 py-3">
-                  <div className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0 mt-0.5" />
+                  <div className={`w-2 h-2 rounded-full flex-shrink-0 mt-0.5 ${b.source === 'ical' ? 'bg-indigo-400' : 'bg-amber-400'}`} />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900">
                       {b.start_date === b.end_date ? b.start_date : `${b.start_date} → ${b.end_date}`}
                     </p>
                     {b.note && <p className="text-xs text-gray-400">{b.note}</p>}
+                    {b.source === 'ical' && (
+                      <p className="text-[11px] text-indigo-600">
+                        From {b.source_name || 'a connected calendar'} — managed by that feed
+                      </p>
+                    )}
                   </div>
-                  <button
-                    onClick={() => removeBlock(b.id)}
-                    className="flex items-center justify-center w-8 h-8 rounded-xl bg-red-50 text-red-500 hover:bg-red-100 transition flex-shrink-0"
-                  >
-                    <Trash2 size={14} />
-                  </button>
+                  {b.source === 'ical' ? (
+                    <span className="text-[11px] text-gray-400 flex-shrink-0">synced</span>
+                  ) : (
+                    <button
+                      onClick={() => removeBlock(b.id)}
+                      className="flex items-center justify-center w-8 h-8 rounded-xl bg-red-50 text-red-500 hover:bg-red-100 transition flex-shrink-0"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
                 </div>
               ))}
             </div>

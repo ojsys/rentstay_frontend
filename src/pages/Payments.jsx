@@ -6,6 +6,7 @@ import useAuthStore from '../store/authStore';
 import { Navigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import PaystackPop from '@paystack/inline-js';
+import { getErrorMessage } from '../utils/errors';
 
 const Payments = () => {
   const [loading, setLoading] = useState(true);
@@ -112,7 +113,7 @@ const Payments = () => {
         },
       });
     } catch (e) {
-      toast.error(e?.response?.data?.detail || 'Failed to initialize payment');
+      toast.error(getErrorMessage(e, 'Failed to initialize payment'));
       setPaying(false);
     }
   };
@@ -154,7 +155,7 @@ const Payments = () => {
         },
       });
     } catch (e) {
-      toast.error(e?.response?.data?.detail || 'Failed to initialize payment');
+      toast.error(getErrorMessage(e, 'Failed to initialize payment'));
       setPaying(false);
     }
   };

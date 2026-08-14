@@ -1,11 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
-import { dashboardAPI, rentalAPI, inviteAPI } from '../../services/api';
-import { Loader2, FileText, CalendarClock, AlertTriangle, Users, ArrowRight, UserPlus, Mail, Clock, CheckCircle2, XCircle } from 'lucide-react';
+import { dashboardAPI, rentalAPI, inviteAPI, messagingAPI } from '../../services/api';
+import { Loader2, FileText, CalendarClock, AlertTriangle, Users, ArrowRight, UserPlus, Mail, Clock, CheckCircle2, XCircle, User as UserIcon, MessageSquare } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import EnhancedApplicationsInbox from '../../components/dashboard/EnhancedApplicationsInbox';
 import MoveOutWorkflow from '../../components/dashboard/MoveOutWorkflow';
+import NoticesPanel from '../../components/dashboard/NoticesPanel';
+import NoticeTemplateEditor from '../../components/dashboard/NoticeTemplateEditor';
+import { NOTICE_TYPES } from '../../utils/notices';
 import toast from 'react-hot-toast';
+import { getErrorMessage } from '../../utils/errors';
 
 const statusColors = {
   active: 'bg-green-100 text-green-700',
@@ -54,6 +58,9 @@ const LandlordDashboardLeases = () => {
   const [typeFilter, setTypeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('');
 
+  const [messagingTenant, setMessagingTenant] = useState(null);
+  // 'agreement' or one of the NOTICE_TYPES values
+  const [templateDoc, setTemplateDoc] = useState('agreement');
   const [templateBody, setTemplateBody] = useState('');
   const [placeholders] = useState(['{{landlord}}','{{tenant}}','{{address}}','{{start_date}}','{{end_date}}','{{rent_amount}}','{{caution_fee}}']);
   const [templateLoading, setTemplateLoading] = useState(false);
@@ -83,7 +90,7 @@ const LandlordDashboardLeases = () => {
         const res = await rentalAPI.getTemplate();
         setTemplateBody(res.data.body || '');
       } catch (e) {
-        toast.error(e?.response?.data?.detail || 'Failed to load template');
+        toast.error(getErrorMessage(e, 'Failed to load template'));
       } finally {
         setTemplateLoading(false);
       }
@@ -101,6 +108,19 @@ const LandlordDashboardLeases = () => {
       toast.error('Failed to save template');
     } finally {
       setSaving(false);
+    }
+  };
+
+  // Opens (or reuses) the tenancy conversation and jumps straight into it.
+  const messageTenant = async (tenantId) => {
+    setMessagingTenant(tenantId);
+    try {
+      const { data: convo } = await messagingAPI.startConversationWithUser(tenantId);
+      navigate(`/messages?conversation=${convo.id}`);
+    } catch (e) {
+      toast.error(getErrorMessage(e, 'Could not open the conversation'));
+    } finally {
+      setMessagingTenant(null);
     }
   };
 
@@ -129,6 +149,7 @@ const LandlordDashboardLeases = () => {
     { key: 'invites', label: 'Invites', badge: pendingInvitesCount > 0 ? pendingInvitesCount : null },
     { key: 'applications', label: 'Applications' },
     { key: 'moveouts', label: 'Move-Outs' },
+    { key: 'notices', label: 'Notices' },
     { key: 'template', label: 'Template' },
   ];
 
@@ -169,6 +190,7 @@ const LandlordDashboardLeases = () => {
 
       {activeSection === 'applications' && <EnhancedApplicationsInbox />}
       {activeSection === 'moveouts' && <MoveOutWorkflow />}
+      {activeSection === 'notices' && <NoticesPanel agreements={agreements} />}
 
       {/* Invites */}
       {activeSection === 'invites' && (
@@ -242,7 +264,28 @@ const LandlordDashboardLeases = () => {
       {/* Template */}
       {activeSection === 'template' && (
         <div className="space-y-4">
-          {templateLoading ? (
+          {/* Which document's wording is being edited */}
+          <div className="bg-white rounded-2xl shadow-sm p-4">
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+              Document
+            </label>
+            <select
+              className="input w-full md:max-w-md"
+              value={templateDoc}
+              onChange={(e) => setTemplateDoc(e.target.value)}
+            >
+              <option value="agreement">Tenancy Agreement</option>
+              <optgroup label="Legal Notices">
+                {NOTICE_TYPES.map(t => (
+                  <option key={t.value} value={t.value}>{t.label}</option>
+                ))}
+              </optgroup>
+            </select>
+          </div>
+
+          {templateDoc !== 'agreement' ? (
+            <NoticeTemplateEditor noticeType={templateDoc} />
+          ) : templateLoading ? (
             <div className="flex items-center justify-center py-12 text-gray-400">
               <Loader2 className="animate-spin mr-2" /> Loading template...
             </div>
@@ -387,6 +430,26 @@ const LandlordDashboardLeases = () => {
                           <span className={`text-xs font-medium ${item.caution_fee_paid ? 'text-green-600' : 'text-amber-600'}`}>
                             {item.caution_fee_paid ? 'Caution Paid' : 'Caution Unpaid'}
                           </span>
+                        </div>
+                      )}
+                      {item.type === 'long_term' && item.tenant_id && (
+                        <div className="flex gap-3 mt-2">
+                          <Link
+                            to={`/users/${item.tenant_id}/profile`}
+                            className="flex items-center gap-1 text-xs font-semibold text-[#0C3B2E] hover:underline"
+                          >
+                            <UserIcon size={12} /> View profile
+                          </Link>
+                          <button
+                            onClick={() => messageTenant(item.tenant_id)}
+                            disabled={messagingTenant === item.tenant_id}
+                            className="flex items-center gap-1 text-xs font-semibold text-[#0C3B2E] hover:underline disabled:opacity-50"
+                          >
+                            {messagingTenant === item.tenant_id
+                              ? <Loader2 size={12} className="animate-spin" />
+                              : <MessageSquare size={12} />}
+                            Message
+                          </button>
                         </div>
                       )}
                     </div>

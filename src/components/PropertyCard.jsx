@@ -4,6 +4,7 @@ import { useState } from 'react';
 import useAuthStore from '../store/authStore';
 import { visitAPI } from '../services/api';
 import toast from 'react-hot-toast';
+import { getErrorMessage } from '../utils/errors';
 
 const PropertyCard = ({ property }) => {
   const [isFavorite, setIsFavorite] = useState(false);
@@ -185,7 +186,7 @@ const PropertyCard = ({ property }) => {
                 setVisitDateTime('');
                 setVisitNote('');
               } catch (err) {
-                toast.error(err?.response?.data?.detail || 'Failed to request visit');
+                toast.error(getErrorMessage(err, 'Failed to request visit'));
               } finally {
                 setVisitLoading(false);
               }

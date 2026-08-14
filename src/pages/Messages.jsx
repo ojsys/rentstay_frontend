@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { messagingAPI } from '../services/api';
-import { Loader2, Send, MessageSquare } from 'lucide-react';
+import { Loader2, Send, MessageSquare, Check, CheckCheck, User as UserIcon } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import DashboardShell from '../components/dashboard/DashboardShell';
 import { useSearchParams, Navigate } from 'react-router-dom';
@@ -152,8 +152,20 @@ const Messages = () => {
                         <p className="text-sm">{m.content}</p>
                         <div className="flex items-center justify-between mt-1">
                           <p className={`text-[10px] ${mine ? 'text-white/80' : 'text-dark-500'}`}>{new Date(m.created_at).toLocaleString()}</p>
+                          {/* Read receipt — one tick sent, two ticks seen */}
                           {mine && (
-                            <p className="text-[10px] ml-3">{m._pending ? 'sending…' : (m.is_read ? 'read' : 'sent')}</p>
+                            <span
+                              className="text-[10px] ml-3 flex items-center gap-0.5 whitespace-nowrap"
+                              title={m.read_at ? `Seen ${new Date(m.read_at).toLocaleString()}` : undefined}
+                            >
+                              {m._pending ? (
+                                'sending…'
+                              ) : m.is_read ? (
+                                <><CheckCheck size={12} /> Seen</>
+                              ) : (
+                                <><Check size={12} /> Sent</>
+                              )}
+                            </span>
                           )}
                         </div>
                       </div>

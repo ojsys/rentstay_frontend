@@ -2,15 +2,17 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardShell from '../components/dashboard/DashboardShell';
 import { authAPI } from '../services/api';
-import { ShieldCheck, Loader2, AlertCircle, FileText, Camera, Home } from 'lucide-react';
+import { ShieldCheck, Loader2, AlertCircle, FileText, Camera } from 'lucide-react';
 import toast from 'react-hot-toast';
+import DocumentUpload from '../components/verification/DocumentUpload';
+import { getErrorMessage } from '../utils/errors';
 
 const Verify = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState(null);
   const [form, setForm] = useState({ id_type: '', id_number: '' });
-  const [files, setFiles] = useState({ id_document: null, selfie: null, address_document: null });
+  const [files, setFiles] = useState({ id_document: null, selfie: null });
   const [submitting, setSubmitting] = useState(false);
 
   // Helper to get document type guidance based on ID type
@@ -45,7 +47,6 @@ const Verify = () => {
       if (form.id_number) fd.append('id_number', form.id_number);
       if (files.id_document) fd.append('id_document', files.id_document);
       if (files.selfie) fd.append('selfie', files.selfie);
-      if (files.address_document) fd.append('address_document', files.address_document);
       await authAPI.submitVerification(fd);
       toast.success('Verification submitted successfully! We\'ll review it shortly.');
       await load();
@@ -53,7 +54,7 @@ const Verify = () => {
       setTimeout(() => {
         navigate('/dashboard');
       }, 2000);
-    } catch (e) { toast.error(e?.response?.data?.detail || 'Failed to submit'); }
+    } catch (e) { toast.error(getErrorMessage(e, 'Failed to submit')); }
     setSubmitting(false);
   };
 
@@ -96,12 +97,14 @@ const Verify = () => {
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 flex gap-3">
         <AlertCircle className="text-blue-600 flex-shrink-0 mt-0.5" size={20} />
         <div className="text-sm text-blue-900">
-          <p className="font-medium mb-1">Why verify your identity?</p>
+          <p className="font-medium mb-1">Two things, about a minute</p>
           <ul className="list-disc list-inside space-y-1 text-blue-800">
-            <li>Build trust with landlords and tenants</li>
-            <li>Access premium features and faster approvals</li>
-            <li>Secure your account and transactions</li>
+            <li>A photo of your ID — snap it with your phone camera</li>
+            <li>A selfie holding that ID</li>
           </ul>
+          <p className="mt-2 text-blue-800">
+            Verified guests and tenants get faster approvals, and some hosts only accept them.
+          </p>
         </div>
       </div>
 
@@ -139,74 +142,35 @@ const Verify = () => {
             </div>
           </div>
 
-          {/* ID Document Upload */}
-          <div>
-            <label className="label flex items-center gap-2">
-              <FileText size={16} className="text-primary" />
-              ID Document * <span className="text-xs text-dark-500 font-normal">(JPEG, PNG, or PDF - Max 5MB)</span>
-            </label>
-            <input
-              className="input"
-              type="file"
-              accept="image/jpeg,image/jpg,image/png,application/pdf"
-              onChange={(e) => setFiles(f => ({ ...f, id_document: e.target.files?.[0] || null }))}
-              required
-            />
-            {form.id_type && (
-              <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                <p className="text-xs text-amber-900">
-                  <strong>Required:</strong> {getDocumentGuidance()}
-                </p>
-              </div>
-            )}
-            <p className="text-xs text-dark-500 mt-1">
-              Ensure all text is clearly readable and the document is not expired
-            </p>
-          </div>
+          {/* ID document — camera-first on mobile */}
+          <DocumentUpload
+            label="ID Document"
+            required
+            icon={FileText}
+            capture="environment"
+            value={files.id_document}
+            onChange={(f) => setFiles(prev => ({ ...prev, id_document: f }))}
+            hint={form.id_type ? getDocumentGuidance() : 'Make sure all text is readable and the document has not expired'}
+          />
 
-          {/* Selfie Upload */}
-          <div>
-            <label className="label flex items-center gap-2">
-              <Camera size={16} className="text-primary" />
-              Selfie with ID * <span className="text-xs text-dark-500 font-normal">(JPEG or PNG - Max 5MB)</span>
-            </label>
-            <input
-              className="input"
-              type="file"
-              accept="image/jpeg,image/jpg,image/png"
-              onChange={(e) => setFiles(f => ({ ...f, selfie: e.target.files?.[0] || null }))}
-              required
-            />
-            <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-              <p className="text-xs text-amber-900">
-                <strong>Required:</strong> Take a clear selfie holding your ID document next to your face. Both your face and the ID should be clearly visible.
-              </p>
-            </div>
-          </div>
-
-          {/* Address Document Upload */}
-          <div>
-            <label className="label flex items-center gap-2">
-              <Home size={16} className="text-primary" />
-              Proof of Address (Optional) <span className="text-xs text-dark-500 font-normal">(JPEG, PNG, or PDF - Max 5MB)</span>
-            </label>
-            <input
-              className="input"
-              type="file"
-              accept="image/jpeg,image/jpg,image/png,application/pdf"
-              onChange={(e) => setFiles(f => ({ ...f, address_document: e.target.files?.[0] || null }))}
-            />
-            <p className="text-xs text-dark-500 mt-1">
-              Upload a recent utility bill, bank statement, or government document showing your current address (not older than 3 months)
-            </p>
-          </div>
+          {/* Selfie — front camera */}
+          <DocumentUpload
+            label="Selfie with ID"
+            required
+            icon={Camera}
+            capture="user"
+            accept="image/jpeg,image/jpg,image/png"
+            value={files.selfie}
+            onChange={(f) => setFiles(prev => ({ ...prev, selfie: f }))}
+            hint="Hold your ID next to your face — both should be clearly visible"
+          />
 
           {/* Submit Button */}
           <div className="flex justify-end pt-4 border-t">
             <button
               type="submit"
               className="btn btn-primary"
-              disabled={submitting || !form.id_type || !form.id_number}
+              disabled={submitting || !form.id_type || !form.id_number || !files.id_document || !files.selfie}
             >
               {submitting ? (
                 <>

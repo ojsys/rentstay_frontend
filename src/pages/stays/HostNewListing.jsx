@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import RichTextEditor from '../../components/common/RichTextEditor';
 import toast from 'react-hot-toast';
+import { getErrorMessage } from '../../utils/errors';
 
 const AMENITY_OPTIONS = [
   'WiFi', 'Air conditioning', 'Kitchen', 'Hot water', 'TV',
@@ -178,7 +179,7 @@ const HostNewListing = () => {
         const val = data[key];
         if (Array.isArray(val) && val.length) msg = `${key}: ${val[0]}`;
         else if (typeof val === 'string') msg = `${key}: ${val}`;
-      } else if (err?.response?.data?.detail) {
+      } else if (getErrorMessage(err)) {
         msg = err.response.data.detail;
       }
       toast.error(msg);
@@ -192,7 +193,7 @@ const HostNewListing = () => {
       await staysAPI.publish(created.id);
       toast.success('Listing published!');
       navigate('/dashboard/stays');
-    } catch (e) { toast.error(e?.response?.data?.detail || 'Failed to publish'); }
+    } catch (e) { toast.error(getErrorMessage(e, 'Failed to publish')); }
   };
 
   return (

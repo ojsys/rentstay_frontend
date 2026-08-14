@@ -4,6 +4,7 @@ import { authAPI } from '../../services/api';
 import { Loader2, Check, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import useAuthStore from '../../store/authStore';
+import { getErrorMessage } from '../../utils/errors';
 
 const AdminKYC = () => {
   const { user } = useAuthStore();
@@ -29,7 +30,7 @@ const AdminKYC = () => {
       await authAPI.decideVerification(id, decision, notes[id] || '');
       toast.success(`Request ${decision}`);
       load();
-    } catch (e) { toast.error(e?.response?.data?.detail || 'Failed'); }
+    } catch (e) { toast.error(getErrorMessage(e, 'Failed')); }
   };
 
   if (!user?.is_staff && user?.user_type !== 'admin') {

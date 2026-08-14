@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import useAuthStore from '../../store/authStore';
+import { getErrorMessage } from '../../utils/errors';
 
 const STATUS_BADGE = {
   published: 'bg-green-100 text-green-700',
@@ -41,7 +42,7 @@ const HostMyListings = () => {
 
   const publish = async (id) => {
     try { await staysAPI.publish(id); load(); toast.success('Listing published'); }
-    catch (e) { toast.error(e?.response?.data?.detail || 'Failed to publish'); }
+    catch (e) { toast.error(getErrorMessage(e, 'Failed to publish')); }
   };
 
   const unpublish = async (id) => {

@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import useAuthStore from '../../store/authStore';
+import { getErrorMessage } from '../../utils/errors';
 
 const STATUS_STYLES = {
   pending:         { label: 'Pending',   cls: 'bg-amber-100 text-amber-700',  dot: 'bg-amber-400' },
@@ -58,6 +59,7 @@ const StarRating = ({ value, onChange }) => (
 );
 
 const HostBookings = () => {
+  const [refundBusy, setRefundBusy] = useState(null);
   const { user } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState([]);
@@ -86,7 +88,7 @@ const HostBookings = () => {
   const approve = async (id) => {
     setActionLoading(l => ({ ...l, [id]: 'approve' }));
     try { await staysAPI.approveBooking(id); toast.success('Booking approved'); load(); }
-    catch (e) { toast.error(e?.response?.data?.detail || 'Failed to approve'); }
+    catch (e) { toast.error(getErrorMessage(e, 'Failed to approve')); }
     finally { setActionLoading(l => ({ ...l, [id]: null })); }
   };
 
@@ -98,7 +100,7 @@ const HostBookings = () => {
       toast.success('Booking declined');
       setDeclineModal(null);
       load();
-    } catch (e) { toast.error(e?.response?.data?.detail || 'Failed to decline'); }
+    } catch (e) { toast.error(getErrorMessage(e, 'Failed to decline')); }
     finally { setDeclining(false); }
   };
 
@@ -116,8 +118,23 @@ const HostBookings = () => {
       setReviewedBookings(prev => new Set([...prev, reviewModal.id]));
       setReviewModal(null);
       load();
-    } catch (e) { toast.error(e?.response?.data?.detail || 'Failed to submit review'); }
+    } catch (e) { toast.error(getErrorMessage(e, 'Failed to submit review')); }
     finally { setSubmittingReview(false); }
+  };
+
+  // Refund decisions live here because this is where hosts already triage
+  // bookings; a cancelled stay with money owed needs an obvious home.
+  const decideRefund = async (bookingId, decision) => {
+    setRefundBusy(bookingId);
+    try {
+      await staysAPI.decideRefund(bookingId, decision);
+      toast.success(decision === 'approve' ? 'Refund approved' : 'Refund declined');
+      load();
+    } catch (e) {
+      toast.error(getErrorMessage(e, 'Could not update the refund'));
+    } finally {
+      setRefundBusy(null);
+    }
   };
 
   const filtered = statusFilter ? items.filter(b => b.status === statusFilter) : items;
@@ -241,6 +258,40 @@ const HostBookings = () => {
                     {b.cancellation_reason && (
                       <p className="text-xs text-red-500 flex items-center gap-1 mb-3">
                         <AlertCircle size={12} /> {b.cancellation_reason}
+                      </p>
+                    )}
+
+                    {/* Pending refund needs a decision from the host */}
+                    {b.refund?.status === 'pending' && (
+                      <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-3">
+                        <p className="text-sm font-semibold text-amber-900">Refund requested</p>
+                        <p className="text-xs text-amber-800 mt-0.5">
+                          {b.refund.policy_label} — the guest is eligible for{' '}
+                          <strong>₦{Number(b.refund.eligible_amount).toLocaleString()}</strong>.
+                        </p>
+                        <div className="flex gap-2 mt-2.5">
+                          <button
+                            onClick={() => decideRefund(b.id, 'approve')}
+                            disabled={refundBusy === b.id}
+                            className="flex-1 py-2 rounded-xl bg-[#0C3B2E] text-white text-xs font-semibold hover:bg-[#0a3226] transition disabled:opacity-60"
+                          >
+                            Approve refund
+                          </button>
+                          <button
+                            onClick={() => decideRefund(b.id, 'decline')}
+                            disabled={refundBusy === b.id}
+                            className="flex-1 py-2 rounded-xl border border-gray-200 text-gray-700 text-xs font-semibold hover:bg-gray-50 transition disabled:opacity-60"
+                          >
+                            Decline
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    {b.refund && b.refund.status !== 'pending' && (
+                      <p className="text-xs text-gray-500 mb-3">
+                        Refund {b.refund.status_display.toLowerCase()}
+                        {b.refund.status === 'approved'
+                          && ` — ₦${Number(b.refund.amount_approved).toLocaleString()}`}
                       </p>
                     )}
 

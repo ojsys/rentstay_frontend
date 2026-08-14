@@ -8,6 +8,7 @@ import {
   Building2, Calendar, Banknote, CheckCircle2, XCircle, Loader2,
   AlertTriangle, Clock, User, Home,
 } from 'lucide-react';
+import { getErrorMessage } from '../utils/errors';
 
 const formatAmount = (val) => {
   const n = parseFloat(val);
@@ -38,7 +39,7 @@ export default function InviteAccept() {
       toast.success('Invitation accepted! Your tenancy is now active.');
     },
     onError: (err) => {
-      toast.error(err?.response?.data?.detail || 'Failed to accept invitation.');
+      toast.error(getErrorMessage(err, 'Failed to accept invitation.'));
     },
   });
 
@@ -49,7 +50,7 @@ export default function InviteAccept() {
       toast('Invitation declined.', { icon: '👋' });
     },
     onError: (err) => {
-      toast.error(err?.response?.data?.detail || 'Failed to decline invitation.');
+      toast.error(getErrorMessage(err, 'Failed to decline invitation.'));
     },
   });
 

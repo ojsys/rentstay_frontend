@@ -3,6 +3,7 @@ import { dashboardAPI } from '../../services/api';
 import { Plus, Trash2, Star, Building2, Search, CheckCircle, Loader2, AlertCircle } from 'lucide-react';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
+import { getErrorMessage } from '../../utils/errors';
 
 const EMPTY_FORM = { bank_name: '', bank_code: '', account_number: '', account_name: '', is_primary: false };
 
@@ -114,7 +115,7 @@ const BankAccountsManager = () => {
       queryClient.invalidateQueries({ queryKey: ['bank-accounts'] });
       queryClient.invalidateQueries({ queryKey: ['landlord-payments-dashboard'] });
     } catch (err) {
-      toast.error(err?.response?.data?.detail || 'Failed to add bank account');
+      toast.error(getErrorMessage(err, 'Failed to add bank account'));
     } finally {
       setSaving(false);
     }
