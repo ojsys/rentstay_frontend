@@ -19,6 +19,7 @@ import Notifications from './pages/Notifications';
 import Notices from './pages/Notices';
 import UserProfile from './pages/UserProfile';
 import CorporateProfile from './pages/CorporateProfile';
+import RefundAccount from './pages/RefundAccount';
 import Legal from './pages/Legal';
 import LegalCaseDetail from './pages/LegalCaseDetail';
 import LegalQueue from './pages/LegalQueue';
@@ -157,6 +158,7 @@ function App() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/profile/view" element={<ProfileView />} />
             <Route path="/corporate" element={<CorporateProfile />} />
+            <Route path="/refund-account" element={<RefundAccount />} />
             <Route path="/users/:id/profile" element={<UserProfile />} />
             <Route path="/maintenance" element={<Maintenance />} />
             <Route path="/payments" element={<Payments />} />

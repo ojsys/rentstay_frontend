@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Mail, Bell, Clipboard, Wrench, CreditCard, User, Home, Building2, Plus, ShieldAlert, Scale, Bed, Building } from 'lucide-react';
+import { LayoutDashboard, Mail, Bell, Clipboard, Wrench, CreditCard, User, Home, Building2, Plus, ShieldAlert, Scale, Bed, Building, Banknote } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
 
 const NavItem = ({ to, icon: Icon, label, active, badge }) => (
@@ -37,6 +37,14 @@ const DashboardSidebar = ({ counts = {} }) => {
     { to: '/corporate', icon: Building, label: 'Company' },
     { to: '/properties', icon: Home, label: 'Browse Properties' },
   ];
+
+  // Refunds go to guests and tenants; landlords and agents manage payout
+  // accounts inside their own dashboards.
+  if (['guest', 'tenant'].includes(user?.user_type)) {
+    const at = items.findIndex(i => i.to === '/profile/view');
+    items.splice(at === -1 ? items.length : at, 0,
+      { to: '/refund-account', icon: Banknote, label: 'Refund Account' });
+  }
 
   // Guests have no tenancy, so the rental tools are noise for them.
   const isGuest = user?.user_type === 'guest';

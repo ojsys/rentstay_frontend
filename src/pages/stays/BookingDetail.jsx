@@ -362,8 +362,26 @@ const BookingDetail = () => {
             {b.refund.status === 'approved' && (
               <p className="text-sm text-gray-800 mt-2">
                 <strong>₦{Number(b.refund.amount_approved).toLocaleString()}</strong> will be
-                returned to your original payment method.
+                paid to {b.refund.account_name
+                  ? `${b.refund.account_name} (${b.refund.bank_name})`
+                  : 'your refund account'}.
               </p>
+            )}
+            {!b.refund.has_destination && b.refund.status !== 'declined' && (
+              <div className="mt-3 bg-white/70 rounded-xl p-3">
+                <p className="text-sm font-semibold text-dark-900">
+                  Add an account to receive this refund
+                </p>
+                <p className="text-xs text-dark-600 mt-0.5">
+                  We do not have a refund account for you yet. Adding one now avoids a delay.
+                </p>
+                <Link
+                  to="/refund-account"
+                  className="inline-flex items-center gap-1.5 mt-2.5 px-4 py-2 rounded-xl bg-[#0C3B2E] text-white text-xs font-semibold hover:bg-[#0a3226] transition"
+                >
+                  Add refund account
+                </Link>
+              </div>
             )}
             {b.refund.status === 'declined' && (
               <p className="text-sm text-gray-800 mt-2">

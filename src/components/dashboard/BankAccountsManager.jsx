@@ -7,7 +7,10 @@ import { getErrorMessage } from '../../utils/errors';
 
 const EMPTY_FORM = { bank_name: '', bank_code: '', account_number: '', account_name: '', is_primary: false };
 
-const BankAccountsManager = () => {
+const BankAccountsManager = ({
+  title = 'Bank Accounts',
+  description = '',
+} = {}) => {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -144,8 +147,11 @@ const BankAccountsManager = () => {
 
   return (
     <div className="card">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-dark-900">Bank Accounts</h3>
+      <div className="flex items-start justify-between mb-4 gap-3">
+        <div>
+          <h3 className="text-lg font-semibold text-dark-900">{title}</h3>
+          {description && <p className="text-sm text-dark-500 mt-0.5">{description}</p>}
+        </div>
         <button
           onClick={() => { setShowForm(!showForm); if (showForm) resetForm(); }}
           className="btn btn-primary btn-sm inline-flex items-center gap-1"
@@ -288,6 +294,16 @@ const BankAccountsManager = () => {
                   {!acc.bank_code && (
                     <p className="text-xs text-amber-600 mt-0.5 flex items-center gap-1">
                       <AlertCircle size={10} /> Remove and re-add to enable withdrawals
+                    </p>
+                  )}
+                  {acc.name_check && acc.name_check !== 'unchecked' && (
+                    <p className={`text-xs mt-0.5 flex items-start gap-1 ${
+                      acc.usable_for_refunds ? 'text-emerald-600' : 'text-amber-600'
+                    }`}>
+                      <AlertCircle size={10} className="mt-0.5 flex-shrink-0" />
+                      {acc.usable_for_refunds
+                        ? 'Name confirmed — can receive refunds'
+                        : `${acc.name_check_display}. ${acc.name_check_detail}`}
                     </p>
                   )}
                 </div>
