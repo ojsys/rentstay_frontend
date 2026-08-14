@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { dashboardAPI, paymentAPI, maintenanceAPI } from '../../services/api';
-import { Loader2, CalendarClock, Wallet, Wrench, Mail, FileText, CreditCard, Plus, Clipboard, ArrowRight } from 'lucide-react';
+import { Loader2, CalendarClock, Wallet, Wrench, Mail, FileText, CreditCard, Plus, Clipboard, ArrowRight, Banknote, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import useAuthStore from '../../store/authStore';
@@ -331,6 +331,25 @@ const TenantDashboard = () => {
         title="Important Agreements"
       />
 
+      {/* Where money comes back to. Shown up front because the alternative is
+          asking for bank details at the moment a refund is already due. */}
+      <Link
+        to="/refund-account"
+        className="card p-4 flex items-center gap-3 hover:border-primary transition"
+      >
+        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+          <Banknote size={18} className="text-primary" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-dark-900 text-sm">Refund account</p>
+          <p className="text-xs text-dark-500">
+            Add the account for your caution fee refund and any booking refunds — it
+            must be in your own name.
+          </p>
+        </div>
+        <ChevronRight size={16} className="text-dark-300 flex-shrink-0" />
+      </Link>
+
       {/* Quick Actions */}
       <div className="card">
         <h3 className="text-lg font-semibold text-dark-900 mb-4">Quick Actions</h3>
@@ -344,6 +363,9 @@ const TenantDashboard = () => {
           <button onClick={() => setShowRequest(true)} className="btn btn-accent btn-sm md:btn-md inline-flex items-center">
             <Plus size={14} className="mr-1.5" /> Maintenance
           </button>
+          <Link to="/refund-account" className="btn btn-secondary btn-sm md:btn-md inline-flex items-center">
+            <Banknote size={14} className="mr-1.5" /> Refund Account
+          </Link>
         </div>
 
         {showRequest && (

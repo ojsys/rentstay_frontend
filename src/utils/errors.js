@@ -56,12 +56,45 @@ const fromBody = (data) => {
  * @returns a message worth showing to a user
  */
 export const getErrorMessage = (error, fallback = 'Something went wrong. Please try again.') => {
-  // Request never completed — offline, DNS, CORS, or the server is down.
   if (!error?.response) {
     if (error?.code === 'ECONNABORTED') {
       return 'That took too long and timed out. Please try again.';
     }
-    return 'Could not reach the server. Check your connection and try again.';
+
+    // A plain JavaScript error is a bug in the page, not a network problem.
+    // Reporting it as "check your connection" sends people to reboot their
+    // router over a TypeError, so it is called out separately and logged.
+    const isRequestError = Boolean(error?.request || error?.isAxiosError || error?.config);
+    if (!isRequestError) {
+      if (typeof console !== 'undefined') {
+        console.error('Unexpected client error:', error);
+      }
+      return 'Something went wrong in the app. Please refresh and try again.';
+    }
+
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      return 'You appear to be offline. Reconnect and try again.';
+    }
+
+    // The request left the browser and nothing usable came back. In practice
+    // this is almost always one of: the API is down, the endpoint is not
+    // deployed on this server yet, or the response was blocked before
+    // JavaScript could read it (CORS — which is what a web-server 404 looks
+    // like, because that page carries no CORS headers).
+    //
+    // None of those are visible from the message alone, so the request is
+    // logged: the browser console then shows the URL and the real cause.
+    if (typeof console !== 'undefined') {
+      const cfg = error?.config || {};
+      console.error(
+        '[api] no response for %s %s%s — server down, endpoint not deployed, or CORS-blocked',
+        (cfg.method || 'get').toUpperCase(),
+        (cfg.baseURL || '') + (cfg.url || ''),
+        cfg.params ? `?${new URLSearchParams(cfg.params)}` : '',
+        error,
+      );
+    }
+    return 'The server did not respond. It may be updating — please try again shortly.';
   }
 
   const { status, data } = error.response;

@@ -14,9 +14,6 @@ const STATUS_STYLES = {
   processed: 'bg-emerald-100 text-emerald-700',
 };
 
-// Only these two may be paid without a written override.
-const NAME_OK = ['exact', 'match'];
-
 const NameCheck = ({ destination }) => {
   if (!destination) {
     return (
@@ -25,7 +22,9 @@ const NameCheck = ({ destination }) => {
       </p>
     );
   }
-  const ok = NAME_OK.includes(destination.name_check);
+  // The server decides which name verdicts are payable — mirroring that
+  // rule here is how the UI drifted out of step with it before.
+  const ok = destination.name_acceptable;
   return (
     <div className={`rounded-xl p-3 text-xs ${ok ? 'bg-emerald-50' : 'bg-red-50'}`}>
       <p className={`font-semibold flex items-center gap-1.5 ${ok ? 'text-emerald-800' : 'text-red-800'}`}>
@@ -155,7 +154,7 @@ const StaffRefunds = () => {
       ) : (
         <div className="space-y-3">
           {rows.map(r => {
-            const nameOk = NAME_OK.includes(r.destination?.name_check);
+            const nameOk = r.destination?.name_acceptable;
             return (
               <div key={r.id} className="card p-5 space-y-3">
                 <div className="flex items-start justify-between gap-3 flex-wrap">

@@ -5,6 +5,9 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
 // Create axios instance
 const api = axios.create({
   baseURL: API_BASE_URL,
+  // Without a timeout a stalled request hangs until the browser gives up, and
+  // surfaces as an ambiguous "no response" rather than a clear timeout.
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
