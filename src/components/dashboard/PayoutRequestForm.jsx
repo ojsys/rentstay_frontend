@@ -37,7 +37,9 @@ const PayoutRequestForm = ({ availableBalance = 0 }) => {
     queryKey: ['landlord-payments-dashboard'],
     queryFn: () => dashboardAPI.getLandlordPaymentsDashboard().then(r => r.data),
   });
-  const payoutHistory = dashData?.payout_history || [];
+  // The dashboard returns rent and stays withdrawals together; this form only
+  // withdraws rent, so a pending stays request must not block it.
+  const payoutHistory = (dashData?.payout_history || []).filter(p => p.payout_type !== 'stays');
 
   const payoutMutation = useMutation({
     mutationFn: (data) => dashboardAPI.requestPayout(data),

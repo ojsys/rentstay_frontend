@@ -2,6 +2,7 @@ import { Outlet, Navigate, Link, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import useAuthStore from '../../store/authStore';
+import NotificationBell from '../../components/common/NotificationBell';
 import DashboardTabNav from '../../components/dashboard/DashboardTabNav';
 import MobileBottomNav from '../../components/dashboard/MobileBottomNav';
 import ErrorBoundary from '../../components/common/ErrorBoundary';
@@ -78,22 +79,9 @@ const LandlordDashboardLayout = () => {
           >
             <Menu size={20} />
           </button>
-          <Link
-            to="/notifications"
-            className="p-2 rounded-lg bg-white/10 text-white"
-            aria-label="Notifications"
-          >
-            {badges.messages > 0 ? (
-              <div className="relative">
-                <Bell size={20} />
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold rounded-full min-w-[14px] h-3.5 flex items-center justify-center px-0.5">
-                  {badges.messages > 9 ? '9+' : badges.messages}
-                </span>
-              </div>
-            ) : (
-              <Bell size={20} />
-            )}
-          </Link>
+          {/* Was a link whose badge counted unread *messages* only, so a
+              booking awaiting approval showed nothing at all. */}
+          <NotificationBell tone="light" />
         </div>
         <p className="text-white/70 text-sm font-medium">Welcome back,</p>
         <h1 className="text-white text-2xl font-bold leading-tight">

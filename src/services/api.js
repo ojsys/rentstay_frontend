@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { isImpersonating, restoreStaffSession } from '../utils/impersonation';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
@@ -25,30 +26,106 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+// Endpoints that answer 401 as a normal result rather than "your session
+// expired" — a wrong password on /auth/login/ must surface as a form error,
+// not wipe the session and reload the page.
+const CREDENTIAL_ENDPOINTS = [
+  '/auth/login/',
+  '/auth/register/',
+  '/auth/token/refresh/',
+  '/auth/password/reset/',
+  '/auth/password/reset/confirm/',
+];
+const isCredentialEndpoint = (url = '') =>
+  CREDENTIAL_ENDPOINTS.some((path) => url.includes(path));
+
+// Pages that already are the logged-out destination. Redirecting /login to
+// /login is a full page reload of the same URL, so any authenticated request
+// firing there would loop the page forever.
+const LOGGED_OUT_PATHS = ['/login', '/register', '/forgot-password', '/reset-password'];
+const onLoggedOutPage = () =>
+  LOGGED_OUT_PATHS.some((path) => window.location.pathname.startsWith(path));
+
+const clearSession = () => {
+  localStorage.removeItem('access_token');
+  localStorage.removeItem('refresh_token');
+  // The persisted auth store holds isAuthenticated independently of the tokens.
+  // Leaving it set means the app still believes it is logged in and keeps
+  // firing authenticated calls (the notification bell polls on mount) from the
+  // logged-out page — each one 401ing straight back into this handler.
+  localStorage.removeItem('auth-storage');
+};
+
+const redirectToLogin = () => {
+  if (onLoggedOutPage()) return;
+  const { pathname, search } = window.location;
+  window.location.replace(`/login?redirect=${encodeURIComponent(pathname + search)}`);
+};
+
+// A page typically has several requests in flight at once (the dashboard fires
+// five), so an expired access token produces a burst of simultaneous 401s. The
+// backend rotates refresh tokens and blacklists the old one on use, so letting
+// each 401 refresh on its own means the first one succeeds and the rest present
+// an already-blacklisted token and get logged out. One shared refresh instead.
+let refreshInFlight = null;
+
+const refreshAccessToken = () => {
+  if (!refreshInFlight) {
+    refreshInFlight = axios
+      .post(`${API_BASE_URL}/auth/token/refresh/`, {
+        refresh: localStorage.getItem('refresh_token'),
+      })
+      .then(({ data }) => {
+        localStorage.setItem('access_token', data.access);
+        // Rotation is on, so the refresh token just used is now blacklisted —
+        // keeping it would break the next refresh and end the session early.
+        if (data.refresh) localStorage.setItem('refresh_token', data.refresh);
+        return data.access;
+      })
+      .finally(() => {
+        refreshInFlight = null;
+      });
+  }
+  return refreshInFlight;
+};
+
 // Response interceptor to handle token refresh
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const originalRequest = error.config;
+    const originalRequest = error.config || {};
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      !isCredentialEndpoint(originalRequest.url)
+    ) {
       originalRequest._retry = true;
 
+      // A support session has no refresh token and dies after 30 minutes.
+      // Ending it must put the staff member back in their own session rather
+      // than log them out of the platform — they were never signed out.
+      if (isImpersonating()) {
+        restoreStaffSession();
+        window.location.replace('/staff/dashboard/users?session=expired');
+        return Promise.reject(error);
+      }
+
+      if (!localStorage.getItem('refresh_token')) {
+        // Nothing to refresh with: posting `refresh: null` only produces a 400
+        // and lands in the same place.
+        clearSession();
+        redirectToLogin();
+        return Promise.reject(error);
+      }
+
       try {
-        const refreshToken = localStorage.getItem('refresh_token');
-        const response = await axios.post(`${API_BASE_URL}/auth/token/refresh/`, {
-          refresh: refreshToken,
-        });
-
-        const { access } = response.data;
-        localStorage.setItem('access_token', access);
-
-        originalRequest.headers.Authorization = `Bearer ${access}`;
+        const access = await refreshAccessToken();
+        originalRequest.headers = { ...originalRequest.headers, Authorization: `Bearer ${access}` };
         return api(originalRequest);
       } catch (refreshError) {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        window.location.href = '/login';
+        clearSession();
+        redirectToLogin();
         return Promise.reject(refreshError);
       }
     }
@@ -87,6 +164,31 @@ export const staffAPI = {
   // Guest refunds: review, approve/decline, and pay out
   listRefunds: (params) => api.get('/staff/refunds/', { params }),
   decideRefund: (payload) => api.post('/staff/refunds/', payload),
+  // Landlord, host and agent withdrawals in one queue.
+  listPayouts: (params) => api.get('/staff/payouts/', { params }),
+  actOnPayout: (payload) => api.post('/staff/payouts/', payload),
+  // Individual KYC and company files in one queue.
+  listVerifications: (params) => api.get('/staff/verifications/', { params }),
+  decideVerification: (payload) => api.post('/staff/verifications/', payload),
+  // Payment lookup, reconciliation and revenue.
+  listPayments: (params) => api.get('/staff/payments/', { params }),
+  actOnPayment: (payload) => api.post('/staff/payments/', payload),
+  // Support desk: search, or pass user_id for the full profile.
+  searchUsers: (params) => api.get('/staff/users/', { params }),
+  actOnUser: (payload) => api.post('/staff/users/', payload),
+  // Support sessions. `stop` is sent with the impersonation token still in
+  // place — that token is what identifies the session being closed.
+  impersonate: (user_id, reason) =>
+    api.post('/staff/impersonate/', { user_id, reason }),
+  stopImpersonating: () => api.post('/staff/impersonate/stop/'),
+  // Scheduled-job health and the server error queue.
+  health: (params) => api.get('/staff/health/', { params }),
+  actOnError: (payload) => api.post('/staff/health/', payload),
+  // Tenant caution deposits, and the account they are swept to.
+  listCautionFees: (params) => api.get('/staff/caution-fees/', { params }),
+  actOnCautionFees: (payload) => api.post('/staff/caution-fees/', payload),
+  cautionAccount: () => api.get('/staff/caution-account/'),
+  setCautionAccount: (payload) => api.post('/staff/caution-account/', payload),
 };
 
 export const propertyAPI = {
@@ -168,13 +270,21 @@ export const messagingAPI = {
   // listings that have no linked property.
   startConversationForBooking: (bookingId) =>
     api.post('/messaging/conversations/start/', { booking_id: bookingId }),
+  // Pre-booking enquiry from a stay listing page. Shares the thread with the
+  // post-booking conversation, so the host sees one continuous history.
+  startConversationForListing: (listingId) =>
+    api.post('/messaging/conversations/start/', { listing_id: listingId }),
   startConversationWithUser: (userId, propertyId) =>
     api.post('/messaging/conversations/start/', { user_id: userId, property_id: propertyId }),
   getMessages: (conversationId) => api.get(`/messaging/conversations/${conversationId}/messages/`),
   sendMessage: (conversationId, message) =>
     api.post(`/messaging/conversations/${conversationId}/messages/`, { content: message }),
   getNotifications: () => api.get('/messaging/notifications/'),
+  // What the bell polls: the newest few plus the badge number, in one request.
+  getNotificationSummary: (limit = 12) =>
+    api.get('/messaging/notifications/', { params: { envelope: 1, limit } }),
   markAsRead: (notificationId) => api.patch(`/messaging/notifications/${notificationId}/`, { is_read: true }),
+  markAllNotificationsRead: () => api.post('/messaging/notifications/read-all/'),
 };
 
 export const applicationAPI = {
@@ -240,6 +350,14 @@ export const staysAPI = {
     api.delete(`/stays/listings/${id}/calendars/`, { data: { id: connectionId } }),
   syncCalendars: (id, connectionId) =>
     api.post(`/stays/listings/${id}/calendars/sync/`, connectionId ? { id: connectionId } : {}),
+  // Address search for the host's map picker. Proxied through our backend so
+  // the geocoder can be cached and swapped without a frontend release.
+  geocode: (q) => api.get('/stays/geocode/', { params: { q } }),
+  reverseGeocode: (lat, lng) => api.get('/stays/geocode/reverse/', { params: { lat, lng } }),
+  // A pasted Google Maps link resolves to a pin on the server: short links
+  // (maps.app.goo.gl) have to be followed, and the browser cannot read a
+  // cross-origin redirect.
+  resolveMapLink: (url) => api.post('/stays/geocode/map-link/', { url }),
   createBooking: (payload) => api.post('/stays/bookings/', payload),
   getBookingsGuest: () => api.get('/stays/bookings/'),
   getBookingsHost: () => api.get('/stays/bookings/', { params: { role: 'host' } }),
@@ -256,6 +374,13 @@ export const staysAPI = {
   approveBooking: (id) => api.post(`/stays/bookings/${id}/set_status/`, { status: 'approved' }),
   declineBooking: (id, reason) => api.post(`/stays/bookings/${id}/decline/`, { reason }),
   cancelBooking: (id, reason) => api.post(`/stays/bookings/${id}/cancel/`, { reason }),
+  // Date changes: the guest asks to move, the host decides. A move keeps the
+  // same number of nights, so nothing is re-priced or re-paid.
+  requestBookingMove: (id, { check_in, check_out, reason }) =>
+    api.post(`/stays/bookings/${id}/move/`, { check_in, check_out, reason }),
+  decideBookingMove: (id, decision, note) =>
+    api.post(`/stays/bookings/${id}/move/decide/`, { decision, note }),
+  withdrawBookingMove: (id) => api.post(`/stays/bookings/${id}/move/withdraw/`),
   // What the guest would get back if they cancelled now
   // Re-query Paystack when a payment went through but the booking still
   // shows pending (missed callback or webhook).

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { staysAPI, propertyAPI, locationAPI } from '../../services/api';
 import useAuthStore from '../../store/authStore';
@@ -9,6 +9,8 @@ import {
 import RichTextEditor from '../../components/common/RichTextEditor';
 import toast from 'react-hot-toast';
 import { getErrorMessage } from '../../utils/errors';
+// Leaflet is ~150 KB — kept out of the main bundle.
+const LocationPicker = lazy(() => import('../../components/stays/LocationPicker'));
 
 const AMENITY_OPTIONS = [
   'WiFi', 'Air conditioning', 'Kitchen', 'Hot water', 'TV',
@@ -70,7 +72,6 @@ const HostNewListing = () => {
   const [properties, setProperties] = useState([]);
   const [states, setStates] = useState([]);
   const [lgas, setLgas] = useState([]);
-  const [showAdvancedLocation, setShowAdvancedLocation] = useState(false);
   const [form, setForm] = useState({
     owner_email: '',
     title: '',
@@ -96,6 +97,8 @@ const HostNewListing = () => {
     lga_id: '',
     latitude: '',
     longitude: '',
+    directions: '',
+    show_exact_location: false,
   });
   const [created, setCreated] = useState(null);
 
@@ -432,36 +435,70 @@ const HostNewListing = () => {
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={() => setShowAdvancedLocation(v => !v)}
-                className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition"
-              >
-                {showAdvancedLocation ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
-                GPS coordinates (optional)
-              </button>
+              {/* Map pin. This replaced two latitude/longitude number inputs behind
+                  a collapsed "GPS coordinates" toggle \u2014 which almost no host ever
+                  filled in, so listings fell back to the linked property's
+                  coordinates and guests arrived at the wrong building. */}
+              <div>
+                <FieldLabel>Pin on the map</FieldLabel>
+                <p className="text-xs text-dark-500 mb-2">
+                  Drag the pin onto your building. This is what guests use to find you,
+                  so a pin on the right street but the wrong gate still gets them lost.
+                </p>
+                <Suspense fallback={
+                  <div className="h-[340px] rounded-2xl bg-gray-50 border border-gray-200 flex items-center justify-center">
+                    <Loader2 size={20} className="animate-spin text-dark-300" />
+                  </div>
+                }>
+                  <LocationPicker
+                    latitude={form.latitude}
+                    longitude={form.longitude}
+                    onChange={({ lat, lng }) =>
+                      setForm(f => ({ ...f, latitude: lat, longitude: lng }))}
+                    onAddressResolved={(data) =>
+                      setForm(f => ({
+                        // Never overwrite what the host already typed \u2014 the
+                        // reverse geocode is a starting point, not a correction.
+                        ...f,
+                        address: f.address || data.address || '',
+                        area: f.area || data.area || '',
+                      }))}
+                  />
+                </Suspense>
+              </div>
 
-              {showAdvancedLocation && (
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <FieldLabel optional>Latitude</FieldLabel>
-                    <input name="latitude" value={form.latitude} onChange={onChange} className="input w-full" placeholder="6.431433" type="number" step="any" />
-                  </div>
-                  <div>
-                    <FieldLabel optional>Longitude</FieldLabel>
-                    <input name="longitude" value={form.longitude} onChange={onChange} className="input w-full" placeholder="3.421860" type="number" step="any" />
-                  </div>
-                  {form.latitude && form.longitude && (
-                    <div className="col-span-2 rounded-xl overflow-hidden border border-gray-200 h-44">
-                      <iframe
-                        title="listing-map"
-                        className="w-full h-full"
-                        src={`https://www.openstreetmap.org/export/embed.html?bbox=${Number(form.longitude)-0.01},${Number(form.latitude)-0.01},${Number(form.longitude)+0.01},${Number(form.latitude)+0.01}&layer=mapnik&marker=${form.latitude},${form.longitude}`}
-                      />
-                    </div>
-                  )}
-                </div>
-              )}
+              <div>
+                <FieldLabel optional>How to find it</FieldLabel>
+                <textarea
+                  name="directions"
+                  value={form.directions || ''}
+                  onChange={onChange}
+                  className="input w-full min-h-[80px]"
+                  placeholder="Blue gate opposite the filling station. Ask the security man for Flat 3B."
+                />
+                <p className="text-xs text-dark-400 mt-1">
+                  Landmarks, gate colour, which block. Shown to the guest once their
+                  booking is confirmed \u2014 this is what a map alone cannot tell them.
+                </p>
+              </div>
+
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="show_exact_location"
+                  checked={Boolean(form.show_exact_location)}
+                  onChange={(e) => setForm(f => ({ ...f, show_exact_location: e.target.checked }))}
+                  className="mt-1"
+                />
+                <span className="text-sm text-dark-700">
+                  Show my exact address publicly
+                  <span className="block text-xs text-dark-400 mt-0.5">
+                    Off by default: guests browsing see the general area, and get the exact
+                    address once their booking is confirmed. Turn this on for a hotel or
+                    serviced apartment that wants to be found before booking.
+                  </span>
+                </span>
+              </label>
             </SectionCard>
 
             {/* ── Policies ───────────────────────────────────── */}

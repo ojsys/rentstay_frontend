@@ -109,6 +109,16 @@ const useAuthStore = create(
         user: state.user,
         isAuthenticated: state.isAuthenticated,
       }),
+      // The tokens live outside this store, so the two can drift apart — an
+      // expired session clears the tokens while the persisted flag still says
+      // authenticated, and the app keeps firing calls that can only 401.
+      // The token is what actually authenticates, so it wins on rehydrate.
+      onRehydrateStorage: () => (state) => {
+        if (state && state.isAuthenticated && !localStorage.getItem('access_token')) {
+          state.isAuthenticated = false;
+          state.user = null;
+        }
+      },
     }
   )
 );

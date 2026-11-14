@@ -1,15 +1,31 @@
 import { Navigate, Outlet, NavLink, Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import { Home, Building2, Bed, ShieldCheck, Bell, Menu, X, LogOut, User as UserIcon, Banknote } from 'lucide-react';
+import { Home, Building2, Bed, ShieldCheck, Bell, Menu, X, LogOut, User as UserIcon, Banknote, Wallet, Receipt, UserSearch, Activity, Scale, PiggyBank } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
+import NotificationBell from '../../components/common/NotificationBell';
 import MobileBottomNav from '../../components/dashboard/MobileBottomNav';
 
 const TABS = [
   { to: '/staff/dashboard/home', icon: Home, label: 'Home', badgeKey: null },
   { to: '/staff/dashboard/rentals', icon: Building2, label: 'Rent', badgeKey: null },
   { to: '/staff/dashboard/stays', icon: Bed, label: 'Short-stays', badgeKey: null },
+  { to: '/staff/dashboard/payouts', icon: Wallet, label: 'Withdrawals', badgeKey: null },
+  { to: '/staff/dashboard/verifications', icon: ShieldCheck, label: 'Verification', badgeKey: null },
+  { to: '/staff/dashboard/payments', icon: Receipt, label: 'Payments', badgeKey: null },
+  { to: '/staff/dashboard/users', icon: UserSearch, label: 'Support', badgeKey: null },
+  { to: '/staff/dashboard/health', icon: Activity, label: 'Health', badgeKey: null },
+  { to: '/staff/dashboard/legal', icon: Scale, label: 'Legal', badgeKey: null },
   { to: '/staff/dashboard/refunds', icon: Banknote, label: 'Refunds', badgeKey: null },
+  { to: '/staff/dashboard/caution-fees', icon: PiggyBank, label: 'Caution deposits', badgeKey: null },
 ];
+
+// Eight tabs will not fit a phone's bottom bar. The money queues stay one tap
+// away; content moderation moves behind "More", since it is the least
+// time-critical of the eight.
+const MOBILE_PRIMARY = TABS.filter(t =>
+  ['/staff/dashboard/home', '/staff/dashboard/payouts',
+   '/staff/dashboard/verifications', '/staff/dashboard/payments'].includes(t.to));
+const MOBILE_MORE = TABS.filter(t => !MOBILE_PRIMARY.includes(t));
 
 const StaffDashboardLayout = () => {
   const { isAuthenticated, user, logout } = useAuthStore();
@@ -37,9 +53,7 @@ const StaffDashboardLayout = () => {
           >
             <Menu size={20} />
           </button>
-          <Link to="/notifications" className="p-2 rounded-lg bg-white/10 text-white" aria-label="Notifications">
-            <Bell size={20} />
-          </Link>
+          <NotificationBell tone="light" />
         </div>
         <p className="text-white/70 text-sm font-medium">Staff workspace</p>
         <h1 className="text-white text-2xl font-bold leading-tight">
@@ -81,13 +95,6 @@ const StaffDashboardLayout = () => {
                   {tab.label}
                 </Link>
               ))}
-              <Link
-                to="/admin/kyc"
-                onClick={() => setSidebarOpen(false)}
-                className="flex items-center gap-3 px-3 py-3 rounded-xl text-white/80 hover:bg-white/10 hover:text-white transition-colors text-sm font-medium"
-              >
-                <ShieldCheck size={18} /> KYC Requests
-              </Link>
             </nav>
             <div className="p-4 border-t border-white/10 space-y-1">
               <Link
@@ -115,9 +122,6 @@ const StaffDashboardLayout = () => {
             <h1 className="text-xl font-display font-bold text-dark-900">Staff Dashboard</h1>
             <p className="text-sm text-dark-500">Review and publish listings, {user?.first_name}</p>
           </div>
-          <NavLink to="/admin/kyc" className="btn btn-secondary inline-flex items-center gap-2 text-sm">
-            <ShieldCheck size={16} /> KYC Requests
-          </NavLink>
         </div>
         <div className="container-custom">
           <nav className="flex gap-1 overflow-x-auto pb-px">
@@ -147,7 +151,7 @@ const StaffDashboardLayout = () => {
       </div>
 
       {/* ── Mobile Bottom Navigation ─────────────────────────────── */}
-      <MobileBottomNav primaryTabs={TABS} moreTabs={[]} />
+      <MobileBottomNav primaryTabs={MOBILE_PRIMARY} moreTabs={MOBILE_MORE} />
     </div>
   );
 };

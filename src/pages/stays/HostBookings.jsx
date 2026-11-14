@@ -8,6 +8,8 @@ import {
 import toast from 'react-hot-toast';
 import useAuthStore from '../../store/authStore';
 import { getErrorMessage } from '../../utils/errors';
+import { bookingState, TONE_CLASSES } from '../../utils/bookingStatus';
+import MoveRequestCard from '../../components/stays/MoveRequestCard';
 
 const STATUS_STYLES = {
   pending:         { label: 'Pending',   cls: 'bg-amber-100 text-amber-700',  dot: 'bg-amber-400' },
@@ -83,7 +85,7 @@ const HostBookings = () => {
 
   useEffect(() => { load(); }, []);
 
-  if (user?.user_type === 'landlord') return <Navigate to="/dashboard/stays" replace />;
+  if (user?.user_type === 'landlord') return <Navigate to={`/dashboard/stays${window.location.search}`} replace />;
 
   const approve = async (id) => {
     setActionLoading(l => ({ ...l, [id]: 'approve' }));
@@ -190,6 +192,8 @@ const HostBookings = () => {
           <div className="space-y-3">
             {filtered.map(b => {
               const s = STATUS_STYLES[b.status] || { label: b.status, cls: 'bg-gray-100 text-gray-600', dot: 'bg-gray-400' };
+              // Whose turn it is, from the host's side.
+              const state = bookingState(b, 'host');
               const nights = b.check_in && b.check_out
                 ? Math.round((new Date(b.check_out) - new Date(b.check_in)) / 86400000)
                 : null;
@@ -220,11 +224,25 @@ const HostBookings = () => {
                           </p>
                         )}
                       </div>
-                      <span className={`text-[10px] font-semibold px-2.5 py-1 rounded-full ${s.cls}`}>{s.label}</span>
+                      <span className={`text-[10px] font-semibold px-2.5 py-1 rounded-full ${TONE_CLASSES[state.tone]}`}>
+                        {state.label}
+                      </span>
                     </div>
                   </div>
 
                   <div className="p-4">
+                    {/* Whose turn it is. "Pending" alone did not tell a host
+                        whether they owed the guest an answer or the guest
+                        owed a payment. */}
+                    {state.detail && (
+                      <p className={`text-xs mb-3 flex items-start gap-1.5 ${
+                        state.waitingOn === 'host' ? 'text-amber-700 font-medium' : 'text-gray-500'
+                      }`}>
+                        <AlertCircle size={12} className="mt-0.5 flex-shrink-0" />
+                        {state.detail}
+                      </p>
+                    )}
+
                     {/* Guest info */}
                     <div className="flex items-center gap-3 mb-3">
                       <div className="w-9 h-9 rounded-full bg-[#0C3B2E] text-white text-sm font-bold flex items-center justify-center flex-shrink-0">
@@ -260,6 +278,9 @@ const HostBookings = () => {
                         <AlertCircle size={12} /> {b.cancellation_reason}
                       </p>
                     )}
+
+                    {/* Pending date change needs a decision from the host */}
+                    <MoveRequestCard booking={b} onDone={load} />
 
                     {/* Pending refund needs a decision from the host */}
                     {b.refund?.status === 'pending' && (
@@ -317,7 +338,7 @@ const HostBookings = () => {
                           </button>
                         </>
                       )}
-                      {b.status === 'completed' && !alreadyReviewed && (
+                      {b.can_review && !alreadyReviewed && (
                         <button
                           onClick={() => { setReviewModal(b); setReviewRating(5); setReviewComment(''); }}
                           className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border-2 border-[#0C3B2E] text-[#0C3B2E] text-sm font-semibold hover:bg-green-50 transition"
@@ -325,7 +346,7 @@ const HostBookings = () => {
                           <MessageSquarePlus size={14} /> Review stayer
                         </button>
                       )}
-                      {b.status === 'completed' && alreadyReviewed && (
+                      {alreadyReviewed && (
                         <span className="text-xs text-green-600 flex items-center gap-1 font-medium py-2">
                           <Star size={12} className="fill-green-500 stroke-green-500" />
                           Reviewed ({b.my_review?.rating || reviewRating}★)

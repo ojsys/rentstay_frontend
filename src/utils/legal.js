@@ -27,3 +27,18 @@ export const CASE_STATUS_FLOW = [
   'submitted', 'in_review', 'awaiting_info', 'advice_issued',
   'escalated', 'resolved', 'closed',
 ];
+
+
+/**
+ * Who may read and handle dispute cases.
+ *
+ * Mirrors `legal/access.py::is_legal_staff`. Deliberately **not** every
+ * `is_staff` user: a content moderator has no reason to read tenancy disputes,
+ * harassment complaints or a landlord's legal position. Superusers are
+ * included so the platform owner cannot lock themselves out.
+ *
+ * The server enforces this regardless; this only decides what to render.
+ */
+export const isLegalStaff = (user) => Boolean(
+  user?.is_legal_partner || user?.is_superuser || user?.user_type === 'admin'
+);

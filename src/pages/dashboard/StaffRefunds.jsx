@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   Loader2, ShieldCheck, ShieldAlert, AlertTriangle, Banknote, CheckCircle2,
-  XCircle, Clock, User as UserIcon,
+  XCircle, Clock, User as UserIcon, Copy,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { staffAPI } from '../../services/api';
@@ -12,6 +12,7 @@ const STATUS_STYLES = {
   approved: 'bg-sky-100 text-sky-700',
   declined: 'bg-gray-100 text-gray-500',
   processed: 'bg-emerald-100 text-emerald-700',
+  closed: 'bg-gray-100 text-gray-600',
 };
 
 const NameCheck = ({ destination }) => {
@@ -55,11 +56,13 @@ const NameCheck = ({ destination }) => {
 const StaffRefunds = () => {
   const [rows, setRows] = useState([]);
   const [summary, setSummary] = useState({});
+  const [failedIds, setFailedIds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('open');
   const [busy, setBusy] = useState(null);
   const [amounts, setAmounts] = useState({});
   const [overrides, setOverrides] = useState({});
+  const [closeReasons, setCloseReasons] = useState({});
 
   const load = async () => {
     setLoading(true);
@@ -68,6 +71,7 @@ const StaffRefunds = () => {
       const { data } = await staffAPI.listRefunds(params);
       setRows(data.results || []);
       setSummary(data.summary || {});
+      setFailedIds(data.failed_ids || []);
     } catch (e) {
       toast.error(getErrorMessage(e, 'Could not load refunds'));
     } finally {
@@ -85,6 +89,7 @@ const StaffRefunds = () => {
         action,
         amount: action === 'approve' ? (amounts[row.id] ?? row.eligible_amount) : undefined,
         override_reason: action === 'payout' ? (overrides[row.id] || '') : undefined,
+        note: action === 'close' ? (closeReasons[row.id] || '') : undefined,
       });
       toast.success(data.detail);
       await load();
@@ -100,6 +105,7 @@ const StaffRefunds = () => {
     { key: 'pending', label: 'Awaiting decision' },
     { key: 'approved', label: 'Awaiting payout' },
     { key: 'processed', label: 'Paid' },
+    { key: 'closed', label: 'Closed' },
     { key: '', label: 'All' },
   ];
 
@@ -140,6 +146,17 @@ const StaffRefunds = () => {
           </button>
         ))}
       </div>
+
+      {failedIds.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3">
+          <AlertTriangle size={18} className="text-amber-600 flex-shrink-0 mt-0.5" />
+          <p className="text-sm text-amber-900">
+            {failedIds.length} refund{failedIds.length !== 1 ? 's' : ''} could not be
+            displayed (ID{failedIds.length !== 1 ? 's' : ''} {failedIds.join(', ')}).
+            The rest are shown below — check Error Logs in the admin for the cause.
+          </p>
+        </div>
+      )}
 
       {loading ? (
         <div className="flex items-center gap-2 text-dark-400 text-sm p-4">
@@ -194,6 +211,27 @@ const StaffRefunds = () => {
                   <p className="text-xs text-dark-400 mt-2">{r.policy_label}</p>
                 </div>
 
+                {/* The same guest's other open claims. A second refund for
+                    one booking cannot be created, so these are separate
+                    bookings — only a matching amount is suspicious. */}
+                {r.other_pending?.length > 0 && (
+                  <div className={`rounded-xl p-3 text-xs ${r.likely_duplicate ? 'bg-red-50' : 'bg-amber-50'}`}>
+                    <p className={`font-semibold flex items-center gap-1.5 ${r.likely_duplicate ? 'text-red-800' : 'text-amber-800'}`}>
+                      <Copy size={12} />
+                      {r.likely_duplicate
+                        ? 'Looks like a duplicate claim'
+                        : `This guest has ${r.other_pending.length} other open refund${r.other_pending.length !== 1 ? 's' : ''}`}
+                    </p>
+                    <ul className="mt-1.5 space-y-0.5 text-dark-700">
+                      {r.other_pending.map(o => (
+                        <li key={o.id}>
+                          Booking #{o.booking_id} · {o.listing} · ₦{Number(o.eligible_amount).toLocaleString()}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
                 <NameCheck destination={r.destination} />
 
                 {r.blockers?.length > 0 && r.status !== 'processed' && (
@@ -201,6 +239,21 @@ const StaffRefunds = () => {
                     <AlertTriangle size={12} className="mt-0.5 flex-shrink-0" />
                     {r.blockers.join(' · ')}
                   </p>
+                )}
+
+                {r.status === 'closed' && (
+                  <div className="flex items-center justify-between gap-3 flex-wrap">
+                    <p className="text-xs text-dark-500">
+                      Closed{r.decided_by && ` by ${r.decided_by}`}
+                    </p>
+                    <button
+                      onClick={() => act(r, 'reopen')}
+                      disabled={busy === r.id}
+                      className="px-3 py-1.5 rounded-lg border border-gray-200 text-dark-700 text-xs font-semibold hover:bg-gray-50 transition disabled:opacity-60"
+                    >
+                      Reopen
+                    </button>
+                  </div>
                 )}
 
                 {r.status === 'processed' && (
@@ -237,7 +290,28 @@ const StaffRefunds = () => {
                     >
                       <XCircle size={14} /> Decline
                     </button>
+                    <button
+                      onClick={() => act(r, 'close')}
+                      disabled={busy === r.id || !(closeReasons[r.id] || '').trim()}
+                      title={(closeReasons[r.id] || '').trim()
+                        ? 'Dismiss without judging the claim'
+                        : 'Give a reason first — it is sent to the guest'}
+                      className="px-4 py-2.5 rounded-xl border border-gray-200 text-dark-500 text-sm font-medium hover:bg-gray-50 transition disabled:opacity-40 flex items-center gap-1.5"
+                    >
+                      <Copy size={13} /> Close as duplicate
+                    </button>
                   </div>
+                )}
+
+                {r.status === 'pending' && (
+                  <input
+                    className="input py-2 text-sm w-full"
+                    placeholder={r.likely_duplicate
+                      ? 'Reason to close — e.g. duplicate of booking #12'
+                      : 'Reason to close (sent to the guest, not a refusal)'}
+                    value={closeReasons[r.id] || ''}
+                    onChange={e => setCloseReasons(v => ({ ...v, [r.id]: e.target.value }))}
+                  />
                 )}
 
                 {r.status === 'approved' && (

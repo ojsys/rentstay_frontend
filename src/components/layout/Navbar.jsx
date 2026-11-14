@@ -7,6 +7,7 @@ import {
   CreditCard, Wrench, Upload
 } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
+import NotificationBell from '../common/NotificationBell';
 import useSiteSettings from '../../hooks/useSiteSettings';
 import BrandTitle from './BrandTitle';
 
@@ -107,6 +108,7 @@ const Navbar = () => {
           <div className="hidden md:flex items-center space-x-4">
             {isAuthenticated ? (
               <>
+                <NotificationBell />
                 <Link
                   to={dashboardPath}
                   className="flex items-center space-x-1 text-dark-600 hover:text-primary transition-colors font-medium"
@@ -246,13 +248,18 @@ const Navbar = () => {
             )}
           </div>
 
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
+          {/* Mobile: bell sits outside the menu — an unread badge is no use
+              if you have to open the menu to discover it. */}
+          <div className="md:hidden flex items-center gap-1">
+            {isAuthenticated && <NotificationBell />}
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              aria-label="Menu"
+            >
+              {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
         </div>
 
         {/* Mobile Menu */}

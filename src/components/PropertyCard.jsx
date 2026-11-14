@@ -5,6 +5,7 @@ import useAuthStore from '../store/authStore';
 import { visitAPI } from '../services/api';
 import toast from 'react-hot-toast';
 import { getErrorMessage } from '../utils/errors';
+import { propertyPath } from '../utils/links';
 
 const PropertyCard = ({ property }) => {
   const [isFavorite, setIsFavorite] = useState(false);
@@ -38,7 +39,7 @@ const PropertyCard = ({ property }) => {
     <div className="card group hover:shadow-xl transition-all duration-300 overflow-hidden">
       {/* Image Container */}
       <div className="relative h-64 overflow-hidden">
-        <Link to={`/properties/${property.id}`}>
+        <Link to={propertyPath(property)}>
           <img
             src={primaryImage}
             alt={property.title}
@@ -87,7 +88,7 @@ const PropertyCard = ({ property }) => {
         </div>
 
         {/* Title */}
-        <Link to={`/properties/${property.id}`}>
+        <Link to={propertyPath(property)}>
           <h3 className="text-xl font-semibold text-dark-900 mb-2 hover:text-primary transition-colors line-clamp-2">
             {property.title}
           </h3>
@@ -142,7 +143,7 @@ const PropertyCard = ({ property }) => {
         {/* CTA Button */}
         <div className="mt-4 space-y-2">
           <Link
-            to={`/properties/${property.id}`}
+            to={propertyPath(property)}
             className="btn btn-primary w-full flex items-center justify-center group"
           >
             View Details

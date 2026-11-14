@@ -6,6 +6,8 @@ import { applicationAPI } from '../services/api';
 import toast from 'react-hot-toast';
 import useAuthStore from '../store/authStore';
 import { getErrorMessage } from '../utils/errors';
+import ShareButton from '../components/common/ShareButton';
+import { propertyShareUrl } from '../utils/links';
 
 const DetailRow = ({ label, value }) => (
   <div className="flex justify-between py-2 border-b last:border-b-0">
@@ -268,11 +270,20 @@ const PropertyDetail = () => {
         )}
 
         {/* Header */}
-        <div>
-          <h1 className="text-3xl md:text-4xl font-display font-bold text-dark-900 mb-2">{property.title}</h1>
-          <div className="flex items-center text-dark-600">
-            <MapPin size={18} className="text-primary mr-2" /> {locationText}
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div className="min-w-0">
+            <h1 className="text-3xl md:text-4xl font-display font-bold text-dark-900 mb-2">{property.title}</h1>
+            <div className="flex items-center text-dark-600">
+              <MapPin size={18} className="text-primary mr-2" /> {locationText}
+            </div>
           </div>
+          {/* Shares the backend preview URL, not this page's — crawlers do not
+              run JavaScript, so a link to the app previews as a bare URL. */}
+          <ShareButton
+            url={propertyShareUrl(property)}
+            title={property.title}
+            className="flex-shrink-0 mt-1"
+          />
         </div>
 
         {/* Gallery + Summary */}

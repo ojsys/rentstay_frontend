@@ -51,6 +51,13 @@ import StaffDashboardHome from './pages/dashboard/StaffDashboardHome';
 import StaffRentals from './pages/dashboard/StaffRentals';
 import StaffStays from './pages/dashboard/StaffStays';
 import StaffRefunds from './pages/dashboard/StaffRefunds';
+import StaffCautionFees from './pages/dashboard/StaffCautionFees';
+import StaffPayouts from './pages/dashboard/StaffPayouts';
+import StaffVerifications from './pages/dashboard/StaffVerifications';
+import StaffPayments from './pages/dashboard/StaffPayments';
+import StaffUsers from './pages/dashboard/StaffUsers';
+import StaffHealth from './pages/dashboard/StaffHealth';
+import StaffLegal from './pages/dashboard/StaffLegal';
 import Verify from './pages/Verify';
 import Visits from './pages/Visits';
 import ForgotPassword from './pages/ForgotPassword';
@@ -187,7 +194,14 @@ function App() {
               <Route path="home" element={<StaffDashboardHome />} />
               <Route path="rentals" element={<StaffRentals />} />
               <Route path="stays" element={<StaffStays />} />
+              <Route path="legal" element={<StaffLegal />} />
+              <Route path="health" element={<StaffHealth />} />
+              <Route path="users" element={<StaffUsers />} />
+              <Route path="payments" element={<StaffPayments />} />
+              <Route path="verifications" element={<StaffVerifications />} />
+              <Route path="payouts" element={<StaffPayouts />} />
               <Route path="refunds" element={<StaffRefunds />} />
+              <Route path="caution-fees" element={<StaffCautionFees />} />
             </Route>
             <Route path="/invite/:token" element={<InviteAccept />} />
             <Route path="/visits" element={<Visits />} />

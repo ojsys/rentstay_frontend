@@ -25,6 +25,16 @@ const prettyField = (name) =>
   name.replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase());
 
 /**
+ * A body that is a web page rather than an API answer.
+ *
+ * The web server's own 404 and 502 pages are HTML, and a URL that reaches the
+ * server but matches no route returns one. Passing that through put an entire
+ * `<!DOCTYPE html>` document into a toast — see the endpoint-not-deployed case
+ * below, which is what it always means in practice.
+ */
+const isHtml = (text) => /^\s*(<!doctype|<html|<\?xml)/i.test(text);
+
+/**
  * Pull the first useful message out of a DRF error body.
  *
  * Handles `{detail}`, `{field: ["msg"]}`, `{field: "msg"}`, nested dicts and
@@ -32,7 +42,7 @@ const prettyField = (name) =>
  */
 const fromBody = (data) => {
   if (!data) return null;
-  if (typeof data === 'string') return data.slice(0, 300);
+  if (typeof data === 'string') return isHtml(data) ? null : data.slice(0, 300);
   if (Array.isArray(data)) return data.length ? String(data[0]) : null;
   if (typeof data !== 'object') return null;
 
@@ -105,6 +115,26 @@ export const getErrorMessage = (error, fallback = 'Something went wrong. Please 
     return reference
       ? `Something went wrong on our end (reference ${reference}). Our team has been notified.`
       : 'Something went wrong on our end. Our team has been notified.';
+  }
+
+  // An HTML body means the request never reached a view: the URL matched no
+  // route, so the web server answered with its own page. Almost always the
+  // endpoint exists in this build of the frontend but not on the deployed
+  // server yet — invisible from the message, so the URL goes to the console.
+  if (typeof data === 'string' && isHtml(data)) {
+    if (typeof console !== 'undefined') {
+      const cfg = error?.config || {};
+      console.error(
+        '[api] %s %s%s returned %s as a web page, not JSON — the endpoint is '
+        + 'probably not deployed on this server',
+        (cfg.method || 'get').toUpperCase(),
+        (cfg.baseURL || '') + (cfg.url || ''),
+        '', status,
+      );
+    }
+    return status === 404
+      ? 'That is not available on this server yet. It may need deploying.'
+      : BY_STATUS[status] || fallback;
   }
 
   // A server-supplied message beats a generic one for the status.

@@ -8,6 +8,15 @@
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-l
 
+    # Social crawlers do not run JavaScript, so they cannot see any og:image
+    # this app sets — a shared listing link would preview as a bare URL.
+    # Send them to the backend, which renders the preview tags server-side.
+    # A redirect, not a proxy: shared cPanel hosting rarely has mod_proxy, and
+    # every crawler follows 302s.
+    RewriteCond %{HTTP_USER_AGENT} (facebookexternalhit|Facebot|Twitterbot|WhatsApp|LinkedInBot|Slackbot|TelegramBot|Discordbot|Pinterest|redditbot|Applebot|SkypeUriPreview|vkShare|W3C_Validator|Googlebot) [NC]
+    RewriteRule ^stays/listings/([^/?]+)/?$ https://myrentstay.com/s/stay/$1 [R=302,L]
+    RewriteRule ^properties/([^/?]+)/?$ https://myrentstay.com/s/rent/$1 [R=302,L]
+
     # Rewrite everything else to index.html
     RewriteRule . /index.html [L]
 </IfModule>

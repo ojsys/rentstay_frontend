@@ -1,17 +1,22 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
-import { useParams, useSearchParams, Link } from 'react-router-dom';
-import { staysAPI } from '../../services/api';
+import { useEffect, useState, useCallback, useRef, lazy, Suspense } from 'react';
+import { useParams, useSearchParams, Link, useNavigate } from 'react-router-dom';
+import { staysAPI, messagingAPI } from '../../services/api';
 import {
   Loader2, Star, MapPin, Users, BedDouble, Bath, Home, DoorOpen, Wifi, Wind,
   ChefHat, Droplets, Tv, Zap, Car, Shield, WashingMachine, Waves, Dumbbell,
   Coffee, PawPrint, ArrowUpDown, ArrowLeft, ArrowRight, X, Upload, Trash2,
   CheckCircle, AlertCircle, Clock, Info, ChevronLeft, Grid3x3, CreditCard,
   Building2, Sofa, SquareStack, Navigation, BadgeCheck, CalendarDays,
+  MessageCircle, Lock, Compass,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import useAuthStore from '../../store/authStore';
 import AvailabilityCalendar from '../../components/stays/AvailabilityCalendar';
+// Leaflet is ~150 KB — loaded only when a listing page is actually opened.
+const StayMap = lazy(() => import('../../components/stays/StayMap'));
 import { nightsBetween, buildUnavailableSet, fromISODate } from '../../utils/dates';
+import { listingShareUrl } from '../../utils/links';
+import ShareButton from '../../components/common/ShareButton';
 import { getErrorMessage } from '../../utils/errors';
 
 const AMENITY_ICONS = {
@@ -159,9 +164,12 @@ const ListingDetail = () => {
 
   const submitBooking = async () => {
     if (!guestInfo.name || !guestInfo.phone) { toast.error('Name and phone are required'); return; }
+    // The URL segment can be a slug, so the numeric id has to come from the
+    // loaded listing — Number('the-pelican-1-jos') is NaN and serialises to null.
+    if (!listing?.id) { toast.error('Listing still loading, please try again'); return; }
     setBookingLoading(true);
     try {
-      const payload = { listing_id: Number(id), check_in: checkIn, check_out: checkOut, guests, guest_full_name: guestInfo.name, guest_phone: guestInfo.phone, guest_note: guestInfo.note };
+      const payload = { listing_id: listing.id, check_in: checkIn, check_out: checkOut, guests, guest_full_name: guestInfo.name, guest_phone: guestInfo.phone, guest_note: guestInfo.note };
       const res = await staysAPI.createBooking(payload);
       setGuestModal(false);
       const booking = res.data?.booking;
@@ -225,8 +233,10 @@ const ListingDetail = () => {
   const propDetails = listing.property_details;
   const PropTypeIcon = propDetails ? (PROP_TYPE_ICONS[propDetails.type] || Building2) : Building2;
 
-  const mapsUrl = loc?.latitude && loc?.longitude
-    ? `https://www.google.com/maps?q=${loc.latitude},${loc.longitude}`
+  // Only offer turn-by-turn directions when the pin is the real one. Sending
+  // someone to a deliberately blurred point is worse than not offering it.
+  const mapsUrl = loc?.is_exact && loc?.latitude && loc?.longitude
+    ? `https://www.google.com/maps/dir/?api=1&destination=${loc.latitude},${loc.longitude}`
     : loc?.display
       ? `https://www.google.com/maps/search/${encodeURIComponent(loc.display)}`
       : null;
@@ -235,9 +245,12 @@ const ListingDetail = () => {
     <div className="min-h-screen bg-white">
       {/* Back nav */}
       <div className="container-custom pt-4 pb-2">
-        <Link to="/stays" className="inline-flex items-center gap-1.5 text-sm text-dark-600 hover:text-dark-900">
-          <ChevronLeft size={16} /> Back to stays
-        </Link>
+        <div className="flex items-center justify-between gap-3">
+          <Link to="/stays" className="inline-flex items-center gap-1.5 text-sm text-dark-600 hover:text-dark-900">
+            <ChevronLeft size={16} /> Back to stays
+          </Link>
+          <ShareButton url={listingShareUrl(listing)} title={listing.title} />
+        </div>
       </div>
 
       {/* Title row */}
@@ -332,14 +345,16 @@ const ListingDetail = () => {
             </div>
 
             {/* Host profile card */}
-            <HostCard owner={listing.owner} />
+            <HostCard owner={listing.owner} listing={listing} />
 
-            {/* Location section */}
+            {/* Location & directions */}
             {loc?.display && (
               <div className="border-b border-gray-100 pb-6">
-                <h2 className="text-xl font-semibold text-dark-900 mb-4 flex items-center gap-2">
-                  <MapPin size={18} className="text-primary" /> Location
+                <h2 className="text-xl font-semibold text-dark-900 mb-1 flex items-center gap-2">
+                  <MapPin size={18} className="text-primary" /> Location &amp; directions
                 </h2>
+                <p className="text-sm text-dark-500 mb-4">{loc.display}</p>
+
                 <div className="flex flex-wrap gap-2 text-sm text-dark-700 mb-3">
                   {loc.area && (
                     <span className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5">
@@ -358,33 +373,62 @@ const ListingDetail = () => {
                   )}
                 </div>
 
-                {/* Embedded map */}
-                {loc.latitude && loc.longitude ? (
-                  <div className="rounded-2xl overflow-hidden border border-gray-200 mb-3" style={{ height: '280px' }}>
-                    <iframe
-                      title="listing-location"
-                      className="w-full h-full"
-                      loading="lazy"
-                      src={`https://www.openstreetmap.org/export/embed.html?bbox=${Number(loc.longitude)-0.015},${Number(loc.latitude)-0.015},${Number(loc.longitude)+0.015},${Number(loc.latitude)+0.015}&layer=mapnik&marker=${loc.latitude},${loc.longitude}`}
-                    />
+                {/* The map: an exact pin once booked, an approximate circle before */}
+                {loc.has_pin ? (
+                  <div className="rounded-2xl overflow-hidden border border-gray-200 mb-3">
+                    <Suspense fallback={
+                      <div className="h-[300px] bg-gray-50 flex items-center justify-center">
+                        <Loader2 size={20} className="animate-spin text-dark-300" />
+                      </div>
+                    }>
+                      <StayMap
+                        latitude={loc.latitude}
+                        longitude={loc.longitude}
+                        radiusMetres={loc.radius_metres}
+                        height={300}
+                      />
+                    </Suspense>
                   </div>
                 ) : (
                   <div className="rounded-2xl border border-gray-200 bg-gray-50 h-40 flex items-center justify-center mb-3">
-                    <div className="text-center text-dark-400">
+                    <div className="text-center text-dark-400 px-4">
                       <MapPin size={28} className="mx-auto mb-1 opacity-40" />
                       <p className="text-sm">{loc.display}</p>
+                      <p className="text-xs mt-1">This host hasn&apos;t placed a map pin yet.</p>
                     </div>
                   </div>
                 )}
 
-                <div className="flex flex-wrap items-center gap-3">
-                  <p className="text-sm text-dark-500">Exact address provided after booking confirmation.</p>
-                  {mapsUrl && (
-                    <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline font-medium flex-shrink-0">
-                      <Navigation size={14} /> Open in Google Maps
-                    </a>
-                  )}
-                </div>
+                {/* Exact address — only once the stay is confirmed */}
+                {loc.is_exact ? (
+                  <div className="rounded-xl bg-emerald-50 border border-emerald-100 p-4 space-y-2">
+                    {loc.address && (
+                      <p className="text-sm text-dark-800 flex items-start gap-2">
+                        <MapPin size={14} className="text-emerald-600 mt-0.5 flex-shrink-0" />
+                        <span><span className="font-semibold">Address:</span> {loc.address}</span>
+                      </p>
+                    )}
+                    {loc.directions && (
+                      <p className="text-sm text-dark-800 flex items-start gap-2">
+                        <Compass size={14} className="text-emerald-600 mt-0.5 flex-shrink-0" />
+                        <span><span className="font-semibold">Finding it:</span> {loc.directions}</span>
+                      </p>
+                    )}
+                    {mapsUrl && (
+                      <a href={mapsUrl} target="_blank" rel="noopener noreferrer"
+                         className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline font-medium">
+                        <Navigation size={14} /> Get directions
+                      </a>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm text-dark-500 flex items-start gap-2">
+                    <Lock size={13} className="mt-0.5 flex-shrink-0 text-dark-400" />
+                    {loc.pin_status === 'approximate'
+                      ? 'For the host\u2019s privacy the map shows the general area. You\u2019ll get the exact address and directions as soon as your booking is confirmed.'
+                      : 'You\u2019ll get the exact address and directions as soon as your booking is confirmed.'}
+                  </p>
+                )}
               </div>
             )}
 
@@ -458,7 +502,9 @@ const ListingDetail = () => {
               {listing.max_nights < 365 && <> · <span className="font-medium">{listing.max_nights}</span> nights max</>}
             </div>
 
-            {/* Availability calendar — exposed in the page body, Airbnb-style */}
+            {/* Availability calendar — exposed in the page body rather than
+                hidden behind the date picker, so guests can see what is free
+                before committing to dates. */}
             <div className="border-t border-gray-200 pt-6 mt-6" id="availability">
               <h2 className="text-xl font-display font-bold text-dark-900">
                 {checkIn && checkOut
@@ -664,7 +710,25 @@ const ListingDetail = () => {
 };
 
 /* ── Host profile card ── */
-const HostCard = ({ owner }) => {
+const HostCard = ({ owner, listing }) => {
+  const navigate = useNavigate();
+  const { isAuthenticated, user } = useAuthStore();
+  const [composeOpen, setComposeOpen] = useState(false);
+
+  // Hooks must run before any early return.
+  const isOwnListing = user?.id && owner?.id && user.id === owner.id;
+  const enquiriesOpen = listing?.allow_guest_messages !== false;
+
+  const messageHost = () => {
+    if (!isAuthenticated) {
+      // Come back to this listing after logging in, rather than dumping the
+      // guest on a dashboard having forgotten what they wanted to ask.
+      navigate(`/login?redirect=${encodeURIComponent(`/stays/listings/${listing.id}`)}`);
+      return;
+    }
+    setComposeOpen(true);
+  };
+
   if (!owner) return null;
   const initials = `${owner.first_name?.[0] || ''}${owner.last_name?.[0] || ''}`.toUpperCase() || '?';
   return (
@@ -712,6 +776,159 @@ const HostCard = ({ owner }) => {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Reaching the host. Guests had no way to do this before booking at
+          all, which is how people ended up stuck outside with no number. */}
+      {listing && !isOwnListing && (
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          {enquiriesOpen ? (
+            <>
+              <button
+                onClick={messageHost}
+                className="btn btn-secondary w-full sm:w-auto inline-flex items-center justify-center gap-2"
+              >
+                <MessageCircle size={15} /> Message host
+              </button>
+              <p className="text-xs text-dark-400 mt-2">
+                Ask about check-in, parking or directions before you book.
+                Hosts usually reply within a few hours.
+              </p>
+            </>
+          ) : (
+            <p className="text-xs text-dark-500 flex items-start gap-1.5">
+              <Info size={12} className="mt-0.5 flex-shrink-0" />
+              This host has enquiries turned off. You can message them here once
+              your booking is confirmed.
+            </p>
+          )}
+        </div>
+      )}
+
+      {composeOpen && (
+        <MessageHostModal
+          listing={listing}
+          host={owner}
+          onClose={() => setComposeOpen(false)}
+        />
+      )}
+    </div>
+  );
+};
+
+/* ── Message the host without leaving the listing ── */
+/**
+ * Asking a question should not cost you your place on the page.
+ *
+ * Sending used to navigate straight to the dashboard inbox, which threw away
+ * the dates the guest had picked and the listing they were reading. This
+ * composes and sends in place, then offers the inbox as a choice rather than
+ * making it a consequence.
+ */
+const MessageHostModal = ({ listing, host, onClose }) => {
+  const navigate = useNavigate();
+  const [text, setText] = useState('');
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const inputRef = useRef(null);
+
+  useEffect(() => { inputRef.current?.focus(); }, []);
+
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape' && !sending) onClose(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose, sending]);
+
+  const send = async () => {
+    const body = text.trim();
+    if (!body) { toast.error('Write your message first'); return; }
+    setSending(true);
+    try {
+      // Two calls: the thread may already exist, and starting it is idempotent.
+      const { data: convo } = await messagingAPI.startConversationForListing(listing.id);
+      await messagingAPI.sendMessage(convo.id, body);
+      setSent({ conversationId: convo.id });
+    } catch (e) {
+      toast.error(getErrorMessage(e, 'Could not send your message'));
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const hostName = host?.first_name || 'the host';
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] bg-black/50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+      onClick={() => !sending && onClose()}
+    >
+      <div
+        className="bg-white w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl shadow-xl max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Message ${hostName}`}
+      >
+        <div className="flex items-start justify-between p-5 border-b border-gray-100">
+          <div className="min-w-0">
+            <h3 className="text-lg font-semibold text-dark-900">Message {hostName}</h3>
+            <p className="text-sm text-dark-500 truncate mt-0.5">About: {listing.title}</p>
+          </div>
+          <button
+            onClick={onClose}
+            disabled={sending}
+            className="p-1.5 rounded-lg hover:bg-gray-100 text-dark-400 disabled:opacity-50"
+            aria-label="Close"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        {sent ? (
+          <div className="p-6 text-center">
+            <CheckCircle size={34} className="mx-auto text-green-500 mb-3" />
+            <p className="font-semibold text-dark-900">Message sent</p>
+            <p className="text-sm text-dark-500 mt-1">
+              {hostName} will be notified by email. Their reply will appear in your inbox.
+            </p>
+            <div className="flex gap-2 mt-5">
+              <button onClick={onClose} className="btn btn-secondary flex-1">
+                Keep browsing
+              </button>
+              <button
+                onClick={() => navigate(`/messages?conversation=${sent.conversationId}`)}
+                className="btn btn-primary flex-1"
+              >
+                Go to inbox
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="p-5 space-y-3">
+            <textarea
+              ref={inputRef}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              className="input w-full min-h-[130px] resize-none"
+              placeholder={`Hi ${hostName}, is the place available for my dates? Is there parking?`}
+              maxLength={2000}
+            />
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs text-dark-400">
+                Don&apos;t share payment details in chat.
+              </p>
+              <button
+                onClick={send}
+                disabled={sending || !text.trim()}
+                className="btn btn-primary inline-flex items-center gap-2 disabled:opacity-50"
+              >
+                {sending ? <Loader2 size={15} className="animate-spin" /> : <MessageCircle size={15} />}
+                Send
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,21 +1,22 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { staysAPI } from '../../services/api';
+import { Link, useNavigate } from 'react-router-dom';
+import { staysAPI, messagingAPI } from '../../services/api';
 import {
   Loader2, CalendarDays, Users, MapPin, X, CreditCard,
   AlertCircle, Star, MessageSquarePlus, ShieldCheck, ShieldAlert, Bed,
+  Phone, Compass, Navigation, MessageCircle, KeyRound, Clock3,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getErrorMessage } from '../../utils/errors';
+import { bookingState, TONE_CLASSES } from '../../utils/bookingStatus';
+import { listingPath } from '../../utils/links';
 
-const STATUS_STYLES = {
-  pending:         { label: 'Pending',   cls: 'bg-amber-100 text-amber-700',  dot: 'bg-amber-400' },
-  approved:        { label: 'Approved',  cls: 'bg-blue-100 text-blue-700',    dot: 'bg-blue-400' },
-  confirmed:       { label: 'Confirmed', cls: 'bg-green-100 text-green-700',  dot: 'bg-green-400' },
-  completed:       { label: 'Completed', cls: 'bg-gray-100 text-gray-600',    dot: 'bg-gray-400' },
-  cancelled_guest: { label: 'Cancelled', cls: 'bg-red-100 text-red-700',      dot: 'bg-red-400' },
-  cancelled_host:  { label: 'Declined',  cls: 'bg-red-100 text-red-700',      dot: 'bg-red-400' },
+/** Accent bar along the top of each card, matched to the status tone. */
+const TONE_BARS = {
+  amber: 'bg-amber-400', blue: 'bg-blue-400', green: 'bg-green-400',
+  red: 'bg-red-400', gray: 'bg-gray-400',
 };
+
 
 const FILTER_TABS = [
   { key: '', label: 'All' },
@@ -59,6 +60,85 @@ const StarRating = ({ value, onChange }) => (
   </div>
 );
 
+/**
+ * Everything a guest needs to actually arrive, shown once the stay is confirmed.
+ *
+ * This is the gap that caused the original complaint: a guest standing outside
+ * had the area on a map and no address, no landmark and no phone number. The
+ * server releases all three at `confirmed`; this renders whatever it sent and
+ * says plainly when a host has not filled something in, rather than showing a
+ * dead button.
+ */
+const ArrivalDetails = ({ booking, onMessageHost, messaging }) => {
+  const loc = booking.listing?.location;
+  const contact = booking.host_contact;
+  if (!contact) return null;  // Not confirmed yet — nothing to release.
+
+  const directionsUrl = loc?.is_exact && loc?.latitude && loc?.longitude
+    ? `https://www.google.com/maps/dir/?api=1&destination=${loc.latitude},${loc.longitude}`
+    : null;
+
+  return (
+    <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-3 mb-3 space-y-2">
+      <p className="text-[11px] font-semibold text-emerald-800 uppercase tracking-wider flex items-center gap-1.5">
+        <KeyRound size={11} /> Getting there
+      </p>
+
+      {loc?.address && (
+        <p className="text-xs text-gray-700 flex items-start gap-1.5">
+          <MapPin size={11} className="mt-0.5 flex-shrink-0 text-emerald-600" />
+          {loc.address}
+        </p>
+      )}
+      {loc?.directions && (
+        <p className="text-xs text-gray-700 flex items-start gap-1.5">
+          <Compass size={11} className="mt-0.5 flex-shrink-0 text-emerald-600" />
+          {loc.directions}
+        </p>
+      )}
+      {booking.listing?.check_in_instructions && (
+        <p className="text-xs text-gray-700 flex items-start gap-1.5">
+          <KeyRound size={11} className="mt-0.5 flex-shrink-0 text-emerald-600" />
+          {booking.listing.check_in_instructions}
+        </p>
+      )}
+
+      <div className="flex flex-wrap gap-2 pt-1">
+        {directionsUrl && (
+          <a
+            href={directionsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg bg-white border border-emerald-200 text-emerald-800 hover:bg-emerald-50 transition"
+          >
+            <Navigation size={12} /> Directions
+          </a>
+        )}
+        {contact.has_phone ? (
+          <a
+            href={`tel:${contact.phone}`}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg bg-white border border-emerald-200 text-emerald-800 hover:bg-emerald-50 transition"
+          >
+            <Phone size={12} /> Call {contact.name?.split(' ')[0] || 'host'}
+          </a>
+        ) : (
+          <span className="text-[11px] text-gray-500 self-center">
+            Host hasn&apos;t added a phone number — message them instead.
+          </span>
+        )}
+        <button
+          onClick={() => onMessageHost(booking)}
+          disabled={messaging}
+          className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg bg-white border border-emerald-200 text-emerald-800 hover:bg-emerald-50 transition disabled:opacity-60"
+        >
+          {messaging ? <Loader2 size={12} className="animate-spin" /> : <MessageCircle size={12} />}
+          Message host
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const GuestBookings = () => {
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState([]);
@@ -72,6 +152,21 @@ const GuestBookings = () => {
   const [submittingReview, setSubmittingReview] = useState(false);
   const [reviewedBookings, setReviewedBookings] = useState(new Set());
   const [payLoading, setPayLoading] = useState({});
+  const [messagingId, setMessagingId] = useState(null);
+  const navigate = useNavigate();
+
+  /** Open (or reuse) the thread with this booking's host. */
+  const messageHost = async (booking) => {
+    setMessagingId(booking.id);
+    try {
+      const { data } = await messagingAPI.startConversationForBooking(booking.id);
+      navigate(`/messages?conversation=${data.id}`);
+    } catch (e) {
+      toast.error(getErrorMessage(e, 'Could not open a chat with your host'));
+    } finally {
+      setMessagingId(null);
+    }
+  };
 
   const load = async () => {
     try {
@@ -200,7 +295,7 @@ const GuestBookings = () => {
         ) : (
           <div className="space-y-3">
             {filtered.map(b => {
-              const s = STATUS_STYLES[b.status] || { label: b.status, cls: 'bg-gray-100 text-gray-600', dot: 'bg-gray-400' };
+              const state = bookingState(b, 'guest');
               const nights = b.check_in && b.check_out
                 ? Math.round((new Date(b.check_out) - new Date(b.check_in)) / 86400000)
                 : null;
@@ -208,7 +303,7 @@ const GuestBookings = () => {
 
               return (
                 <div key={b.id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
-                  <div className={`h-1 w-full ${s.dot}`} />
+                  <div className={`h-1 w-full ${TONE_BARS[state.tone] || 'bg-gray-400'}`} />
                   {/* Listing image banner */}
                   <div className="relative h-36 md:h-44 overflow-hidden">
                     <img
@@ -219,7 +314,7 @@ const GuestBookings = () => {
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                     <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between">
                       <div>
-                        <Link to={`/stays/listings/${b.listing?.id}`} className="text-white font-semibold text-sm hover:underline line-clamp-1">
+                        <Link to={listingPath(b.listing)} className="text-white font-semibold text-sm hover:underline line-clamp-1">
                           {b.listing?.title}
                         </Link>
                         {(b.listing?.location?.display || b.listing?.city) && (
@@ -228,7 +323,9 @@ const GuestBookings = () => {
                           </p>
                         )}
                       </div>
-                      <span className={`text-[10px] font-semibold px-2.5 py-1 rounded-full ${s.cls}`}>{s.label}</span>
+                      <span className={`text-[10px] font-semibold px-2.5 py-1 rounded-full ${TONE_CLASSES[state.tone]}`}>
+                        {state.label}
+                      </span>
                     </div>
                   </div>
 
@@ -242,6 +339,17 @@ const GuestBookings = () => {
                       </div>
                     </div>
 
+                    {/* Whose turn it is. A bare "Pending" answered neither
+                        "has the host seen this" nor "do I owe money". */}
+                    {state.detail && (
+                      <p className={`text-xs mb-3 flex items-start gap-1.5 ${state.waitingOn ? 'text-amber-700' : 'text-gray-500'}`}>
+                        {state.waitingOn === 'guest'
+                          ? <AlertCircle size={12} className="mt-0.5 flex-shrink-0" />
+                          : <Clock3 size={12} className="mt-0.5 flex-shrink-0" />}
+                        {state.detail}
+                      </p>
+                    )}
+
                     {/* Dates + guests */}
                     <div className="flex flex-wrap gap-3 text-xs text-gray-500 mb-3">
                       <span className="flex items-center gap-1"><CalendarDays size={12} /> {b.check_in} → {b.check_out}</span>
@@ -253,6 +361,21 @@ const GuestBookings = () => {
                         <AlertCircle size={12} /> {b.cancellation_reason}
                       </p>
                     )}
+
+                    {/* A move waiting on the host explains why these dates
+                        still look like the old ones. */}
+                    {b.date_change?.status === 'pending' && (
+                      <p className="text-xs text-sky-700 bg-sky-50 border border-sky-100 rounded-lg px-2.5 py-1.5 flex items-center gap-1.5 mb-3">
+                        <CalendarDays size={12} className="flex-shrink-0" />
+                        Move to {b.date_change.new_check_in} → {b.date_change.new_check_out}
+                        {' '}is with your host
+                      </p>
+                    )}
+
+                    {/* Getting there. Only rendered once the stay is confirmed,
+                        because that is when the server releases the exact
+                        address and the host's number. */}
+                    <ArrivalDetails booking={b} onMessageHost={messageHost} messaging={messagingId === b.id} />
 
                     <Link
                       to={`/stays/bookings/${b.id}`}
@@ -273,7 +396,7 @@ const GuestBookings = () => {
                           Pay Now
                         </button>
                       )}
-                      {b.status === 'completed' && !alreadyReviewed && (
+                      {b.can_review && !alreadyReviewed && (
                         <button
                           onClick={() => { setReviewModal(b); setReviewRating(5); setReviewComment(''); }}
                           className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border-2 border-[#0C3B2E] text-[#0C3B2E] text-sm font-semibold hover:bg-green-50 transition"
@@ -281,7 +404,7 @@ const GuestBookings = () => {
                           <MessageSquarePlus size={14} /> Review this stay
                         </button>
                       )}
-                      {b.status === 'completed' && alreadyReviewed && (
+                      {alreadyReviewed && (
                         <span className="text-xs text-green-600 flex items-center gap-1 font-medium py-2">
                           <Star size={12} className="fill-green-500 stroke-green-500" />
                           Reviewed ({b.my_review?.rating || reviewRating}★)

@@ -4,12 +4,12 @@ import { Home, Building2, FileText, CreditCard, Wrench, Mail, Calendar, Bed, Bar
 const tabs = [
   { to: '/dashboard/home', icon: Home, label: 'Home' },
   { to: '/dashboard/properties', icon: Building2, label: 'Rent' },
+  { to: '/dashboard/stays', icon: Bed, label: 'Stays' },
   { to: '/dashboard/leases', icon: FileText, label: 'Leases' },
   { to: '/dashboard/payments', icon: CreditCard, label: 'Payments' },
   { to: '/dashboard/maintenance', icon: Wrench, label: 'Maintenance' },
   { to: '/dashboard/messages', icon: Mail, label: 'Messages' },
   { to: '/dashboard/visits', icon: Calendar, label: 'Visits' },
-  { to: '/dashboard/stays', icon: Bed, label: 'Stays' },
   { to: '/dashboard/legal', icon: Scale, label: 'Legal' },
   { to: '/dashboard/reports', icon: BarChart3, label: 'Reports' },
 ];

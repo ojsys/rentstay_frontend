@@ -4,6 +4,7 @@ import { propertyAPI } from '../../services/api';
 import { Loader2, Plus, Eye, Edit, Home, Upload, Trash2, Image as ImageIcon, Star, BarChart2, Send, ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
+import { propertyPath } from '../../utils/links';
 
 const statusColors = {
   available: 'bg-green-100 text-green-700',
@@ -198,7 +199,7 @@ const LandlordDashboardProperties = () => {
 
                 {/* Action row — icon buttons on mobile */}
                 <div className="flex gap-2 mt-3">
-                  <Link to={`/properties/${p.id}`} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-gray-200 text-gray-600 text-xs font-medium hover:bg-gray-50 transition">
+                  <Link to={propertyPath(p)} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-gray-200 text-gray-600 text-xs font-medium hover:bg-gray-50 transition">
                     <Eye size={13} /> View
                   </Link>
                   <Link to={`/properties/${p.id}/edit`} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-[#0C3B2E] text-white text-xs font-medium hover:bg-[#0a3226] transition">

@@ -2,6 +2,7 @@ import { Navigate, Outlet, NavLink, Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { Home, Building2, DollarSign, Wallet, Plus, Bell, Menu, X, LogOut, User as UserIcon } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
+import NotificationBell from '../../components/common/NotificationBell';
 import MobileBottomNav from '../../components/dashboard/MobileBottomNav';
 
 const TABS = [
@@ -37,13 +38,7 @@ const AgentDashboardLayout = () => {
           >
             <Menu size={20} />
           </button>
-          <Link
-            to="/notifications"
-            className="p-2 rounded-lg bg-white/10 text-white"
-            aria-label="Notifications"
-          >
-            <Bell size={20} />
-          </Link>
+          <NotificationBell tone="light" />
         </div>
         <p className="text-white/70 text-sm font-medium">Welcome back,</p>
         <h1 className="text-white text-2xl font-bold leading-tight">

@@ -293,7 +293,7 @@ const Home = () => {
                     <span className="text-primary font-semibold">earn 5% cashback</span> on your caution fee
                   </p>
 
-                  {/* Airbnb-style Search Bar */}
+                  {/* Search Bar */}
             <form onSubmit={handleSearch} className="bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden max-w-4xl mx-auto">
               {/* Main row */}
               <div className="flex flex-col md:flex-row">

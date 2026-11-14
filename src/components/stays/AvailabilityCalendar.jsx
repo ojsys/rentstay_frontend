@@ -6,7 +6,7 @@ import {
 } from '../../utils/dates';
 
 /**
- * Airbnb-style availability calendar with two-click range selection.
+ * Availability calendar with two-click range selection.
  *
  * Shows two months side by side on desktop and one on mobile. Unavailable
  * nights are struck through and unselectable; the range highlight is a
@@ -18,6 +18,10 @@ import {
  *   onChange      ({ checkIn, checkOut }) — checkOut is '' while mid-selection
  *   minNights/maxNights   listing limits, used to guide the second click
  *   nightlyRate   optional; renders a per-night price under each day
+ *   fixedNights   when set, the stay is a known length and a single click
+ *                 selects the whole range. Used when moving a booking, where
+ *                 the length cannot change — asking for a checkout the guest
+ *                 has no say over would be a click that can only be wrong.
  */
 const AvailabilityCalendar = ({
   unavailable = new Set(),
@@ -28,6 +32,7 @@ const AvailabilityCalendar = ({
   maxNights = 365,
   nightlyRate = 0,
   months = 2,
+  fixedNights = 0,
 }) => {
   const today = todayISO();
   const [cursor, setCursor] = useState(() =>
@@ -53,8 +58,19 @@ const AvailabilityCalendar = ({
     return cur;
   }, [checkIn, unavailable, maxNights]);
 
+  /** Every night of a fixed-length stay starting here must be free. */
+  const fixedRangeFree = (iso) => {
+    let cur = iso;
+    for (let i = 0; i < fixedNights; i += 1) {
+      if (unavailable.has(cur)) return false;
+      cur = addDays(cur, 1);
+    }
+    return true;
+  };
+
   const isSelectable = (iso) => {
     if (iso < today) return false;
+    if (fixedNights > 0) return fixedRangeFree(iso);
     if (!checkIn || (checkIn && checkOut)) return !unavailable.has(iso);
     // Mid-selection: only forward dates that keep the stay contiguous.
     if (iso <= checkIn) return !unavailable.has(iso);
@@ -64,6 +80,11 @@ const AvailabilityCalendar = ({
 
   const handlePick = (iso) => {
     if (!onChange) return;
+    // Fixed length: one click picks the whole stay.
+    if (fixedNights > 0) {
+      onChange({ checkIn: iso, checkOut: addDays(iso, fixedNights) });
+      return;
+    }
     // Starting fresh, or restarting because the click landed before check-in.
     if (!checkIn || checkOut || iso <= checkIn) {
       onChange({ checkIn: iso, checkOut: '' });
@@ -73,7 +94,10 @@ const AvailabilityCalendar = ({
   };
 
   // The provisional range follows the cursor before the second click lands.
-  const previewEnd = checkOut || (checkIn && hovered > checkIn ? hovered : '');
+  // A fixed-length stay has no second click, so nothing is provisional.
+  const previewEnd = fixedNights > 0
+    ? checkOut
+    : checkOut || (checkIn && hovered > checkIn ? hovered : '');
 
   const rangeState = (iso) => {
     if (checkIn && iso === checkIn) return 'start';
@@ -176,7 +200,9 @@ const AvailabilityCalendar = ({
       {/* Footer: guidance + clear */}
       <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
         <p className="text-xs text-dark-500">
-          {!checkIn && `${minNights} night minimum`}
+          {!checkIn && (fixedNights > 0
+            ? `Tap a new start date — ${fixedNights} night${fixedNights !== 1 ? 's' : ''}`
+            : `${minNights} night minimum`)}
           {checkIn && !checkOut && 'Select your checkout date'}
           {checkIn && checkOut && `${nightsBetween(checkIn, checkOut)} night${nightsBetween(checkIn, checkOut) !== 1 ? 's' : ''} selected`}
         </p>

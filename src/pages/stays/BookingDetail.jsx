@@ -1,14 +1,18 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, lazy, Suspense } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   ArrowLeft, CalendarDays, Users, MapPin, CreditCard, Loader2, X, Lock,
   ShieldAlert, ShieldCheck, MessageSquare, KeyRound, Receipt, Info, Star,
-  Download, FileText, Image as ImageIcon, RefreshCw,
+  Download, FileText, Image as ImageIcon, RefreshCw, Phone, Compass, Navigation,
+  CalendarClock, ArrowRight,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { staysAPI, messagingAPI } from '../../services/api';
-import { nightsBetween } from '../../utils/dates';
+import { nightsBetween, addDays, buildUnavailableSet } from '../../utils/dates';
 import { getErrorMessage } from '../../utils/errors';
+import AvailabilityCalendar from '../../components/stays/AvailabilityCalendar';
+// Leaflet is ~150 KB — only pulled in when a booking is actually opened.
+const StayMap = lazy(() => import('../../components/stays/StayMap'));
 
 const STATUS = {
   pending: { label: 'Awaiting host approval', cls: 'bg-amber-100 text-amber-700' },
@@ -57,6 +61,11 @@ const BookingDetail = () => {
   const [downloading, setDownloading] = useState(null);
   const [refundQuote, setRefundQuote] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [moveOpen, setMoveOpen] = useState(false);
+  const [moveDates, setMoveDates] = useState({ checkIn: '', checkOut: '' });
+  const [moveReason, setMoveReason] = useState('');
+  const [moveBusy, setMoveBusy] = useState(false);
+  const [unavailable, setUnavailable] = useState(() => new Set());
 
   const load = useCallback(async () => {
     try {
@@ -153,6 +162,69 @@ const BookingDetail = () => {
     }
   };
 
+  /**
+   * Open the "move my dates" sheet.
+   *
+   * The listing's own availability is loaded here rather than on page load —
+   * most visits to this page never move anything, and it is a second request.
+   * This booking's current nights are taken out of the unavailable set: they
+   * are only "busy" because of this very booking, and shifting a stay by a
+   * night has to be allowed to overlap itself. The server excludes the booking
+   * from its own conflict check for the same reason.
+   */
+  const openMove = async () => {
+    setMoveOpen(true);
+    setMoveDates({ checkIn: '', checkOut: '' });
+    setMoveReason('');
+    try {
+      const { data } = await staysAPI.availability(booking.listing.id, {});
+      const set = buildUnavailableSet(data);
+      for (let d = booking.check_in; d < booking.check_out; d = addDays(d, 1)) {
+        set.delete(d);
+      }
+      setUnavailable(set);
+    } catch {
+      // The calendar still renders; the server is the authority on whether a
+      // range is actually free, and it re-checks on request and on approval.
+      setUnavailable(new Set());
+    }
+  };
+
+  const submitMove = async () => {
+    if (!moveDates.checkIn || !moveDates.checkOut) {
+      toast.error('Pick a new start date');
+      return;
+    }
+    setMoveBusy(true);
+    try {
+      const { data } = await staysAPI.requestBookingMove(booking.id, {
+        check_in: moveDates.checkIn,
+        check_out: moveDates.checkOut,
+        reason: moveReason.trim(),
+      });
+      setBooking(data.booking);
+      setMoveOpen(false);
+      toast.success('Date change sent to your host');
+    } catch (e) {
+      toast.error(getErrorMessage(e, 'Could not request those dates'));
+    } finally {
+      setMoveBusy(false);
+    }
+  };
+
+  const withdrawMove = async () => {
+    setMoveBusy(true);
+    try {
+      const { data } = await staysAPI.withdrawBookingMove(booking.id);
+      setBooking(data.booking);
+      toast.success('Request withdrawn');
+    } catch (e) {
+      toast.error(getErrorMessage(e, 'Could not withdraw the request'));
+    } finally {
+      setMoveBusy(false);
+    }
+  };
+
   const confirmCancel = async () => {
     setCancelling(true);
     try {
@@ -200,6 +272,8 @@ const BookingDetail = () => {
   const nights = b.nights || (b.check_in && b.check_out ? nightsBetween(b.check_in, b.check_out) : 0);
   const isConfirmed = ['confirmed', 'completed'].includes(b.status);
   const canCancel = CANCELLABLE.includes(b.status);
+  const move = b.date_change;
+  const movePending = move?.status === 'pending';
 
   return (
     <div className="min-h-screen bg-gray-50 pb-10">
@@ -280,6 +354,17 @@ const BookingDetail = () => {
             <span className="flex items-center gap-1"><Users size={12} /> {b.guests} guest{b.guests !== 1 ? 's' : ''}</span>
           </div>
 
+          {/* Plans change. Moving keeps the booking and the money where they
+              are, which cancelling under a strict policy does not. */}
+          {b.can_request_move && (
+            <button
+              onClick={openMove}
+              className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-gray-200 text-gray-700 text-sm font-semibold hover:bg-gray-50 transition"
+            >
+              <CalendarClock size={14} /> Change my dates
+            </button>
+          )}
+
           <div className="pt-2 border-t border-gray-50">
             <p className="text-xs text-gray-500 flex items-start gap-1.5">
               <MapPin size={12} className="mt-0.5 flex-shrink-0" />
@@ -312,9 +397,71 @@ const BookingDetail = () => {
             )}
           </div>
         )}
-        {!isConfirmed && (listing.check_in_instructions || listing.check_out_instructions) && (
+        {/* Getting there: map, written directions and the host's number.
+            A guest at the gate needs all three, and had none of them. */}
+        {isConfirmed && b.host_contact && (
+          <div className="bg-white rounded-2xl shadow-sm p-4 space-y-3">
+            <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-1.5">
+              <Compass size={14} /> Getting there
+            </h2>
+
+            {listing.location?.has_pin && (
+              <div className="rounded-xl overflow-hidden border border-gray-100">
+                <Suspense fallback={
+                  <div className="h-[220px] bg-gray-50 flex items-center justify-center">
+                    <Loader2 size={18} className="animate-spin text-gray-300" />
+                  </div>
+                }>
+                  <StayMap
+                    latitude={listing.location.latitude}
+                    longitude={listing.location.longitude}
+                    radiusMetres={listing.location.radius_metres}
+                    height={220}
+                  />
+                </Suspense>
+              </div>
+            )}
+
+            {listing.location?.directions && (
+              <p className="text-sm text-gray-700 flex items-start gap-2">
+                <Compass size={13} className="mt-0.5 flex-shrink-0 text-emerald-600" />
+                {listing.location.directions}
+              </p>
+            )}
+
+            <div className="flex flex-wrap gap-2">
+              {listing.location?.is_exact && listing.location?.latitude && (
+                <a
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${listing.location.latitude},${listing.location.longitude}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 transition"
+                >
+                  <Navigation size={12} /> Directions
+                </a>
+              )}
+              {b.host_contact.has_phone ? (
+                <a
+                  href={`tel:${b.host_contact.phone}`}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 transition"
+                >
+                  <Phone size={12} /> Call {b.host_contact.name?.split(' ')[0] || 'host'}
+                </a>
+              ) : (
+                <span className="text-xs text-gray-400 self-center">
+                  Your host hasn&apos;t added a phone number — message them below.
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* The server withholds check-in instructions until the booking is
+            confirmed, so this hint cannot be conditioned on having them. */}
+        {!isConfirmed && (
           <p className="text-xs text-gray-400 flex items-center gap-1.5 px-1">
-            <Info size={12} /> Arrival details appear here once your booking is confirmed.
+            <Info size={12} /> The address, directions and your host&apos;s phone number
+            appear here once your booking is confirmed.
           </p>
         )}
 
@@ -339,6 +486,47 @@ const BookingDetail = () => {
                 Refresh payment status
               </button>
             </div>
+          </div>
+        )}
+
+        {/* Date change status. A declined one is worth showing too — a guest
+            who asked and heard nothing back assumes the request was lost. */}
+        {move && ['pending', 'declined'].includes(move.status) && (
+          <div className={`rounded-2xl p-4 border ${
+            movePending ? 'bg-sky-50 border-sky-200' : 'bg-red-50 border-red-200'
+          }`}>
+            <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-1.5">
+              <CalendarClock size={14} />
+              {movePending ? 'Date change requested' : 'Date change declined'}
+            </h2>
+            <div className="flex items-center gap-2 mt-2 text-sm text-gray-800">
+              <span className="line-through text-gray-400">{move.previous_check_in}</span>
+              <ArrowRight size={13} className="text-gray-400" />
+              <span className="font-semibold">
+                {move.new_check_in} → {move.new_check_out}
+              </span>
+            </div>
+            {movePending ? (
+              <>
+                <p className="text-xs text-sky-800 mt-2">
+                  Your host is reviewing it. Your current dates stay booked until they
+                  decide, and the price does not change.
+                </p>
+                <button
+                  onClick={withdrawMove}
+                  disabled={moveBusy}
+                  className="mt-3 px-4 py-2 rounded-xl border border-sky-300 text-sky-800 text-xs font-semibold hover:bg-white/60 transition disabled:opacity-60"
+                >
+                  {moveBusy ? 'Working…' : 'Withdraw request'}
+                </button>
+              </>
+            ) : (
+              <p className="text-xs text-red-800 mt-2">
+                Your host could not move this booking
+                {move.decision_note ? `. Reason: ${move.decision_note}` : '.'}
+                {' '}Your original dates are unchanged. You can ask for different dates.
+              </p>
+            )}
           </div>
         )}
 
@@ -509,6 +697,74 @@ const BookingDetail = () => {
           )}
         </div>
       </div>
+
+      {/* Move sheet. The stay keeps its length, so one tap picks the whole
+          new range — there is no checkout date for the guest to choose. */}
+      {moveOpen && (
+        <>
+          <div className="fixed inset-0 bg-black/40 z-50" onClick={() => setMoveOpen(false)} />
+          <div className="fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-2xl p-5 max-w-lg mx-auto max-h-[92vh] overflow-y-auto">
+            <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-4" />
+            <h3 className="font-bold text-gray-900">Move your stay</h3>
+            <p className="text-sm text-gray-500 mt-1">
+              Pick a new start date. Your stay stays {nights} night{nights !== 1 ? 's' : ''}
+              {' '}and the price is unchanged — your host approves the new dates.
+            </p>
+
+            <div className="mt-4">
+              <AvailabilityCalendar
+                unavailable={unavailable}
+                checkIn={moveDates.checkIn}
+                checkOut={moveDates.checkOut}
+                onChange={setMoveDates}
+                fixedNights={nights}
+                months={1}
+              />
+            </div>
+
+            {moveDates.checkIn && (
+              <div className="mt-3 rounded-xl bg-gray-50 p-3 flex items-center gap-2 text-sm">
+                <span className="line-through text-gray-400">
+                  {b.check_in} → {b.check_out}
+                </span>
+                <ArrowRight size={14} className="text-gray-400" />
+                <span className="font-semibold text-gray-900">
+                  {moveDates.checkIn} → {moveDates.checkOut}
+                </span>
+              </div>
+            )}
+
+            <textarea
+              className="input w-full mt-3 min-h-[70px]"
+              placeholder="Why are you moving? (optional — your host sees this)"
+              value={moveReason}
+              onChange={(e) => setMoveReason(e.target.value)}
+            />
+
+            <p className="text-xs text-gray-400 mt-2">
+              Need a longer or shorter stay? That changes the price, so cancel this
+              booking and make a new one instead.
+            </p>
+
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={() => setMoveOpen(false)}
+                className="flex-1 py-3 rounded-xl border border-gray-200 text-gray-600 text-sm font-semibold"
+              >
+                Keep my dates
+              </button>
+              <button
+                onClick={submitMove}
+                disabled={moveBusy || !moveDates.checkOut}
+                className="flex-1 py-3 rounded-xl bg-[#0C3B2E] text-white text-sm font-semibold hover:bg-[#0a3226] transition disabled:opacity-60 flex items-center justify-center gap-2"
+              >
+                {moveBusy && <Loader2 size={14} className="animate-spin" />}
+                Request change
+              </button>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Cancel sheet */}
       {cancelOpen && (

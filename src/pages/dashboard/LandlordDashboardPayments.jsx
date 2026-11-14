@@ -1,10 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { dashboardAPI } from '../../services/api';
-import { Loader2, CreditCard, Wallet, TrendingUp, Building2, ArrowLeft } from 'lucide-react';
+import { Loader2, CreditCard, Wallet, TrendingUp, Building2, Home, Clock, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import BankAccountsManager from '../../components/dashboard/BankAccountsManager';
 import CautionWalletView from '../../components/dashboard/CautionWalletView';
 import PayoutRequestForm from '../../components/dashboard/PayoutRequestForm';
+import StaysEarningsView, { StayStatusBadge } from '../../components/dashboard/StaysEarningsView';
+import StaysRefundsView from '../../components/dashboard/StaysRefundsView';
+import { stayNet } from '../../utils/stayEarnings';
 
 const PaymentStatusBadge = ({ isPaid, isLate }) => {
   if (isPaid) return <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">Paid</span>;
@@ -12,9 +15,24 @@ const PaymentStatusBadge = ({ isPaid, isLate }) => {
   return <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">Pending</span>;
 };
 
+const PayoutTypeBadge = ({ type }) => (
+  type === 'stays'
+    ? <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-teal-50 text-teal-700">Stays</span>
+    : <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-sky-50 text-sky-700">Rent</span>
+);
+
+const SectionHeader = ({ title, onViewAll }) => (
+  <div className="px-4 py-3 border-b border-gray-50 flex items-center justify-between">
+    <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
+    <button onClick={onViewAll} className="text-xs font-medium text-primary hover:underline">View all</button>
+  </div>
+);
+
 const SUB_TABS = [
   { key: 'overview', label: 'Overview' },
   { key: 'rent', label: 'Rent' },
+  { key: 'stays', label: 'Stays' },
+  { key: 'refunds', label: 'Refunds' },
   { key: 'caution', label: 'Caution' },
   { key: 'payouts', label: 'Payouts' },
 ];
@@ -31,6 +49,8 @@ const LandlordDashboardPayments = () => {
   const recentPayments = data?.recent_payments || [];
   const payoutHistory = data?.payout_history || [];
   const cautionWallet = data?.caution_wallet || [];
+  const stays = data?.stays || {};
+  const recentStayPayments = stays.recent_payments || [];
 
   if (isLoading) {
     return (
@@ -41,8 +61,10 @@ const LandlordDashboardPayments = () => {
   }
 
   const summaryCards = [
-    { label: 'Total Received', value: summary.total_received, icon: TrendingUp, color: 'text-green-500', bg: 'bg-green-50' },
+    { label: 'Rent Received', value: summary.total_received, icon: TrendingUp, color: 'text-green-500', bg: 'bg-green-50' },
     { label: 'Pending Rent',   value: summary.pending_rent,   icon: CreditCard,  color: 'text-amber-500', bg: 'bg-amber-50' },
+    { label: 'Stays Earned',   value: stays.released,         icon: Home,        color: 'text-teal-600', bg: 'bg-teal-50' },
+    { label: 'Stays On Hold',  value: stays.pending,          icon: Clock,       color: 'text-sky-500', bg: 'bg-sky-50' },
     { label: 'Caution Held',  value: summary.caution_held,   icon: Wallet,      color: 'text-indigo-500', bg: 'bg-indigo-50' },
     { label: 'Cashback',      value: summary.interest_earned, icon: TrendingUp,  color: 'text-emerald-500', bg: 'bg-emerald-50' },
     { label: 'Commissions',   value: summary.commissions,     icon: Building2,   color: 'text-purple-500', bg: 'bg-purple-50' },
@@ -53,8 +75,8 @@ const LandlordDashboardPayments = () => {
     <div className="space-y-4 md:space-y-6">
       <h2 className="text-lg md:text-xl font-bold text-gray-900">Payments & Finances</h2>
 
-      {/* Summary cards — 3 per row on mobile, 6 on desktop */}
-      <div className="grid grid-cols-3 md:grid-cols-6 gap-2 md:gap-3">
+      {/* Summary cards — 4 per row on mobile, 8 on desktop */}
+      <div className="grid grid-cols-4 md:grid-cols-8 gap-2 md:gap-3">
         {summaryCards.map((card) => (
           <div key={card.label} className="bg-white rounded-2xl p-3 shadow-sm flex flex-col items-center gap-1 text-center">
             <div className={`w-7 h-7 ${card.bg} rounded-xl flex items-center justify-center`}>
@@ -71,12 +93,12 @@ const LandlordDashboardPayments = () => {
       </div>
 
       {/* Sub-tabs */}
-      <div className="flex gap-1 bg-gray-100 rounded-xl p-1">
+      <div className="flex gap-1 bg-gray-100 rounded-xl p-1 overflow-x-auto scrollbar-hide">
         {SUB_TABS.map(t => (
           <button
             key={t.key}
             onClick={() => setActiveTab(t.key)}
-            className={`flex-1 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
+            className={`flex-1 px-2 py-2 rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition-all ${
               activeTab === t.key ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'
             }`}
           >
@@ -87,17 +109,16 @@ const LandlordDashboardPayments = () => {
 
       {/* Overview */}
       {activeTab === 'overview' && (
+        <div className="space-y-4 md:space-y-6">
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-50">
-            <h3 className="text-sm font-semibold text-gray-900">Recent Rent Payments</h3>
-          </div>
+          <SectionHeader title="Recent Rent Payments" onViewAll={() => setActiveTab('rent')} />
           {recentPayments.length === 0 ? (
             <p className="text-gray-400 text-sm p-4">No payments yet.</p>
           ) : (
             <>
               {/* Mobile list */}
               <div className="md:hidden divide-y divide-gray-50">
-                {recentPayments.slice(0, 10).map((p, idx) => (
+                {recentPayments.slice(0, 5).map((p, idx) => (
                   <div key={idx} className="flex items-center gap-3 px-4 py-3">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">
@@ -126,7 +147,7 @@ const LandlordDashboardPayments = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {recentPayments.slice(0, 10).map((p, idx) => (
+                    {recentPayments.slice(0, 5).map((p, idx) => (
                       <tr key={idx} className="border-t border-gray-50">
                         <td className="py-2.5 px-4">{p.rental_agreement__tenant__first_name} {p.rental_agreement__tenant__last_name}</td>
                         <td className="py-2.5 pr-4 truncate max-w-[150px]">{p.rental_agreement__property__title}</td>
@@ -140,6 +161,60 @@ const LandlordDashboardPayments = () => {
               </div>
             </>
           )}
+        </div>
+
+        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+          <SectionHeader title="Recent Stay Payments" onViewAll={() => setActiveTab('stays')} />
+          {recentStayPayments.length === 0 ? (
+            <p className="text-gray-400 text-sm p-4">No paid stay bookings yet.</p>
+          ) : (
+            <>
+              {/* Mobile list */}
+              <div className="md:hidden divide-y divide-gray-50">
+                {recentStayPayments.slice(0, 5).map((b) => (
+                  <div key={b.id} className="flex items-center gap-3 px-4 py-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        {b.guest__first_name} {b.guest__last_name}
+                      </p>
+                      <p className="text-xs text-gray-400 truncate">{b.listing__title}</p>
+                      <p className="text-xs text-gray-400">{b.check_in} → {b.check_out}</p>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <p className="text-sm font-bold text-gray-900">₦{stayNet(b).toLocaleString()}</p>
+                      <StayStatusBadge status={b.status} className="text-[10px] px-1.5" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {/* Desktop table */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="min-w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-gray-400 text-xs border-b border-gray-100">
+                      <th className="py-2.5 px-4">Guest</th>
+                      <th className="py-2.5 pr-4">Listing</th>
+                      <th className="py-2.5 pr-4">Dates</th>
+                      <th className="py-2.5 pr-4">You Earn</th>
+                      <th className="py-2.5">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recentStayPayments.slice(0, 5).map((b) => (
+                      <tr key={b.id} className="border-t border-gray-50">
+                        <td className="py-2.5 px-4">{b.guest__first_name} {b.guest__last_name}</td>
+                        <td className="py-2.5 pr-4 truncate max-w-[150px]">{b.listing__title}</td>
+                        <td className="py-2.5 pr-4 whitespace-nowrap">{b.check_in} → {b.check_out}</td>
+                        <td className="py-2.5 pr-4">₦{stayNet(b).toLocaleString()}</td>
+                        <td className="py-2.5"><StayStatusBadge status={b.status} /></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+        </div>
         </div>
       )}
 
@@ -206,6 +281,12 @@ const LandlordDashboardPayments = () => {
         </div>
       )}
 
+      {/* Stays earnings — same view as the Stays tab */}
+      {activeTab === 'stays' && <StaysEarningsView onAddBankAccount={() => setActiveTab('payouts')} />}
+
+      {/* Stay cancellations & refund trail — same view as the Stays tab */}
+      {activeTab === 'refunds' && <StaysRefundsView />}
+
       {/* Caution Wallet */}
       {activeTab === 'caution' && <CautionWalletView pools={cautionWallet} />}
 
@@ -213,9 +294,27 @@ const LandlordDashboardPayments = () => {
       {activeTab === 'payouts' && (
         <div className="space-y-4">
           <div className="bg-white rounded-2xl shadow-sm p-4">
-            <h3 className="text-sm font-semibold text-gray-900 mb-4">Request Payout</h3>
+            <h3 className="text-sm font-semibold text-gray-900 mb-4">Withdraw Rent</h3>
             <PayoutRequestForm availableBalance={summary.available_balance || 0} />
           </div>
+
+          {/* Stays earnings are a separate balance with their own hold, so they
+              are withdrawn from the Stays sub-tab rather than this form. */}
+          <button
+            onClick={() => setActiveTab('stays')}
+            className="w-full bg-white rounded-2xl shadow-sm p-4 flex items-center gap-3 text-left hover:bg-gray-50 transition"
+          >
+            <div className="w-9 h-9 bg-teal-50 rounded-xl flex items-center justify-center flex-shrink-0">
+              <Home size={16} className="text-teal-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-gray-900">
+                Stays balance: ₦{Number(stays.available_balance || 0).toLocaleString()}
+              </p>
+              <p className="text-xs text-gray-500">Withdraw short-stay earnings from the Stays tab</p>
+            </div>
+            <ChevronRight size={16} className="text-gray-400 flex-shrink-0" />
+          </button>
 
           <BankAccountsManager />
 
@@ -234,7 +333,7 @@ const LandlordDashboardPayments = () => {
                     return (
                       <div key={p.id} className="flex items-center gap-3 px-4 py-3">
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900">{p.bank_account?.bank_name}</p>
+                          <p className="text-sm font-medium text-gray-900">{p.bank_account?.bank_name} <PayoutTypeBadge type={p.payout_type} /></p>
                           <p className="text-xs text-gray-400">{p.bank_account?.account_number} · {new Date(p.created_at).toLocaleDateString()}</p>
                         </div>
                         <div className="text-right flex-shrink-0">
@@ -251,6 +350,7 @@ const LandlordDashboardPayments = () => {
                     <thead>
                       <tr className="text-left text-gray-400 text-xs border-b border-gray-100">
                         <th className="py-2.5 px-4">Reference</th>
+                        <th className="py-2.5 pr-4">From</th>
                         <th className="py-2.5 pr-4">Bank</th>
                         <th className="py-2.5 pr-4">Amount</th>
                         <th className="py-2.5 pr-4">Status</th>
@@ -261,6 +361,7 @@ const LandlordDashboardPayments = () => {
                       {payoutHistory.map((p) => (
                         <tr key={p.id} className="border-t border-gray-50">
                           <td className="py-2.5 px-4 font-mono text-xs">{String(p.reference).substring(0, 12)}…</td>
+                          <td className="py-2.5 pr-4"><PayoutTypeBadge type={p.payout_type} /></td>
                           <td className="py-2.5 pr-4">{p.bank_account?.bank_name} — {p.bank_account?.account_number}</td>
                           <td className="py-2.5 pr-4 font-semibold">₦{Number(p.amount).toLocaleString()}</td>
                           <td className="py-2.5 pr-4">

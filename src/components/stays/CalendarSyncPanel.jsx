@@ -250,7 +250,14 @@ const CalendarSyncPanel = ({ listingId, onChanged }) => {
                   value={name}
                   onChange={e => setName(e.target.value)}
                   placeholder="Airbnb"
+                  /* Matches the column. Hosts paste the feed URL in here, which
+                     used to reach the database and fail with a 500. */
+                  maxLength={100}
                 />
+                <p className="text-[10px] text-gray-400 mt-1">
+                  Just a label so you can tell your calendars apart — the link
+                  goes below.
+                </p>
               </div>
               <div>
                 <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1">
@@ -261,6 +268,7 @@ const CalendarSyncPanel = ({ listingId, onChanged }) => {
                   value={url}
                   onChange={e => setUrl(e.target.value)}
                   placeholder="https://www.airbnb.com/calendar/ical/12345.ics?s=…"
+                  maxLength={500}
                 />
               </div>
               <div className="flex gap-2">

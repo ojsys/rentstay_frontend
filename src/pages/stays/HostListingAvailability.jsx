@@ -158,7 +158,7 @@ const HostListingAvailability = () => {
               </div>
               <div>
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Note (optional)</label>
-                <input className="input w-full" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Maintenance, personal use…" />
+                <input className="input w-full" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Maintenance, personal use…" maxLength={200} />
               </div>
               <div className="flex gap-3">
                 <button type="button" onClick={() => setShowAddForm(false)} className="flex-1 py-3 rounded-xl border border-gray-200 text-gray-600 text-sm font-semibold">

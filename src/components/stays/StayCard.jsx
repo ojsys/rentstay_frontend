@@ -1,12 +1,16 @@
 import { Link } from 'react-router-dom';
 import { Star, Zap, Home, DoorOpen, BedDouble, ArrowRight } from 'lucide-react';
+import { listingPath } from '../../utils/links';
 
 const TYPE_LABELS = { entire: 'Entire place', private_room: 'Private room', shared_room: 'Shared room' };
 const TYPE_ICONS = { entire: Home, private_room: DoorOpen, shared_room: BedDouble };
 
 const StayCard = ({ listing, checkIn, checkOut, guests = 1 }) => {
   const TypeIcon = TYPE_ICONS[listing.listing_type] || Home;
-  const to = `/stays/listings/${listing.id}${checkIn && checkOut ? `?check_in=${checkIn}&check_out=${checkOut}&guests=${guests}` : ''}`;
+  const to = listingPath(
+    listing,
+    checkIn && checkOut ? `?check_in=${checkIn}&check_out=${checkOut}&guests=${guests}` : '',
+  );
 
   return (
     <Link to={to} className="group block">

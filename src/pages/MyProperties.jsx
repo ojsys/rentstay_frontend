@@ -5,6 +5,7 @@ import { Home, Edit2, Trash2, Image as ImageIcon, Star, BarChart2, Send } from '
 import toast from 'react-hot-toast';
 import { Link, Navigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
+import { propertyPath } from '../utils/links';
 
 const MyProperties = () => {
   const { user } = useAuthStore();
@@ -160,7 +161,7 @@ const MyProperties = () => {
                         <button className="btn btn-secondary btn-sm" onClick={() => startEdit(p)}><Edit2 size={14} className="mr-1" /> Quick Edit</button>
                         <Link className="btn btn-secondary btn-sm" to={`/properties/${p.id}/edit`}><Edit2 size={14} className="mr-1" /> Full Edit</Link>
                         <button className="btn btn-secondary btn-sm" onClick={() => delProp(p.id)}><Trash2 size={14} className="mr-1" /> Delete</button>
-                        <Link className="btn btn-primary btn-sm" to={`/properties/${p.id}`}>View</Link>
+                        <Link className="btn btn-primary btn-sm" to={propertyPath(p)}>View</Link>
                       </div>
                     </div>
                   )}
