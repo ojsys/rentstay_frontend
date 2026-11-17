@@ -29,12 +29,18 @@ const AddPropertyForAgent = () => {
     available_from: '',
   });
 
-  if (!isAuthenticated) return <Navigate to="/login" replace />;
-  if (!['agent', 'super_agent'].includes(user?.user_type)) return <Navigate to="/dashboard" replace />;
+  const isAgent = ['agent', 'super_agent'].includes(user?.user_type);
+  const canAccess = isAuthenticated && isAgent;
 
   useEffect(() => {
+    if (!canAccess) return;
     locationAPI.getStates().then(res => setStates(res.data)).catch(() => setStates([]));
-  }, []);
+  }, [canAccess]);
+
+  // Redirects come after every hook — returning early above a hook changes
+  // the hook order between renders.
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (!isAgent) return <Navigate to="/dashboard" replace />;
 
   const onChange = (e) => {
     const { name, value, type, checked } = e.target;

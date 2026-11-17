@@ -29,10 +29,11 @@ const AgentEditProperty = () => {
     has_legal_fee: false, available_from: '',
   });
 
-  if (!isAuthenticated) return <Navigate to="/login" replace />;
-  if (user?.user_type !== 'agent') return <Navigate to="/dashboard" replace />;
+  const isAgent = user?.user_type === 'agent';
+  const canAccess = isAuthenticated && isAgent;
 
   useEffect(() => {
+    if (!canAccess) return;
     const load = async () => {
       try {
         const [propRes, statesRes] = await Promise.all([
@@ -80,7 +81,12 @@ const AgentEditProperty = () => {
       }
     };
     load();
-  }, [id]);
+  }, [id, canAccess]);
+
+  // Redirects come after every hook — returning early above a hook changes
+  // the hook order between renders.
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (!isAgent) return <Navigate to="/dashboard" replace />;
 
   const onChange = (e) => {
     const { name, value, type, checked } = e.target;
