@@ -58,6 +58,7 @@ import StaffPayments from './pages/dashboard/StaffPayments';
 import StaffUsers from './pages/dashboard/StaffUsers';
 import StaffHealth from './pages/dashboard/StaffHealth';
 import StaffLegal from './pages/dashboard/StaffLegal';
+import StaffPricing from './pages/dashboard/StaffPricing';
 import Verify from './pages/Verify';
 import Visits from './pages/Visits';
 import ForgotPassword from './pages/ForgotPassword';
@@ -188,13 +189,14 @@ function App() {
             <Route path="/stays/bookings" element={<GuestBookings />} />
             <Route path="/stays/bookings/:id" element={<BookingDetail />} />
             <Route path="/stays/host/bookings" element={<HostBookings />} />
-            <Route path="/admin/kyc" element={<AdminKYC />} />
+            <Route path="/staff/kyc" element={<AdminKYC />} />
             <Route path="/staff/dashboard" element={<StaffDashboardLayout />}>
               <Route index element={<Navigate to="home" replace />} />
               <Route path="home" element={<StaffDashboardHome />} />
               <Route path="rentals" element={<StaffRentals />} />
               <Route path="stays" element={<StaffStays />} />
               <Route path="legal" element={<StaffLegal />} />
+              <Route path="pricing" element={<StaffPricing />} />
               <Route path="health" element={<StaffHealth />} />
               <Route path="users" element={<StaffUsers />} />
               <Route path="payments" element={<StaffPayments />} />

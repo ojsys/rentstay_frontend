@@ -8,7 +8,9 @@
    Public pages use sky blue; the .dashboard-theme wrapper overrides to dark green.
    Values are plain RGB channels so Tailwind's opacity modifier (bg-primary/50) works.
    ──────────────────────────────────────────────────────────────────────────── */
-:root {
+/* .public-theme restores the public palette inside a dashboard, e.g. the
+   pricing editor's live preview. */
+:root, .public-theme {
   /* Sky blue – public-facing */
   --color-primary:     14 165 233;   /* #0EA5E9 */
   --color-primary-50:  240 249 255;  /* #F0F9FF */

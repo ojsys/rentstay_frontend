@@ -189,6 +189,9 @@ export const staffAPI = {
   actOnCautionFees: (payload) => api.post('/staff/caution-fees/', payload),
   cautionAccount: () => api.get('/staff/caution-account/'),
   setCautionAccount: (payload) => api.post('/staff/caution-account/', payload),
+  // Pricing page copy. Rates are read-only here — they live in Site Settings.
+  pricingPage: () => api.get('/staff/pricing/'),
+  savePricingPage: (content) => api.put('/staff/pricing/', { content }),
 };
 
 export const propertyAPI = {
@@ -420,6 +423,8 @@ export const locationAPI = {
 // Static Pages API
 export const pagesAPI = {
   getPage: (slug) => api.get(`/pages/${slug}/`),
+  // Structured pricing copy plus the live rates its placeholders refer to.
+  getPricing: () => api.get('/pricing/'),
   listPages: () => api.get('/pages/'),
 };
 

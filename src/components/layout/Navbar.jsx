@@ -208,7 +208,7 @@ const Navbar = () => {
                       {(user?.is_staff || user?.user_type === 'admin') && (
                         <>
                           <Link
-                            to="/admin/kyc"
+                            to="/staff/kyc"
                             onClick={() => setIsUserMenuOpen(false)}
                             className="block px-4 py-2 text-sm text-dark-700 hover:bg-gray-50"
                           >
@@ -438,7 +438,7 @@ const Navbar = () => {
                           Admin
                         </p>
                         <Link
-                          to="/admin/kyc"
+                          to="/staff/kyc"
                           onClick={() => setIsMobileMenuOpen(false)}
                           className="flex items-center space-x-3 px-3 py-3 text-dark-700 hover:bg-primary-50 hover:text-primary rounded-lg transition-all active:scale-95"
                         >
