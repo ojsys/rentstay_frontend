@@ -8,6 +8,7 @@ import useAuthStore from '../store/authStore';
 import { getErrorMessage } from '../utils/errors';
 import ShareButton from '../components/common/ShareButton';
 import { propertyShareUrl } from '../utils/links';
+import { ShareLinks, FloatingShare } from '../components/common/SocialShare';
 
 const DetailRow = ({ label, value }) => (
   <div className="flex justify-between py-2 border-b last:border-b-0">
@@ -29,6 +30,8 @@ const PropertyDetail = () => {
   const { isAuthenticated, user } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [property, setProperty] = useState(null);
+  // The floating share bar steps aside while the inline row is on screen.
+  const [inlineShareVisible, setInlineShareVisible] = useState(false);
   const [pendingApproval, setPendingApproval] = useState(false);
   const [error, setError] = useState(null);
   const [starting, setStarting] = useState(false);
@@ -250,6 +253,10 @@ const PropertyDetail = () => {
   );
   const PUBLICLY_VISIBLE = ['available', 'rented', 'maintenance'];
   const isNotLive = !PUBLICLY_VISIBLE.includes(property.status);
+  // Only live properties have a share preview; a draft link would 404.
+  const shareUrl = isNotLive ? null : propertyShareUrl(property);
+  const shareText = [property.title, [property.lga?.name, property.state?.name].filter(Boolean).join(', ')]
+    .filter(Boolean).join(' — ');
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -406,6 +413,15 @@ const PropertyDetail = () => {
                 [&>li]:mb-1 [&>a]:text-primary [&>a]:underline"
               dangerouslySetInnerHTML={{ __html: property.description }}
             />
+            {shareUrl && (
+              <ShareLinks
+                url={shareUrl}
+                text={shareText}
+                heading="Share this property"
+                className="mt-6 pt-5 border-t border-gray-100"
+                onVisibleChange={setInlineShareVisible}
+              />
+            )}
           </div>
 
           <div className="card">
@@ -445,6 +461,8 @@ const PropertyDetail = () => {
             </div>
           )}
         </div>
+
+        {shareUrl && <FloatingShare url={shareUrl} text={shareText} hidden={inlineShareVisible} />}
 
         {/* Lightbox */}
         {lightboxOpen && (

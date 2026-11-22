@@ -17,6 +17,7 @@ const StayMap = lazy(() => import('../../components/stays/StayMap'));
 import { nightsBetween, buildUnavailableSet, fromISODate } from '../../utils/dates';
 import { listingShareUrl } from '../../utils/links';
 import ShareButton from '../../components/common/ShareButton';
+import { ShareLinks, FloatingShare } from '../../components/common/SocialShare';
 import { getErrorMessage } from '../../utils/errors';
 
 const AMENITY_ICONS = {
@@ -114,6 +115,8 @@ const ListingDetail = () => {
   }, [galleryOpen, nextImage, prevImage]);
 
   const [uploading, setUploading] = useState(false);
+  // The floating share bar steps aside while the inline row is on screen.
+  const [inlineShareVisible, setInlineShareVisible] = useState(false);
 
   const isOwner = listing && user && listing.owner?.id === user.id;
 
@@ -231,6 +234,10 @@ const ListingDetail = () => {
   const nights = (checkIn && checkOut) ? Math.max(0, (new Date(checkOut) - new Date(checkIn)) / 86400000) : 0;
   const loc = listing.location;
   const propDetails = listing.property_details;
+  // Share text names the area only, never the street: the link travels further than the page.
+  const shareUrl = listing.is_published ? listingShareUrl(listing) : null;
+  const shareText = [listing.title, [listing.lga_name, listing.state_name].filter(Boolean).join(', ')]
+    .filter(Boolean).join(' — ');
   const PropTypeIcon = propDetails ? (PROP_TYPE_ICONS[propDetails.type] || Building2) : Building2;
 
   // Only offer turn-by-turn directions when the pin is the real one. Sending
@@ -440,6 +447,17 @@ const ListingDetail = () => {
               </div>
             )}
 
+            {/* Share — only published listings have a preview page */}
+            {shareUrl && (
+              <ShareLinks
+                url={shareUrl}
+                text={shareText}
+                heading="Share this stay"
+                className="border-b border-gray-100 pb-6"
+                onVisibleChange={setInlineShareVisible}
+              />
+            )}
+
             {/* Amenities */}
             {listing.amenities?.length > 0 && (
               <div className="border-b border-gray-100 pb-6">
@@ -633,6 +651,8 @@ const ListingDetail = () => {
           </div>
         </div>
       </div>
+
+      {shareUrl && <FloatingShare url={shareUrl} text={shareText} hidden={inlineShareVisible} />}
 
       {/* Guest detail modal */}
       {guestModal && (
