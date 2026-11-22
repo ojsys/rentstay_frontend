@@ -1,3 +1,4 @@
+import { createElement, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
@@ -59,6 +60,20 @@ import StaffUsers from './pages/dashboard/StaffUsers';
 import StaffHealth from './pages/dashboard/StaffHealth';
 import StaffLegal from './pages/dashboard/StaffLegal';
 import StaffPricing from './pages/dashboard/StaffPricing';
+
+// Experiences — loaded on demand so the stays and rent pages don't carry them.
+import TripTray from './components/experiences/TripTray';
+const ExperiencesShelf = lazy(() => import('./pages/experiences/ExperiencesShelf'));
+const ExperienceDetail = lazy(() => import('./pages/experiences/ExperienceDetail'));
+const PackageDetail = lazy(() => import('./pages/experiences/PackageDetail'));
+const ProviderDashboard = lazy(() => import('./pages/experiences/ProviderDashboard'));
+const ProviderListingEditor = lazy(() => import('./pages/experiences/ProviderListingEditor'));
+const StaffExperiences = lazy(() => import('./pages/dashboard/StaffExperiences'));
+const lazyPage = (page) => (
+  <Suspense fallback={<div className="min-h-[60vh] flex items-center justify-center"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
+    {createElement(page)}
+  </Suspense>
+);
 import Verify from './pages/Verify';
 import Visits from './pages/Visits';
 import ForgotPassword from './pages/ForgotPassword';
@@ -189,6 +204,13 @@ function App() {
             <Route path="/stays/bookings" element={<GuestBookings />} />
             <Route path="/stays/bookings/:id" element={<BookingDetail />} />
             <Route path="/stays/host/bookings" element={<HostBookings />} />
+            {/* Experiences (Phase 1: add-ons to a stay). Specific paths first. */}
+            <Route path="/experiences" element={lazyPage(ExperiencesShelf)} />
+            <Route path="/experiences/provider" element={lazyPage(ProviderDashboard)} />
+            <Route path="/experiences/provider/listings/new" element={lazyPage(ProviderListingEditor)} />
+            <Route path="/experiences/provider/listings/:id" element={lazyPage(ProviderListingEditor)} />
+            <Route path="/experiences/packages/:slug" element={lazyPage(PackageDetail)} />
+            <Route path="/experiences/:slug" element={lazyPage(ExperienceDetail)} />
             <Route path="/staff/kyc" element={<AdminKYC />} />
             <Route path="/staff/dashboard" element={<StaffDashboardLayout />}>
               <Route index element={<Navigate to="home" replace />} />
@@ -197,6 +219,7 @@ function App() {
               <Route path="stays" element={<StaffStays />} />
               <Route path="legal" element={<StaffLegal />} />
               <Route path="pricing" element={<StaffPricing />} />
+              <Route path="experiences" element={lazyPage(StaffExperiences)} />
               <Route path="health" element={<StaffHealth />} />
               <Route path="users" element={<StaffUsers />} />
               <Route path="payments" element={<StaffPayments />} />
@@ -226,6 +249,7 @@ function App() {
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Layout>
+        <TripTray />
       </Router>
       <Toaster position="top-right" />
     </QueryClientProvider>

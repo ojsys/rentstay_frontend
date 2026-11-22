@@ -4,12 +4,13 @@ import {
   Home, Building2, LogIn, UserPlus, LayoutDashboard, LogOut, Menu, X,
   User as UserIcon, ChevronDown, Edit, Shield, FileText, Mail,
   Calendar, Bed, PlusCircle, Users, Bell, ChevronRight,
-  CreditCard, Wrench, Upload
+  CreditCard, Wrench, Upload, Compass
 } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
 import NotificationBell from '../common/NotificationBell';
 import useSiteSettings from '../../hooks/useSiteSettings';
 import BrandTitle from './BrandTitle';
+import { useExperiencesMeta } from '../../hooks/useExperiences';
 
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -63,10 +64,13 @@ const Navbar = () => {
     };
   }, [isMobileMenuOpen]);
 
+  // Experiences appears once it is switched on (staff see it before launch).
+  const { visible: experiencesVisible } = useExperiencesMeta();
   const navLinks = [
     { to: '/', label: 'Home', icon: Home },
     { to: '/properties', label: 'Rent', icon: Building2 },
     { to: '/stays', label: 'Stays', icon: Building2 },
+    ...(experiencesVisible ? [{ to: '/experiences', label: 'Experiences', icon: Compass, isNew: true }] : []),
   ];
 
   return (
@@ -100,6 +104,7 @@ const Navbar = () => {
               >
                 <link.icon size={18} />
                 <span>{link.label}</span>
+                {link.isNew && <span className="ml-1 bg-accent text-white text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full">New</span>}
               </Link>
             ))}
           </div>
@@ -205,6 +210,15 @@ const Navbar = () => {
                           </Link>
                         </>
                       )}
+                      {experiencesVisible && (
+                        <Link
+                          to="/experiences/provider"
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className="block px-4 py-2 text-sm text-dark-700 hover:bg-gray-50"
+                        >
+                          Experience provider
+                        </Link>
+                      )}
                       {(user?.is_staff || user?.user_type === 'admin') && (
                         <>
                           <Link
@@ -308,6 +322,7 @@ const Navbar = () => {
                     >
                       <link.icon size={20} className="flex-shrink-0" />
                       <span className="font-medium">{link.label}</span>
+                      {link.isNew && <span className="bg-accent text-white text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full">New</span>}
                     </Link>
                   ))}
                 </div>

@@ -1,6 +1,6 @@
 import { Navigate, Outlet, NavLink, Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import { Home, Building2, Bed, ShieldCheck, Bell, Menu, X, LogOut, User as UserIcon, Banknote, Wallet, Receipt, UserSearch, Activity, Scale, PiggyBank, Tag } from 'lucide-react';
+import { Home, Building2, Bed, ShieldCheck, Bell, Menu, X, LogOut, User as UserIcon, Banknote, Wallet, Receipt, UserSearch, Activity, Scale, PiggyBank, Tag, Compass } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
 import NotificationBell from '../../components/common/NotificationBell';
 import MobileBottomNav from '../../components/dashboard/MobileBottomNav';
@@ -17,6 +17,7 @@ const TABS = [
   { to: '/staff/dashboard/legal', icon: Scale, label: 'Legal', badgeKey: null },
   { to: '/staff/dashboard/refunds', icon: Banknote, label: 'Refunds', badgeKey: null },
   { to: '/staff/dashboard/caution-fees', icon: PiggyBank, label: 'Caution deposits', badgeKey: null },
+  { to: '/staff/dashboard/experiences', icon: Compass, label: 'Experiences', badgeKey: null },
   { to: '/staff/dashboard/pricing', icon: Tag, label: 'Pricing page', badgeKey: null },
 ];
 

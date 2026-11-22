@@ -560,3 +560,55 @@ export const superAgentAPI = {
   superviseAgent: (agentId) => api.post('/super-agents/agents/', { agent_id: agentId, action: 'assign' }),
   unsuperviseAgent: (agentId) => api.post('/super-agents/agents/', { agent_id: agentId, action: 'remove' }),
 };
+
+// ── Experiences (Phase 1: add-ons to a stay) ─────────────────────────────────
+export const experiencesAPI = {
+  meta: () => api.get('/experiences/meta/'),
+  list: (params) => api.get('/experiences/', { params }),
+  get: (slug) => api.get(`/experiences/${slug}/`),
+  slots: (slug, params) => api.get(`/experiences/${slug}/slots/`, { params }),
+  packages: () => api.get('/experiences/packages/'),
+  package: (slug, params) => api.get(`/experiences/packages/${slug}/`, { params }),
+  // Guest add-ons on a stay booking
+  addToBooking: (bookingId, items) => api.post(`/experiences/trip/${bookingId}/add/`, { items }),
+  removeAddOn: (id) => api.post(`/experiences/addons/${id}/remove/`),
+  cancelAddOn: (id, reason) => api.post(`/experiences/addons/${id}/cancel/`, { reason }),
+  reviewAddOn: (id, data) => api.post(`/experiences/addons/${id}/review/`, data),
+};
+
+export const providerAPI = {
+  profile: () => api.get('/experiences/provider/profile/'),
+  apply: (data) => api.post('/experiences/provider/profile/', data),
+  updateProfile: (data) => api.patch('/experiences/provider/profile/', data),
+  listings: () => api.get('/experiences/provider/experiences/'),
+  listing: (id) => api.get(`/experiences/provider/experiences/${id}/`),
+  createListing: (data) => api.post('/experiences/provider/experiences/', data),
+  updateListing: (id, data) => api.patch(`/experiences/provider/experiences/${id}/`, data),
+  deleteListing: (id) => api.delete(`/experiences/provider/experiences/${id}/`),
+  submit: (id) => api.post(`/experiences/provider/experiences/${id}/submit/`),
+  uploadImage: (id, formData) => api.post(`/experiences/provider/experiences/${id}/images/`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
+  deleteImage: (id, imageId) => api.delete(`/experiences/provider/experiences/${id}/images/${imageId}/`),
+  setPrimaryImage: (id, imageId) => api.post(`/experiences/provider/experiences/${id}/images/${imageId}/primary/`),
+  addSessions: (id, data) => api.post(`/experiences/provider/experiences/${id}/sessions/`, data),
+  cancelSession: (id, sessionId, reason) =>
+    api.post(`/experiences/provider/experiences/${id}/sessions/${sessionId}/cancel/`, { reason }),
+  bookings: (when) => api.get('/experiences/provider/bookings/', { params: { when } }),
+  cancelBooking: (id, reason) => api.post(`/experiences/provider/bookings/${id}/cancel/`, { reason }),
+  earnings: () => api.get('/experiences/provider/earnings/'),
+  requestPayout: (data) => api.post('/experiences/provider/earnings/', data),
+  reviews: () => api.get('/experiences/provider/reviews/'),
+  reply: (id, reply) => api.post(`/experiences/provider/reviews/${id}/reply/`, { reply }),
+};
+
+export const staffExperiencesAPI = {
+  overview: () => api.get('/staff/experiences/overview/'),
+  providers: (params) => api.get('/staff/experiences/providers/', { params }),
+  decideProvider: (id, action, note) => api.post(`/staff/experiences/providers/${id}/decide/`, { action, note }),
+  listings: (params) => api.get('/staff/experiences/listings/', { params }),
+  setCheck: (id, key, ok, note) => api.post(`/staff/experiences/listings/${id}/check/`, { key, ok, note }),
+  decideListing: (id, action, note) => api.post(`/staff/experiences/listings/${id}/decide/`, { action, note }),
+  refunds: (status) => api.get('/staff/experiences/refunds/', { params: { status } }),
+  markRefunded: (id, reference) => api.post(`/staff/experiences/refunds/${id}/mark-paid/`, { reference }),
+};

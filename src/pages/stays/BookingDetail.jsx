@@ -11,6 +11,7 @@ import { staysAPI, messagingAPI } from '../../services/api';
 import { nightsBetween, addDays, buildUnavailableSet } from '../../utils/dates';
 import { getErrorMessage } from '../../utils/errors';
 import AvailabilityCalendar from '../../components/stays/AvailabilityCalendar';
+import BookingAddOns from '../../components/experiences/BookingAddOns';
 // Leaflet is ~150 KB — only pulled in when a booking is actually opened.
 const StayMap = lazy(() => import('../../components/stays/StayMap'));
 
@@ -272,6 +273,10 @@ const BookingDetail = () => {
   const nights = b.nights || (b.check_in && b.check_out ? nightsBetween(b.check_in, b.check_out) : 0);
   const isConfirmed = ['confirmed', 'completed'].includes(b.status);
   const canCancel = CANCELLABLE.includes(b.status);
+  // Same rule as the server's init_payment: approved, or instant-book pending.
+  const canPay = b.status === 'approved' || (b.status === 'pending' && listing.instant_book);
+  const liveAddOns = (b.experience_addons || []).filter(a => a.status !== 'cancelled');
+  const experiencesTotal = liveAddOns.reduce((sum, a) => sum + Number(a.amount), 0);
   const move = b.date_change;
   const movePending = move?.status === 'pending';
 
@@ -626,13 +631,25 @@ const BookingDetail = () => {
           {Number(b.cleaning_fee) > 0 && (
             <Row label="Cleaning fee" value={`₦${Number(b.cleaning_fee).toLocaleString()}`} />
           )}
+          {liveAddOns.length > 0 && (
+            <>
+              <Row label="Stay total" value={`₦${Number(b.amount_total).toLocaleString()}`} />
+              <Row
+                label={`Experiences (${liveAddOns.length})`}
+                value={`₦${experiencesTotal.toLocaleString()}`}
+              />
+            </>
+          )}
           <div className="pt-2 mt-1 border-t border-gray-100">
-            <Row label="Total" value={`₦${Number(b.amount_total).toLocaleString()}`} strong />
+            <Row label="Total" value={`₦${Number(b.amount_due ?? b.amount_total).toLocaleString()}`} strong />
           </div>
           <p className="text-[11px] text-gray-400 pt-1">
             {isConfirmed ? 'Paid in full.' : 'You are charged when the booking is confirmed.'}
           </p>
         </div>
+
+        {/* Experiences — add before paying, meeting details after */}
+        <BookingAddOns booking={b} canAdd={canPay && !isConfirmed} onChange={setBooking} />
 
         {/* Host */}
         <div className="bg-white rounded-2xl shadow-sm p-4">
@@ -678,13 +695,14 @@ const BookingDetail = () => {
 
         {/* Actions */}
         <div className="flex gap-3 flex-wrap">
-          {b.status === 'approved' && (
+          {canPay && (
             <button
               onClick={pay}
               disabled={paying}
               className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-[#0C3B2E] text-white text-sm font-semibold hover:bg-[#0a3226] transition disabled:opacity-60"
             >
-              {paying ? <Loader2 size={15} className="animate-spin" /> : <CreditCard size={15} />} Pay now
+              {paying ? <Loader2 size={15} className="animate-spin" /> : <CreditCard size={15} />}
+              Pay ₦{Number(b.amount_due ?? b.amount_total).toLocaleString()}
             </button>
           )}
           {canCancel && (

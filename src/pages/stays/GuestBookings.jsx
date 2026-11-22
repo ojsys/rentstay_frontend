@@ -334,8 +334,12 @@ const GuestBookings = () => {
                     <div className="flex items-start justify-between gap-3 mb-3">
                       <HostScoreBadge owner={b.listing?.owner} />
                       <div className="text-right flex-shrink-0">
-                        <p className="text-sm font-bold text-gray-900">₦{Number(b.amount_total).toLocaleString()}</p>
+                        <p className="text-sm font-bold text-gray-900">₦{Number(b.amount_due ?? b.amount_total).toLocaleString()}</p>
                         {nights && <p className="text-xs text-gray-400">{nights} night{nights !== 1 ? 's' : ''}</p>}
+                        {(() => {
+                          const n = (b.experience_addons || []).filter(a => a.status !== 'cancelled').length;
+                          return n > 0 ? <p className="text-xs text-primary font-medium">+ {n} experience{n !== 1 ? 's' : ''}</p> : null;
+                        })()}
                       </div>
                     </div>
 

@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Search, MapPin, Home as HomeIcon, DollarSign, Shield, TrendingUp, CheckCircle, ArrowRight, ChevronDown, BedDouble, Sparkles, Calendar, Users } from 'lucide-react';
 import { staysAPI } from '../services/api';
 import StayCard from '../components/stays/StayCard';
+import HomeExperiences from '../components/experiences/HomeExperiences';
 
 const HERO_ROTATE_MS = 10000; // each hero slide is shown for ~10s before auto-advancing
 const todayStr = () => new Date().toISOString().split('T')[0];
@@ -460,6 +461,9 @@ const Home = () => {
           </div>
         </section>
       )}
+
+      {/* Experiences — the shelf, once it is switched on */}
+      <HomeExperiences />
 
       {/* Features Section */}
       <section className="py-20 bg-white">

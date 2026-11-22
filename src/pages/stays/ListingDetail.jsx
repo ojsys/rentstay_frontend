@@ -18,6 +18,10 @@ import { nightsBetween, buildUnavailableSet, fromISODate } from '../../utils/dat
 import { listingShareUrl } from '../../utils/links';
 import ShareButton from '../../components/common/ShareButton';
 import { ShareLinks, FloatingShare } from '../../components/common/SocialShare';
+import StayExperiences, { TripLines } from '../../components/experiences/StayExperiences';
+import useTripForStay from '../../hooks/useTripForStay';
+import useTripStore from '../../store/tripStore';
+import { toAddOnPayload } from '../../utils/experiences';
 import { getErrorMessage } from '../../utils/errors';
 
 const AMENITY_ICONS = {
@@ -77,6 +81,11 @@ const ListingDetail = () => {
 
   const [guestModal, setGuestModal] = useState(false);
   const [guestInfo, setGuestInfo] = useState({ name: '', phone: '', note: '' });
+
+  // Experiences from the trip tray that fall inside the chosen dates ride
+  // along with the booking and are paid in the same checkout.
+  const trip = useTripForStay(checkIn, checkOut);
+  const removeFromTrip = useTripStore(s => s.removeMany);
 
   // Nights already taken — host-blocked dates plus confirmed bookings.
   const [unavailable, setUnavailable] = useState(() => new Set());
@@ -141,10 +150,13 @@ const ListingDetail = () => {
 
   useEffect(() => { load(); loadAvailability(); }, [load, loadAvailability]);
 
+  // Also re-run once the listing arrives: a link that already carries dates
+  // (a package, the trip tray, a search) set them before the listing loaded,
+  // and the quote never ran — the widget showed no price.
   useEffect(() => {
     if (checkIn && checkOut && listing) getQuote();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [checkIn, checkOut, guests]);
+  }, [checkIn, checkOut, guests, listing?.id]);
 
   const getQuote = async () => {
     if (!checkIn || !checkOut) return;
@@ -172,9 +184,15 @@ const ListingDetail = () => {
     if (!listing?.id) { toast.error('Listing still loading, please try again'); return; }
     setBookingLoading(true);
     try {
-      const payload = { listing_id: listing.id, check_in: checkIn, check_out: checkOut, guests, guest_full_name: guestInfo.name, guest_phone: guestInfo.phone, guest_note: guestInfo.note };
+      const payload = {
+        listing_id: listing.id, check_in: checkIn, check_out: checkOut, guests,
+        guest_full_name: guestInfo.name, guest_phone: guestInfo.phone, guest_note: guestInfo.note,
+        addons: trip.inside.map(toAddOnPayload),
+      };
       const res = await staysAPI.createBooking(payload);
       setGuestModal(false);
+      // They are on the booking now; the tray should not offer them again.
+      if (trip.inside.length) removeFromTrip(trip.inside.map(i => i.key));
       const booking = res.data?.booking;
       if (listing?.instant_book && booking?.id) {
         try {
@@ -447,6 +465,11 @@ const ListingDetail = () => {
               </div>
             )}
 
+            {/* The shelf, in this stay's context */}
+            {listing.is_published && !isOwner && (
+              <StayExperiences listing={listing} checkIn={checkIn} checkOut={checkOut} guests={guests} />
+            )}
+
             {/* Share — only published listings have a preview page */}
             {shareUrl && (
               <ShareLinks
@@ -619,7 +642,19 @@ const ListingDetail = () => {
                     </div>
                     {Number(quote.cleaning_fee) > 0 && <div className="flex justify-between text-dark-700"><span>Cleaning fee</span><span>₦{Number(quote.cleaning_fee).toLocaleString()}</span></div>}
                     {Number(quote.service_fee) > 0 && <div className="flex justify-between text-dark-700"><span>Service fee</span><span>₦{Number(quote.service_fee).toLocaleString()}</span></div>}
-                    <div className="flex justify-between font-bold text-dark-900 border-t border-gray-200 pt-2 mt-2"><span>Total</span><span>₦{Number(quote.amount_total).toLocaleString()}</span></div>
+                    {trip.inside.length > 0 && (
+                      <div className="flex justify-between text-dark-700"><span>Stay total</span><span>₦{Number(quote.amount_total).toLocaleString()}</span></div>
+                    )}
+                    {(trip.inside.length > 0 || trip.outside.length > 0) && (
+                      <div className="border-t border-gray-200 pt-2 mt-2">
+                        <p className="text-[10px] font-bold text-dark-600 uppercase tracking-wider mb-1.5">Experiences</p>
+                        <TripLines inside={trip.inside} outside={trip.outside} />
+                      </div>
+                    )}
+                    <div className="flex justify-between font-bold text-dark-900 border-t border-gray-200 pt-2 mt-2">
+                      <span>{trip.inside.length ? 'Trip total' : 'Total'}</span>
+                      <span>₦{(Number(quote.amount_total) + trip.total).toLocaleString()}</span>
+                    </div>
                   </div>
                 )}
 
@@ -668,7 +703,8 @@ const ListingDetail = () => {
                 <div>
                   <p className="font-semibold text-dark-900 text-sm line-clamp-1">{listing.title}</p>
                   <p className="text-xs text-dark-500 mt-0.5">{checkIn} → {checkOut} · {nights} night{nights !== 1 ? 's' : ''} · {guests} guest{guests !== 1 ? 's' : ''}</p>
-                  {quote && <p className="text-sm font-bold text-dark-900 mt-1">₦{Number(quote.amount_total).toLocaleString()} total</p>}
+                  {quote && <p className="text-sm font-bold text-dark-900 mt-1">₦{(Number(quote.amount_total) + trip.total).toLocaleString()} total</p>}
+                  {trip.inside.length > 0 && <p className="text-xs text-dark-500">Includes {trip.inside.length} experience{trip.inside.length !== 1 ? 's' : ''}</p>}
                 </div>
               </div>
             </div>

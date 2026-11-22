@@ -11,7 +11,7 @@
  *    page carries the picture and then forwards the person to the app.
  */
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://myrentstay.com';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://www.myrentstay.com';
 
 /** In-app route for a listing. */
 export const listingPath = (listing, search = '') => {
