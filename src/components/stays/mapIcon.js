@@ -21,6 +21,9 @@ export const pinIcon = (colour = '#0EA5E9') =>
     iconAnchor: [15, 42],
   });
 
-export const TILE_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+// OSM's tile policy: no a./b./c. subdomains (deprecated), and the request must
+// carry a Referer — the backend's SECURE_REFERRER_POLICY sees to that. A 403
+// on tiles means the Referer went missing again.
+export const TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 export const TILE_ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
