@@ -22,6 +22,11 @@ const Dashboard = () => {
     return <Navigate to="/agent/dashboard/home" replace />;
   }
 
+  // Experience providers work from the provider desk
+  if (user?.user_type === 'provider') {
+    return <Navigate to="/experiences/provider" replace />;
+  }
+
   // Super agents get the platform-wide dashboard
   if (user?.user_type === 'super_agent') {
     return <Navigate to="/super-agent/dashboard" replace />;

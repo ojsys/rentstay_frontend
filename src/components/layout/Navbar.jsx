@@ -28,6 +28,7 @@ const Navbar = () => {
     isLandlord ? '/dashboard/home'
     : isSuperAgent ? '/super-agent/dashboard'
     : user?.user_type === 'agent' ? '/agent/dashboard/home'
+    : user?.user_type === 'provider' ? '/experiences/provider'
     : isStaff ? '/staff/dashboard/home'
     : '/dashboard';
   const isDashboardRoute =
@@ -210,7 +211,7 @@ const Navbar = () => {
                           </Link>
                         </>
                       )}
-                      {experiencesVisible && (
+                      {(experiencesVisible || user?.user_type === 'provider') && (
                         <Link
                           to="/experiences/provider"
                           onClick={() => setIsUserMenuOpen(false)}

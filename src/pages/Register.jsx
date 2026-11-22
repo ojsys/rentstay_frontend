@@ -1,9 +1,18 @@
-import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Mail, Lock, User, Phone, UserPlus, Home, Building2, Eye, EyeOff, Briefcase, Bed } from 'lucide-react';
+import { createElement, useState, useEffect } from 'react';
+import { Mail, Lock, User, Phone, UserPlus, Home, Building2, Eye, EyeOff, Briefcase, Bed, Compass } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import useAuthStore from '../store/authStore';
+
+const ACCOUNT_TYPES = [
+  { type: 'guest', icon: Bed, title: "I'm a Guest", sub: 'Booking a short stay', note: 'Book stays by the night — no tenancy needed' },
+  { type: 'tenant', icon: Home, title: "I'm a Tenant", sub: 'Looking for a property', note: 'Browse and apply for listings' },
+  { type: 'landlord', icon: Building2, title: "I'm a Landlord", sub: 'List and manage properties', note: 'Verification required for full access' },
+  { type: 'agent', icon: Briefcase, title: "I'm an Agent", sub: 'Bring properties, earn commissions', note: '5% commission on each successful rental' },
+  // For people who only run experiences — tours, venues, food. No property needed.
+  { type: 'provider', icon: Compass, title: 'I run experiences', sub: 'Tours, venues, food & culture', note: 'Get booked by visitors staying nearby' },
+];
 
 const Register = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -27,6 +36,8 @@ const Register = () => {
     if (firstName) setValue('first_name', firstName);
     if (lastName) setValue('last_name', lastName);
     if (inviteToken) setUserType('tenant');
+    // "List your experience" links arrive with the type already chosen.
+    else if (ACCOUNT_TYPES.some(t => t.type === searchParams.get('type'))) setUserType(searchParams.get('type'));
   }, []);  // eslint-disable-line react-hooks/exhaustive-deps
 
   const onSubmit = async (data) => {
@@ -51,6 +62,9 @@ const Register = () => {
           navigate(`/invite/${inviteToken}`);
         } else if (userType === 'agent') {
           navigate('/agent/dashboard/home');
+        } else if (userType === 'provider') {
+          // Business details are asked for there, not in this form.
+          navigate('/experiences/provider');
         } else {
           navigate('/dashboard');
         }
@@ -83,12 +97,7 @@ const Register = () => {
                 Select Account Type <span className="text-red-500">*</span>
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {[
-                { type: 'guest', icon: Bed, title: "I'm a Guest", sub: 'Booking a short stay', note: 'Book stays by the night — no tenancy needed' },
-                { type: 'tenant', icon: Home, title: "I'm a Tenant", sub: 'Looking for a property', note: 'Browse and apply for listings' },
-                { type: 'landlord', icon: Building2, title: "I'm a Landlord", sub: 'List and manage properties', note: 'Verification required for full access' },
-                { type: 'agent', icon: Briefcase, title: "I'm an Agent", sub: 'Bring properties, earn commissions', note: '5% commission on each successful rental' },
-              ].map(({ type, icon: Icon, title, sub, note }) => (
+              {ACCOUNT_TYPES.map(({ type, icon, title, sub, note }) => (
                 <button
                   key={type}
                   type="button"
@@ -101,7 +110,7 @@ const Register = () => {
                       : 'border-gray-200 hover:border-primary-200 bg-gray-50'
                   }`}
                 >
-                  <Icon className={`shrink-0 sm:mx-auto sm:mb-2 ${userType === type ? 'text-primary' : 'text-dark-400'}`} size={28} />
+                  {createElement(icon, { size: 28, className: `shrink-0 sm:mx-auto sm:mb-2 ${userType === type ? 'text-primary' : 'text-dark-400'}` })}
                   <div className="min-w-0">
                     <h3 className="font-semibold text-dark-900 text-sm">{title}</h3>
                     <p className="text-xs text-dark-600 mt-0.5 sm:mt-1">{sub}</p>

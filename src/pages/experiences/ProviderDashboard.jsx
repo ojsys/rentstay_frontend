@@ -1,5 +1,5 @@
 import { createElement, useState } from 'react';
-import { Link, Navigate, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import {
@@ -58,7 +58,7 @@ const ProfileForm = ({ initial = {}, onSubmit, busy, submitLabel }) => {
   );
 };
 
-const Apply = () => {
+const Apply = ({ user }) => {
   const qc = useQueryClient();
   const apply = useMutation({
     mutationFn: (data) => providerAPI.apply(data),
@@ -85,8 +85,24 @@ const Apply = () => {
         </ul>
       </div>
       <div className="bg-white rounded-2xl border border-gray-100 shadow-soft p-6">
-        <h2 className="font-semibold text-dark-900 mb-4">Tell us about you</h2>
-        <ProfileForm onSubmit={(d) => apply.mutate(d)} busy={apply.isPending} submitLabel="Apply to list" />
+        {user ? (
+          <>
+            <h2 className="font-semibold text-dark-900">Tell us about your business</h2>
+            <p className="text-sm text-dark-500 mt-1 mb-4">RentStay will be in touch to meet you and walk your first experience before it goes live.</p>
+            <ProfileForm initial={{ phone: user.phone_number || '' }} onSubmit={(d) => apply.mutate(d)} busy={apply.isPending} submitLabel="Apply to list" />
+          </>
+        ) : (
+          <div className="text-center py-6">
+            <h2 className="font-semibold text-dark-900 text-lg">Start with a free account</h2>
+            <p className="text-sm text-dark-500 mt-1">Then tell us about your business — it takes two minutes.</p>
+            <Link to="/register?type=provider" className="btn btn-primary w-full mt-5 inline-flex items-center justify-center gap-2"><Store size={16} /> Create a provider account</Link>
+            <p className="text-sm text-dark-600 mt-4">
+              Already on RentStay?{' '}
+              <Link to={`/login?redirect=${encodeURIComponent('/experiences/provider')}`} className="text-primary font-semibold hover:underline">Log in</Link>
+              {' '}and apply from your account.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -289,7 +305,7 @@ const Listings = ({ listings }) => {
 };
 
 const ProviderDashboard = () => {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
   const [params, setParams] = useSearchParams();
   const tab = params.get('tab') || 'overview';
   const qc = useQueryClient();
@@ -305,9 +321,10 @@ const ProviderDashboard = () => {
     onError: (e) => toast.error(getErrorMessage(e, 'Could not save')),
   });
 
-  if (!isAuthenticated) return <Navigate to={`/login?redirect=${encodeURIComponent('/experiences/provider')}`} replace />;
+  // Logged-out visitors get the pitch and a way to sign up, not a bare login wall.
+  if (!isAuthenticated) return <Apply user={null} />;
   if (profile.isLoading) return <div className="min-h-[60vh] flex items-center justify-center"><Loader2 className="animate-spin text-primary" /></div>;
-  if (!provider) return <Apply />;
+  if (!provider) return <Apply user={user} />;
 
   const all = listings.data || [];
   const setTab = (key) => setParams({ tab: key }, { replace: true });
